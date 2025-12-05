@@ -15,4 +15,23 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    // Performance optimizations
+    target: "esnext",
+    minify: "esbuild",
+    cssMinify: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom", "react-router-dom"],
+          ui: ["framer-motion", "lucide-react"],
+        },
+      },
+    },
+    // Optimize chunk size
+    chunkSizeWarningLimit: 1000,
+  },
+  optimizeDeps: {
+    include: ["react", "react-dom", "react-router-dom", "framer-motion"],
+  },
 }));

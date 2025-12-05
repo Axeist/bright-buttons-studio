@@ -59,7 +59,9 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
               duration: 2,
               repeat: Infinity,
               ease: "easeInOut",
+              type: "tween"
             }}
+            style={{ willChange: "transform, opacity" }}
           />
         )}
 

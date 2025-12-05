@@ -45,7 +45,9 @@ export const WhatsAppButton = ({
             duration: 2,
             repeat: Infinity,
             ease: "easeInOut",
+            type: "tween"
           }}
+          style={{ willChange: "transform, opacity" }}
         />
         
         {/* Sparkle effects */}

@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,23 +8,40 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
-// Public Pages
-import Index from "./pages/Index";
-import AboutFounder from "./pages/AboutFounder";
-import NotFound from "./pages/NotFound";
+// Public Pages - Lazy loaded for better performance
+const Index = lazy(() => import("./pages/Index"));
+const AboutFounder = lazy(() => import("./pages/AboutFounder"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
-// Admin Pages
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import POS from "./pages/POS";
-import Products from "./pages/Products";
-import Orders from "./pages/Orders";
-import Customers from "./pages/Customers";
-import Reports from "./pages/Reports";
-import Settings from "./pages/Settings";
-import Staff from "./pages/Staff";
+// Admin Pages - Lazy loaded
+const Login = lazy(() => import("./pages/Login"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const POS = lazy(() => import("./pages/POS"));
+const Products = lazy(() => import("./pages/Products"));
+const Orders = lazy(() => import("./pages/Orders"));
+const Customers = lazy(() => import("./pages/Customers"));
+const Reports = lazy(() => import("./pages/Reports"));
+const Settings = lazy(() => import("./pages/Settings"));
+const Staff = lazy(() => import("./pages/Staff"));
 
-const queryClient = new QueryClient();
+// Optimized QueryClient configuration
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      retry: 1,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    },
+  },
+});
+
+// Loading fallback component
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+  </div>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -33,62 +51,64 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<Index />} />
-            <Route path="/about-founder" element={<AboutFounder />} />
-            
-            {/* Auth Routes */}
-            <Route path="/login" element={<Login />} />
-            
-            {/* Protected Admin Routes */}
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/pos" element={
-              <ProtectedRoute>
-                <POS />
-              </ProtectedRoute>
-            } />
-            <Route path="/products" element={
-              <ProtectedRoute>
-                <Products />
-              </ProtectedRoute>
-            } />
-            <Route path="/orders" element={
-              <ProtectedRoute>
-                <Orders />
-              </ProtectedRoute>
-            } />
-            <Route path="/customers" element={
-              <ProtectedRoute>
-                <Customers />
-              </ProtectedRoute>
-            } />
-            <Route path="/reports" element={
-              <ProtectedRoute>
-                <Reports />
-              </ProtectedRoute>
-            } />
-            <Route path="/settings" element={
-              <ProtectedRoute>
-                <Settings />
-              </ProtectedRoute>
-            } />
-            <Route path="/staff" element={
-              <ProtectedRoute requireAdmin>
-                <Staff />
-              </ProtectedRoute>
-            } />
-            
-            {/* Catch-all */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </TooltipProvider>
+            <Suspense fallback={<LoadingFallback />}>
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/" element={<Index />} />
+                <Route path="/about-founder" element={<AboutFounder />} />
+                
+                {/* Auth Routes */}
+                <Route path="/login" element={<Login />} />
+                
+                {/* Protected Admin Routes */}
+                <Route path="/dashboard" element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/pos" element={
+                  <ProtectedRoute>
+                    <POS />
+                  </ProtectedRoute>
+                } />
+                <Route path="/products" element={
+                  <ProtectedRoute>
+                    <Products />
+                  </ProtectedRoute>
+                } />
+                <Route path="/orders" element={
+                  <ProtectedRoute>
+                    <Orders />
+                  </ProtectedRoute>
+                } />
+                <Route path="/customers" element={
+                  <ProtectedRoute>
+                    <Customers />
+                  </ProtectedRoute>
+                } />
+                <Route path="/reports" element={
+                  <ProtectedRoute>
+                    <Reports />
+                  </ProtectedRoute>
+                } />
+                <Route path="/settings" element={
+                  <ProtectedRoute>
+                    <Settings />
+                  </ProtectedRoute>
+                } />
+                <Route path="/staff" element={
+                  <ProtectedRoute requireAdmin>
+                    <Staff />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Catch-all */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </AuthProvider>
+      </TooltipProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );

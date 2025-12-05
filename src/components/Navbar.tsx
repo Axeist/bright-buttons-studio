@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, ChevronDown } from "lucide-react";
@@ -25,13 +25,26 @@ export const Navbar = () => {
   const navigate = useNavigate();
   const menuRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+  const handleScroll = useCallback(() => {
+    setIsScrolled(window.scrollY > 20);
   }, []);
+
+  useEffect(() => {
+    // Throttle scroll events for better performance
+    let ticking = false;
+    const throttledScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          handleScroll();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+    
+    window.addEventListener("scroll", throttledScroll, { passive: true });
+    return () => window.removeEventListener("scroll", throttledScroll);
+  }, [handleScroll]);
 
   // Handle hash navigation on page load
   useEffect(() => {

@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { motion } from "framer-motion";
 import { Leaf, Sparkles, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ const trustPoints = [
   { icon: Heart, text: "Handmade in small batches" },
 ];
 
-export const Hero = () => {
+export const Hero = memo(() => {
   const scrollToCollections = () => {
     document.getElementById("collections")?.scrollIntoView({ behavior: "smooth" });
   };
@@ -26,7 +27,13 @@ export const Hero = () => {
             y: [0, -30, 0],
             scale: [1, 1.1, 1]
           }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+          transition={{ 
+            duration: 8, 
+            repeat: Infinity, 
+            ease: "easeInOut",
+            type: "tween"
+          }}
+          style={{ willChange: "transform" }}
           className="absolute top-20 left-10 w-64 h-64 bg-primary-300/20 dark:bg-primary-700/20 rounded-full blur-3xl"
         />
         <motion.div
@@ -35,7 +42,14 @@ export const Hero = () => {
             y: [0, 50, 0],
             scale: [1, 1.2, 1]
           }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+          transition={{ 
+            duration: 10, 
+            repeat: Infinity, 
+            ease: "easeInOut", 
+            delay: 1,
+            type: "tween"
+          }}
+          style={{ willChange: "transform" }}
           className="absolute bottom-20 right-10 w-96 h-96 bg-earth-200/30 dark:bg-earth-800/20 rounded-full blur-3xl"
         />
         <motion.div
@@ -44,7 +58,14 @@ export const Hero = () => {
             y: [0, -20, 0],
             scale: [1, 1.15, 1]
           }}
-          transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+          transition={{ 
+            duration: 7, 
+            repeat: Infinity, 
+            ease: "easeInOut", 
+            delay: 2,
+            type: "tween"
+          }}
+          style={{ willChange: "transform" }}
           className="absolute top-1/2 left-1/3 w-48 h-48 bg-blush-200/20 dark:bg-blush-800/20 rounded-full blur-2xl"
         />
         <motion.div
@@ -52,7 +73,13 @@ export const Hero = () => {
             rotate: [0, 360],
             scale: [1, 1.1, 1]
           }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          transition={{ 
+            duration: 20, 
+            repeat: Infinity, 
+            ease: "linear",
+            type: "tween"
+          }}
+          style={{ willChange: "transform" }}
           className="absolute top-1/4 right-1/4 w-32 h-32 bg-primary-200/15 dark:bg-primary-800/15 rounded-full blur-xl"
         />
       </div>
@@ -200,7 +227,8 @@ export const Hero = () => {
               {/* Main Showcase Card */}
               <motion.div
                 whileHover={{ scale: 1.02 }}
-                transition={{ type: "spring", stiffness: 200 }}
+                transition={{ type: "spring", stiffness: 200, damping: 20 }}
+                style={{ willChange: "transform" }}
                 className="relative bg-gradient-to-br from-primary-50 via-earth-50 to-blush-50 dark:from-primary-900/20 dark:via-card dark:to-card rounded-3xl shadow-2xl overflow-hidden border border-primary-200/50 dark:border-primary-800/30 p-8 md:p-10"
               >
                 {/* Animated Background Elements */}
@@ -211,7 +239,13 @@ export const Hero = () => {
                       y: [0, 30, 0],
                       scale: [1, 1.2, 1]
                     }}
-                    transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+                    transition={{ 
+                      duration: 8, 
+                      repeat: Infinity, 
+                      ease: "easeInOut",
+                      type: "tween"
+                    }}
+                    style={{ willChange: "transform" }}
                     className="absolute -top-10 -left-10 w-40 h-40 bg-primary-200/30 dark:bg-primary-800/20 rounded-full blur-2xl"
                   />
                   <motion.div
@@ -220,7 +254,14 @@ export const Hero = () => {
                       y: [0, -20, 0],
                       scale: [1, 1.3, 1]
                     }}
-                    transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                    transition={{ 
+                      duration: 10, 
+                      repeat: Infinity, 
+                      ease: "easeInOut", 
+                      delay: 1,
+                      type: "tween"
+                    }}
+                    style={{ willChange: "transform" }}
                     className="absolute -bottom-10 -right-10 w-48 h-48 bg-earth-200/30 dark:bg-earth-800/20 rounded-full blur-2xl"
                   />
                 </div>
@@ -333,4 +374,6 @@ export const Hero = () => {
       </div>
     </section>
   );
-};
+});
+
+Hero.displayName = "Hero";

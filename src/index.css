@@ -125,6 +125,22 @@
 
   body {
     @apply bg-background text-foreground font-body antialiased;
+    /* Performance optimizations */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Respect user's motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -252,23 +268,28 @@
 
   .animate-float {
     animation: float 6s ease-in-out infinite;
+    will-change: transform;
+    transform: translateZ(0);
   }
 
   .animate-float-delayed {
     animation: float 6s ease-in-out infinite;
     animation-delay: 2s;
+    will-change: transform;
+    transform: translateZ(0);
   }
 
   .animate-pulse-soft {
     animation: pulse-soft 3s ease-in-out infinite;
+    will-change: opacity;
   }
 
   @keyframes float {
     0%, 100% {
-      transform: translateY(0px);
+      transform: translate3d(0, 0, 0);
     }
     50% {
-      transform: translateY(-20px);
+      transform: translate3d(0, -20px, 0);
     }
   }
 
@@ -278,6 +299,44 @@
     }
     50% {
       opacity: 1;
+    }
+  }
+
+  /* Performance optimizations for animated elements */
+  [class*="motion-"],
+  [data-framer-component] {
+    will-change: transform, opacity;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+
+  /* Optimize blur effects */
+  .blur-3xl,
+  .blur-2xl,
+  .blur-xl {
+    will-change: filter;
+    transform: translateZ(0);
+  }
+
+  /* Optimize images */
+  img {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+
+  /* Optimize scroll performance */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
     }
   }
 
