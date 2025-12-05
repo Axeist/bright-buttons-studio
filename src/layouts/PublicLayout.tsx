@@ -1,6 +1,5 @@
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { WhatsAppButton } from "@/components/WhatsAppButton";
 
 interface PublicLayoutProps {
   children: React.ReactNode;
@@ -14,7 +13,6 @@ export const PublicLayout = ({ children }: PublicLayoutProps) => {
         {children}
       </main>
       <Footer />
-      <WhatsAppButton variant="floating" />
     </div>
   );
 };
