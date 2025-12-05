@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, ChevronDown } from "lucide-react";
 import { Logo } from "./Logo";
@@ -15,13 +15,14 @@ const navLinks = [
   { name: "Testimonials", href: "/#testimonials" },
   { name: "FAQ", href: "/#faq" },
   { name: "Contact", href: "/#contact" },
-  { name: "Meet Subhiksha", href: "/about-founder" },
+  { name: "Meet Subhiksha", href: "/#founder" },
 ];
 
 export const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -31,6 +32,25 @@ export const Navbar = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Handle hash navigation on page load
+  useEffect(() => {
+    if (location.pathname === "/" && location.hash) {
+      const sectionId = location.hash.replace("#", "");
+      setTimeout(() => {
+        const element = document.getElementById(sectionId);
+        if (element) {
+          const headerOffset = 80;
+          const elementPosition = element.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: "smooth"
+          });
+        }
+      }, 300);
+    }
+  }, [location]);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -58,12 +78,28 @@ export const Navbar = () => {
     
     if (href.startsWith("/#")) {
       const sectionId = href.replace("/#", "");
+      
+      // If we're on the home page, scroll directly
       if (location.pathname === "/") {
-        const element = document.getElementById(sectionId);
-        element?.scrollIntoView({ behavior: "smooth" });
+        setTimeout(() => {
+          const element = document.getElementById(sectionId);
+          if (element) {
+            const headerOffset = 80;
+            const elementPosition = element.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+            window.scrollTo({
+              top: offsetPosition,
+              behavior: "smooth"
+            });
+          }
+        }, 100);
       } else {
+        // Navigate to home page first, then scroll
         window.location.href = href;
       }
+    } else {
+      // Regular navigation
+      navigate(href);
     }
   };
 
@@ -124,19 +160,17 @@ export const Navbar = () => {
                     >
                       <div className="py-2">
                         {navLinks.map((link, index) => (
-                          <Link
+                          <a
                             key={link.name}
-                            to={link.href}
+                            href={link.href}
                             onClick={(e) => {
-                              if (link.href.startsWith("/#")) {
-                                e.preventDefault();
-                                handleNavClick(link.href);
-                              }
+                              e.preventDefault();
+                              handleNavClick(link.href);
                             }}
-                            className="block px-4 py-2.5 text-sm text-foreground hover:bg-accent hover:text-primary transition-colors"
+                            className="block px-4 py-2.5 text-sm text-foreground hover:bg-accent hover:text-primary transition-colors cursor-pointer"
                           >
                             {link.name}
-                          </Link>
+                          </a>
                         ))}
                       </div>
                     </motion.div>
@@ -176,19 +210,17 @@ export const Navbar = () => {
             >
               <div className="container-custom py-4 space-y-1">
                 {navLinks.map((link) => (
-                  <Link
+                  <a
                     key={link.name}
-                    to={link.href}
+                    href={link.href}
                     onClick={(e) => {
-                      if (link.href.startsWith("/#")) {
-                        e.preventDefault();
-                        handleNavClick(link.href);
-                      }
+                      e.preventDefault();
+                      handleNavClick(link.href);
                     }}
-                    className="block px-4 py-3 text-base font-medium text-foreground hover:bg-accent hover:text-primary rounded-lg transition-colors"
+                    className="block px-4 py-3 text-base font-medium text-foreground hover:bg-accent hover:text-primary rounded-lg transition-colors cursor-pointer"
                   >
                     {link.name}
-                  </Link>
+                  </a>
                 ))}
                 <div className="pt-4 mt-4 border-t border-border/50">
                   <Button 

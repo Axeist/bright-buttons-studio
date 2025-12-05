@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Instagram, MessageCircle, Mail } from "lucide-react";
 import { Logo } from "./Logo";
 
@@ -8,11 +8,50 @@ const quickLinks = [
   { name: "Process", href: "/#process" },
   { name: "FAQ", href: "/#faq" },
   { name: "Custom Orders", href: "/#contact" },
-  { name: "Meet the Founder", href: "/about-founder" },
+  { name: "Meet the Founder", href: "/#founder" },
   { name: "Contact", href: "/#contact" },
 ];
 
 export const Footer = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (href.startsWith("/#")) {
+      e.preventDefault();
+      const sectionId = href.replace("/#", "");
+      
+      if (location.pathname === "/") {
+        setTimeout(() => {
+          const element = document.getElementById(sectionId);
+          if (element) {
+            const headerOffset = 80;
+            const elementPosition = element.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+            window.scrollTo({
+              top: offsetPosition,
+              behavior: "smooth"
+            });
+          }
+        }, 100);
+      } else {
+        navigate("/");
+        setTimeout(() => {
+          const element = document.getElementById(sectionId);
+          if (element) {
+            const headerOffset = 80;
+            const elementPosition = element.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+            window.scrollTo({
+              top: offsetPosition,
+              behavior: "smooth"
+            });
+          }
+        }, 300);
+      }
+    }
+  };
+
   return (
     <footer className="bg-earth-50 dark:bg-card border-t border-border">
       <div className="container-custom py-12 md:py-16">
@@ -33,6 +72,7 @@ export const Footer = () => {
                 <li key={link.name}>
                   <Link
                     to={link.href}
+                    onClick={(e) => handleLinkClick(e, link.href)}
                     className="text-muted-foreground hover:text-primary transition-colors"
                   >
                     {link.name}

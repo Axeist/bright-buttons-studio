@@ -18,11 +18,43 @@ export const Hero = () => {
 
   return (
     <section id="hero" className="relative min-h-[90vh] gradient-hero overflow-hidden">
-      {/* Decorative Elements */}
+      {/* Enhanced Decorative Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-64 h-64 bg-primary-300/20 rounded-full blur-3xl animate-float" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-earth-200/30 rounded-full blur-3xl animate-float-delayed" />
-        <div className="absolute top-1/2 left-1/3 w-48 h-48 bg-blush-200/20 rounded-full blur-2xl animate-pulse-soft" />
+        <motion.div
+          animate={{
+            x: [0, 50, 0],
+            y: [0, -30, 0],
+            scale: [1, 1.1, 1]
+          }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-20 left-10 w-64 h-64 bg-primary-300/20 dark:bg-primary-700/20 rounded-full blur-3xl"
+        />
+        <motion.div
+          animate={{
+            x: [0, -40, 0],
+            y: [0, 50, 0],
+            scale: [1, 1.2, 1]
+          }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+          className="absolute bottom-20 right-10 w-96 h-96 bg-earth-200/30 dark:bg-earth-800/20 rounded-full blur-3xl"
+        />
+        <motion.div
+          animate={{
+            x: [0, 30, 0],
+            y: [0, -20, 0],
+            scale: [1, 1.15, 1]
+          }}
+          transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+          className="absolute top-1/2 left-1/3 w-48 h-48 bg-blush-200/20 dark:bg-blush-800/20 rounded-full blur-2xl"
+        />
+        <motion.div
+          animate={{
+            rotate: [0, 360],
+            scale: [1, 1.1, 1]
+          }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          className="absolute top-1/4 right-1/4 w-32 h-32 bg-primary-200/15 dark:bg-primary-800/15 rounded-full blur-xl"
+        />
       </div>
 
       <div className="container-custom relative z-10 py-12 md:py-20 lg:py-24">
@@ -34,25 +66,47 @@ export const Hero = () => {
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="space-y-6 md:space-y-8"
           >
-            {/* Badge */}
+            {/* Enhanced Badge */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2 }}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-100 dark:bg-primary-900/30 rounded-full text-sm text-primary-700 dark:text-primary-300 font-medium"
+              initial={{ opacity: 0, scale: 0.9, y: -10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary-100 via-primary-50 to-primary-100 dark:from-primary-900/40 dark:via-primary-900/20 dark:to-primary-900/40 rounded-full text-sm text-primary-700 dark:text-primary-300 font-semibold shadow-lg border border-primary-200/50 dark:border-primary-800/50 backdrop-blur-sm"
             >
-              <Leaf className="w-4 h-4" />
-              Eco-Printed · Handmade · One-of-a-Kind
+              <motion.div
+                animate={{ rotate: [0, 10, -10, 0] }}
+                transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+              >
+                <Leaf className="w-4 h-4" />
+              </motion.div>
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary-700 to-primary-500 dark:from-primary-300 dark:to-primary-400">
+                Eco-Printed · Handmade · One-of-a-Kind
+              </span>
             </motion.div>
 
-            {/* Heading */}
+            {/* Enhanced Heading */}
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="text-4xl md:text-5xl lg:text-6xl font-script text-gradient leading-tight"
+              className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-script text-gradient leading-tight mb-2"
             >
-              Curator of Comfort & Style
+              <motion.span
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.4 }}
+                className="block"
+              >
+                Curator of
+              </motion.span>
+              <motion.span
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.5 }}
+                className="block bg-clip-text text-transparent bg-gradient-to-r from-primary-700 via-primary-500 to-earth-600 dark:from-primary-300 dark:via-primary-400 dark:to-earth-400"
+              >
+                Comfort & Style
+              </motion.span>
             </motion.h1>
 
             {/* Subheading */}
@@ -82,19 +136,34 @@ export const Hero = () => {
               ))}
             </motion.div>
 
-            {/* CTAs */}
+            {/* Enhanced CTAs */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
-              className="flex flex-wrap gap-4 pt-4"
+              className="flex flex-wrap gap-4 pt-6"
             >
-              <Button size="lg" className="rounded-full" onClick={scrollToCollections}>
-                Shop Now
-              </Button>
-              <WhatsAppButton variant="inline">
-                Chat on WhatsApp
-              </WhatsAppButton>
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Button 
+                  size="lg" 
+                  className="rounded-full shadow-xl hover:shadow-2xl transition-all bg-gradient-to-r from-primary to-primary-700 dark:from-primary-600 dark:to-primary-800 hover:from-primary-600 hover:to-primary-800 dark:hover:from-primary-500 dark:hover:to-primary-700"
+                  onClick={scrollToCollections}
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Shop Now
+                </Button>
+              </motion.div>
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <WhatsAppButton variant="inline">
+                  Chat on WhatsApp
+                </WhatsAppButton>
+              </motion.div>
             </motion.div>
           </motion.div>
 
