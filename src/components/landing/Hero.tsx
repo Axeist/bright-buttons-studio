@@ -19,14 +19,15 @@ export const Hero = memo(() => {
 
   return (
     <section id="hero" className="relative min-h-[90vh] gradient-hero overflow-hidden">
-      {/* Background Image Overlay */}
+      {/* Background Image Overlay - Green Leaf Pattern */}
       <div className="absolute inset-0 opacity-10 dark:opacity-5 z-0">
         <img 
-          src="https://source.unsplash.com/q1-dAZuhs7I/1920x1080"
+          src="https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1920&h=1080&fit=crop"
           alt="Green leaf macro photography background - eco printing theme"
           className="w-full h-full object-cover"
-          loading="eager"
+          loading="lazy"
           onError={(e) => {
+            // Fallback: hide image and let gradient show through
             const target = e.target as HTMLImageElement;
             target.style.display = 'none';
           }}
