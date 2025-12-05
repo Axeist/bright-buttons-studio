@@ -36,7 +36,7 @@ export const StorySection = () => {
             transition={{ duration: 0.6 }}
             className="space-y-6"
           >
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-script text-gradient">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-script text-gradient">
               Our Story
             </h2>
             

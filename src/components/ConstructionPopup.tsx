@@ -81,7 +81,7 @@ export const ConstructionPopup = () => {
               damping: 25,
               duration: 0.6
             }}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] w-[90%] max-w-md"
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] w-[95%] sm:w-[90%] max-w-md mx-4"
           >
             <div className="relative bg-gradient-to-br from-primary-50 via-blush-50 to-earth-50 dark:from-card dark:via-card dark:to-card rounded-3xl shadow-2xl border-2 border-primary/30 dark:border-primary/20 overflow-hidden">
               {/* Animated Background Elements */}
@@ -113,14 +113,14 @@ export const ConstructionPopup = () => {
               </div>
 
               {/* Content */}
-              <div className="relative z-10 p-6 md:p-8">
+              <div className="relative z-10 p-5 sm:p-6 md:p-8">
                 {/* Close Button */}
                 <button
                   onClick={handleClose}
-                  className="absolute top-4 right-4 w-8 h-8 rounded-full bg-background/80 dark:bg-background/60 hover:bg-background dark:hover:bg-background flex items-center justify-center transition-colors z-20 group"
+                  className="absolute top-3 right-3 sm:top-4 sm:right-4 w-10 h-10 sm:w-8 sm:h-8 rounded-full bg-background/80 dark:bg-background/60 hover:bg-background dark:hover:bg-background flex items-center justify-center transition-colors z-20 group touch-target"
                   aria-label="Close"
                 >
-                  <X className="w-4 h-4 text-foreground group-hover:rotate-90 transition-transform" />
+                  <X className="w-5 h-5 sm:w-4 sm:h-4 text-foreground group-hover:rotate-90 transition-transform" />
                 </button>
 
                 {/* Header with Animated Icons */}
@@ -157,7 +157,7 @@ export const ConstructionPopup = () => {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="text-2xl md:text-3xl font-script text-primary mb-2"
+                    className="text-xl sm:text-2xl md:text-3xl font-script text-primary mb-2"
                   >
                     🚧 Under Construction! 🚧
                   </motion.h2>
@@ -166,7 +166,7 @@ export const ConstructionPopup = () => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.3 }}
-                    className="text-sm text-muted-foreground"
+                    className="text-xs sm:text-sm text-muted-foreground"
                   >
                     We're building something amazing!
                   </motion.p>
@@ -194,11 +194,11 @@ export const ConstructionPopup = () => {
                       👷‍♀️
                     </motion.div>
                     <div className="flex-1">
-                      <p className="text-sm text-foreground leading-relaxed mb-2">
+                      <p className="text-xs sm:text-sm text-foreground leading-relaxed mb-2">
                         <span className="font-semibold text-primary">Oops!</span> Our website is still being polished by the amazing team at{" "}
                         <span className="font-semibold text-primary">Cuephoria Tech</span>! 🎨
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">
                         Some features might be a bit wonky, but we're working hard to make everything perfect! 💪
                       </p>
                     </div>
@@ -222,11 +222,11 @@ export const ConstructionPopup = () => {
                       key={timeRemaining}
                       initial={{ scale: 1.2, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
-                      className="text-2xl font-bold text-primary mb-1"
+                      className="text-lg sm:text-2xl font-bold text-primary mb-1"
                     >
                       {timeRemaining}
                     </motion.div>
-                    <p className="text-xs text-muted-foreground">Until Jan 10th, 2025</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">Until Jan 10th, 2025</p>
                   </div>
                   
                   {/* Progress Bar */}

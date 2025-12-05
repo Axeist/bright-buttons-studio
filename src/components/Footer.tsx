@@ -82,7 +82,7 @@ export const Footer = () => {
                   <motion.a
                     href={link.href}
                     onClick={(e) => handleLinkClick(e, link.href)}
-                    className="text-muted-foreground hover:text-primary transition-colors inline-block relative group"
+                    className="text-muted-foreground hover:text-primary transition-colors inline-block relative group py-2 touch-target"
                     whileHover={{ x: 4 }}
                     whileTap={{ scale: 0.95 }}
                   >
@@ -105,7 +105,7 @@ export const Footer = () => {
                   href="https://wa.me/919952655555"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-3 text-muted-foreground hover:text-[#25D366] transition-colors"
+                  className="flex items-center gap-3 text-muted-foreground hover:text-[#25D366] transition-colors py-2 touch-target"
                 >
                   <MessageCircle className="w-5 h-5" />
                   <span>+91 99526 55555</span>
@@ -116,7 +116,7 @@ export const Footer = () => {
                   href="https://instagram.com/brightbuttons"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-3 text-muted-foreground hover:text-[#E4405F] transition-colors"
+                  className="flex items-center gap-3 text-muted-foreground hover:text-[#E4405F] transition-colors py-2 touch-target"
                 >
                   <Instagram className="w-5 h-5" />
                   <span>Bright Buttons</span>
@@ -125,10 +125,10 @@ export const Footer = () => {
               <li>
                 <a
                   href="mailto:hello@brightbuttons.com"
-                  className="flex items-center gap-3 text-muted-foreground hover:text-primary transition-colors"
+                  className="flex items-center gap-3 text-muted-foreground hover:text-primary transition-colors py-2 touch-target"
                 >
                   <Mail className="w-5 h-5" />
-                  <span>hello@brightbuttons.com</span>
+                  <span className="break-all">hello@brightbuttons.com</span>
                 </a>
               </li>
             </ul>

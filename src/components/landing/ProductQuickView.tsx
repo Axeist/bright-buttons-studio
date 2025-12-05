@@ -50,7 +50,7 @@ export const ProductQuickView = ({ product, isOpen, onClose }: ProductQuickViewP
 
         {/* Modal */}
         <div className="fixed inset-0 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4">
+          <div className="flex min-h-full items-center justify-center p-3 sm:p-4 safe-top safe-bottom">
             <Transition.Child
               as={Fragment}
               enter="ease-out duration-300"
@@ -99,18 +99,20 @@ export const ProductQuickView = ({ product, isOpen, onClose }: ProductQuickViewP
                     {/* Close button - mobile */}
                     <button
                       onClick={onClose}
-                      className="absolute top-4 right-4 md:hidden w-10 h-10 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center text-foreground"
+                      className="absolute top-3 right-3 sm:top-4 sm:right-4 md:hidden w-11 h-11 sm:w-10 sm:h-10 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center text-foreground touch-target"
+                      aria-label="Close"
                     >
-                      <X className="w-5 h-5" />
+                      <X className="w-6 h-6 sm:w-5 sm:h-5" />
                     </button>
                   </div>
 
                   {/* Content */}
-                  <div className="p-6 md:p-8 relative">
+                  <div className="p-5 sm:p-6 md:p-8 relative">
                     {/* Close button - desktop */}
                     <button
                       onClick={onClose}
-                      className="hidden md:flex absolute top-4 right-4 w-10 h-10 rounded-full bg-secondary items-center justify-center text-foreground hover:bg-accent transition-colors"
+                      className="hidden md:flex absolute top-4 right-4 w-10 h-10 rounded-full bg-secondary items-center justify-center text-foreground hover:bg-accent transition-colors touch-target"
+                      aria-label="Close"
                     >
                       <X className="w-5 h-5" />
                     </button>
@@ -157,7 +159,7 @@ export const ProductQuickView = ({ product, isOpen, onClose }: ProductQuickViewP
                       </div>
 
                       {/* CTAs */}
-                      <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                      <div className="flex flex-col sm:flex-row gap-3 sm:gap-3 pt-4">
                         <Button 
                           className="flex-1 rounded-full bg-[#25D366] hover:bg-[#20BD5A] text-white"
                           onClick={handleWhatsAppEnquiry}

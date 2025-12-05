@@ -84,11 +84,11 @@ export const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
         )}
 
         {/* Actions */}
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-2">
           <Button 
             variant="outline" 
             size="sm" 
-            className="flex-1 rounded-full"
+            className="flex-1 rounded-full w-full sm:w-auto"
             onClick={onQuickView}
           >
             <Eye className="w-4 h-4 mr-1" />
@@ -96,7 +96,7 @@ export const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
           </Button>
           <Button 
             size="sm" 
-            className="flex-1 rounded-full bg-[#25D366] hover:bg-[#20BD5A] text-white"
+            className="flex-1 rounded-full bg-[#25D366] hover:bg-[#20BD5A] text-white w-full sm:w-auto"
             onClick={handleWhatsAppEnquiry}
           >
             <MessageCircle className="w-4 h-4 mr-1" />

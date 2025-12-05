@@ -59,7 +59,7 @@ export const ContactSection = () => {
           transition={{ duration: 0.6 }}
           className="text-center mb-12"
         >
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-script text-gradient mb-4">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-script text-gradient mb-3 sm:mb-4">
             Let's Create Something Beautiful
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
@@ -148,7 +148,7 @@ export const ContactSection = () => {
                 </Button>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="glass-card p-6 md:p-8 space-y-5">
+              <form onSubmit={handleSubmit} className="glass-card p-5 sm:p-6 md:p-8 space-y-4 sm:space-y-5">
                 <h3 className="text-xl font-semibold text-foreground mb-2">Custom Enquiry</h3>
                 
                 <div className="grid sm:grid-cols-2 gap-4">

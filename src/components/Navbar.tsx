@@ -128,7 +128,7 @@ export const Navbar = () => {
         }`}
       >
         <nav className="container-custom">
-          <div className="flex items-center justify-between h-16 md:h-20">
+          <div className="flex items-center justify-between h-14 sm:h-16 md:h-20">
             {/* Logo */}
             <Link to="/" className="flex-shrink-0">
               <Logo size="2xl" linkTo={undefined} />
@@ -204,12 +204,12 @@ export const Navbar = () => {
             </div>
 
             {/* Mobile Menu Button */}
-            <div className="flex items-center gap-3 lg:hidden">
+            <div className="flex items-center gap-2 sm:gap-3 lg:hidden">
               <ThemeToggle />
               <WhatsAppButton variant="ghost" />
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="p-2 text-foreground hover:text-primary transition-colors"
+                className="p-2.5 sm:p-2 text-foreground hover:text-primary transition-colors touch-target"
                 aria-label="Toggle menu"
               >
                 {isMenuOpen ? (
@@ -241,7 +241,7 @@ export const Navbar = () => {
                       e.preventDefault();
                       handleNavClick(link.href);
                     }}
-                    className="block px-4 py-3 text-base font-medium text-foreground hover:bg-accent hover:text-primary rounded-lg transition-colors cursor-pointer relative overflow-hidden group"
+                    className="block px-4 py-3.5 sm:py-3 text-base font-medium text-foreground hover:bg-accent hover:text-primary rounded-lg transition-colors cursor-pointer relative overflow-hidden group touch-target"
                     whileHover={{ x: 4 }}
                     whileTap={{ scale: 0.98 }}
                     initial={{ opacity: 0, x: -10 }}

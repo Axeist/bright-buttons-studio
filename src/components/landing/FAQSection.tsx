@@ -18,7 +18,7 @@ export const FAQSection = () => {
           transition={{ duration: 0.6 }}
           className="text-center mb-12"
         >
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-script text-gradient mb-4">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-script text-gradient mb-3 sm:mb-4">
             Frequently Asked Questions
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">

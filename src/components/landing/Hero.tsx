@@ -97,7 +97,7 @@ export const Hero = memo(() => {
         />
       </div>
 
-      <div className="container-custom relative z-10 py-12 md:py-20 lg:py-24">
+      <div className="container-custom relative z-10 py-8 sm:py-12 md:py-20 lg:py-24">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* Left Content */}
           <motion.div
@@ -129,7 +129,7 @@ export const Hero = memo(() => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-script text-gradient mb-4"
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-script text-gradient mb-3 sm:mb-4"
             >
               <motion.span
                 initial={{ opacity: 0, x: -20 }}
@@ -154,13 +154,13 @@ export const Hero = memo(() => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="space-y-3 max-w-lg"
+              className="space-y-2 sm:space-y-3 max-w-lg"
             >
-              <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">
+              <p className="text-sm sm:text-base md:text-lg lg:text-xl text-muted-foreground leading-relaxed">
                 Where every leaf tells a story, and every garment carries nature's unique signature. 
                 Experience the magic of eco-printing, where real botanicals meet premium fabrics.
               </p>
-              <p className="text-base md:text-lg text-muted-foreground/80 leading-relaxed">
+              <p className="text-xs sm:text-sm md:text-base lg:text-lg text-muted-foreground/80 leading-relaxed">
                 Each piece is handcrafted using ancient techniques passed down through generations, 
                 creating wearable art that's as unique as you are.
               </p>
@@ -180,7 +180,7 @@ export const Hero = memo(() => {
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.6 + index * 0.1 }}
                   whileHover={{ scale: 1.05, y: -2 }}
-                  className="group relative px-4 py-2 bg-gradient-to-r from-primary-50 via-primary-100/50 to-earth-50 dark:from-primary-900/30 dark:via-primary-800/20 dark:to-card border border-primary-200/60 dark:border-primary-800/40 rounded-full text-sm font-medium text-primary-700 dark:text-primary-300 shadow-md hover:shadow-lg transition-all duration-300 cursor-default overflow-hidden"
+                  className="group relative px-3 sm:px-4 py-2 bg-gradient-to-r from-primary-50 via-primary-100/50 to-earth-50 dark:from-primary-900/30 dark:via-primary-800/20 dark:to-card border border-primary-200/60 dark:border-primary-800/40 rounded-full text-xs sm:text-sm font-medium text-primary-700 dark:text-primary-300 shadow-md hover:shadow-lg transition-all duration-300 cursor-default overflow-hidden"
                 >
                   {/* Animated background on hover */}
                   <motion.div
@@ -203,28 +203,30 @@ export const Hero = memo(() => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
-              className="flex flex-wrap items-center gap-4 pt-6"
+              className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 sm:gap-4 pt-4 sm:pt-6"
             >
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-            >
+                className="flex-1 sm:flex-initial"
+              >
                 <Button 
                   size="lg" 
-                  className="h-11 px-8 rounded-full shadow-xl hover:shadow-2xl transition-all bg-gradient-to-r from-primary to-primary-700 dark:from-primary-600 dark:to-primary-800 hover:from-primary-600 hover:to-primary-800 dark:hover:from-primary-500 dark:hover:to-primary-700"
+                  className="w-full sm:w-auto h-12 sm:h-11 px-6 sm:px-8 rounded-full shadow-xl hover:shadow-2xl transition-all bg-gradient-to-r from-primary to-primary-700 dark:from-primary-600 dark:to-primary-800 hover:from-primary-600 hover:to-primary-800 dark:hover:from-primary-500 dark:hover:to-primary-700"
                   onClick={scrollToCollections}
                 >
                   <Sparkles className="w-4 h-4 mr-2" />
-                Shop Now
-              </Button>
+                  Shop Now
+                </Button>
               </motion.div>
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                className="flex-1 sm:flex-initial"
               >
-              <WhatsAppButton variant="inline">
-                Chat on WhatsApp
-              </WhatsAppButton>
+                <WhatsAppButton variant="inline" className="w-full sm:w-auto">
+                  Chat on WhatsApp
+                </WhatsAppButton>
               </motion.div>
             </motion.div>
           </motion.div>

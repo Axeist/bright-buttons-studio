@@ -25,10 +25,11 @@ export const WhatsAppButton = ({
     return (
       <button
         onClick={handleClick}
-        className={`inline-flex items-center justify-center gap-2 h-9 px-3 rounded-full text-sm font-medium text-foreground hover:text-primary transition-colors shadow-md hover:shadow-lg ${className}`}
+        className={`inline-flex items-center justify-center gap-2 h-11 sm:h-9 px-3 sm:px-3 rounded-full text-sm font-medium text-foreground hover:text-primary transition-colors shadow-md hover:shadow-lg min-h-[44px] sm:min-h-[36px] ${className}`}
       >
         <MessageCircle className="w-4 h-4" />
-        <span>{children || "Enquire on WhatsApp"}</span>
+        <span className="hidden sm:inline">{children || "Enquire on WhatsApp"}</span>
+        <span className="sm:hidden">{children || "WhatsApp"}</span>
       </button>
     );
   }
@@ -36,7 +37,7 @@ export const WhatsAppButton = ({
   return (
     <button
       onClick={handleClick}
-      className={`inline-flex items-center justify-center gap-2 h-11 px-8 bg-gradient-to-r from-[#25D366] to-[#20BD5A] text-white rounded-full font-semibold hover:from-[#20BD5A] hover:to-[#1DA851] transition-all duration-300 shadow-xl hover:shadow-2xl ${className}`}
+      className={`inline-flex items-center justify-center gap-2 h-12 sm:h-11 px-6 sm:px-8 bg-gradient-to-r from-[#25D366] to-[#20BD5A] text-white rounded-full font-semibold hover:from-[#20BD5A] hover:to-[#1DA851] transition-all duration-300 shadow-xl hover:shadow-2xl min-h-[48px] sm:min-h-[44px] ${className}`}
     >
       <MessageCircle className="w-5 h-5" />
       <span>{children || "Chat on WhatsApp"}</span>

@@ -75,7 +75,7 @@ export const FounderSection = () => {
               The Creative Force
             </span>
           </motion.div>
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-script text-gradient mb-6">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-script text-gradient mb-4 sm:mb-6">
             Meet Subhiksha
           </h2>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
@@ -181,7 +181,7 @@ export const FounderSection = () => {
             className="space-y-6"
           >
             <div>
-              <h3 className="text-3xl md:text-4xl font-script text-gradient mb-4">
+              <h3 className="text-2xl sm:text-3xl md:text-4xl font-script text-gradient mb-3 sm:mb-4">
                 Subhiksha Subramanian
               </h3>
               <div className="h-1 w-24 bg-gradient-to-r from-primary to-transparent rounded-full mb-6" />
@@ -257,7 +257,7 @@ export const FounderSection = () => {
             transition={{ duration: 0.6 }}
             className="text-center mb-12"
           >
-            <h3 className="text-3xl md:text-4xl lg:text-5xl font-script text-gradient mb-4">
+            <h3 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-script text-gradient mb-3 sm:mb-4">
               Her Craft & Expertise
             </h3>
             <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
