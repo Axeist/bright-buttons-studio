@@ -36,7 +36,7 @@ export const products: Product[] = [
     category: "Shawls",
     fabric: "Linen",
     technique: "Shibori",
-    image: "https://images.unsplash.com/photo-1601925260368-ae2f83d8a24d?w=800&h=1000&fit=crop&auto=format&q=80",
+    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=1000&fit=crop&auto=format&q=80",
     tagline: "Hand-tied indigo shawl with flowing wave patterns",
     price: "₹2,800"
   },
@@ -76,7 +76,7 @@ export const products: Product[] = [
     category: "Sarees",
     fabric: "Tussar",
     technique: "Kalamkari",
-    image: "https://images.unsplash.com/photo-1601925260368-ae2f83d8a24d?w=800&h=1000&fit=crop&auto=format&q=80",
+    image: "https://images.unsplash.com/photo-1583496661160-fb5886a13d93?w=800&h=1000&fit=crop&auto=format&q=80",
     tagline: "Hand-painted Kalamkari on luxurious Tussar silk",
     price: "₹12,000"
   },
@@ -96,7 +96,7 @@ export const products: Product[] = [
     category: "Shawls",
     fabric: "Silk",
     technique: "Eco printing",
-    image: "https://images.unsplash.com/photo-1601925260368-ae2f83d8a24d?w=800&h=1000&fit=crop&auto=format&q=80",
+    image: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=1000&fit=crop&auto=format&q=80",
     tagline: "Rich maple leaf prints on pure silk",
     price: "₹4,800"
   },
@@ -106,7 +106,7 @@ export const products: Product[] = [
     category: "Men's Shirts",
     fabric: "Linen",
     technique: "Shibori",
-    image: "https://images.unsplash.com/photo-1603252109303-2751441dd157?w=800&h=1000&fit=crop&auto=format&q=80",
+    image: "https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?w=800&h=1000&fit=crop&auto=format&q=80",
     tagline: "Deep indigo shibori on breathable linen",
     price: "₹4,200"
   },
@@ -116,7 +116,7 @@ export const products: Product[] = [
     category: "T-Shirts",
     fabric: "Cotton",
     technique: "Batik",
-    image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&h=1000&fit=crop&auto=format&q=80",
+    image: "https://images.unsplash.com/photo-1521223890152-f9c7d3b5dcdf?w=800&h=1000&fit=crop&auto=format&q=80",
     tagline: "Vibrant batik patterns for everyday style",
     price: "₹2,200"
   },
@@ -126,7 +126,7 @@ export const products: Product[] = [
     category: "Kidswear",
     fabric: "Cotton",
     technique: "Tie & Dye",
-    image: "https://images.unsplash.com/photo-1503919005314-30ad5f4f8fda?w=800&h=1000&fit=crop&auto=format&q=80",
+    image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&h=1000&fit=crop&auto=format&q=80",
     tagline: "Cheerful tie-dye set for active kids",
     price: "₹1,800"
   }
