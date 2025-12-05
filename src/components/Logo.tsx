@@ -4,14 +4,15 @@ import logoImage from "@/assets/logo.jpg";
 interface LogoProps {
   className?: string;
   linkTo?: string;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl";
 }
 
 export const Logo = ({ className = "", linkTo = "/", size = "md" }: LogoProps) => {
   const sizes = {
-    sm: "h-8",
-    md: "h-10",
-    lg: "h-14"
+    sm: "h-10",
+    md: "h-16",
+    lg: "h-20",
+    xl: "h-24"
   };
 
   const content = (

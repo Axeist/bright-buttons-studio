@@ -19,7 +19,7 @@ export const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-12">
           {/* Brand Column */}
           <div className="space-y-4">
-            <Logo size="lg" linkTo="/" />
+            <Logo size="xl" linkTo="/" />
             <p className="text-muted-foreground max-w-xs">
               Unique, eco-printed clothing crafted with love. Each piece is handmade using natural dyes and sustainable techniques, making every garment one-of-a-kind.
             </p>

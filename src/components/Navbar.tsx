@@ -57,7 +57,7 @@ export const Navbar = () => {
       >
         <nav className="container-custom">
           <div className="flex items-center justify-between h-16 md:h-20">
-            <Logo size="md" />
+            <Logo size="lg" />
 
             {/* Desktop Navigation */}
             <div className="hidden lg:flex items-center gap-1">
@@ -122,7 +122,7 @@ export const Navbar = () => {
             >
               <div className="flex flex-col h-full">
                 <div className="flex items-center justify-between p-4 border-b border-border">
-                  <Logo size="sm" linkTo={undefined} />
+                  <Logo size="md" linkTo={undefined} />
                   <button
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="p-2 text-foreground"
