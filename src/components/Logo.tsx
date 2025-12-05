@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import logoImage from "@/assets/logo.jpg";
 
 interface LogoProps {
   className?: string;
@@ -8,20 +9,17 @@ interface LogoProps {
 
 export const Logo = ({ className = "", linkTo = "/", size = "md" }: LogoProps) => {
   const sizes = {
-    sm: { sub: "text-xs", main: "text-lg" },
-    md: { sub: "text-xs", main: "text-xl" },
-    lg: { sub: "text-sm", main: "text-2xl" }
+    sm: "h-8",
+    md: "h-10",
+    lg: "h-14"
   };
 
   const content = (
-    <div className={`flex flex-col leading-tight ${className}`}>
-      <span className={`${sizes[size].sub} text-muted-foreground font-medium tracking-wide`}>
-        Bb's
-      </span>
-      <span className={`${sizes[size].main} font-script text-gradient`}>
-        Bright Buttons
-      </span>
-    </div>
+    <img 
+      src={logoImage} 
+      alt="Bb's Bright Buttons" 
+      className={`${sizes[size]} w-auto object-contain ${className}`}
+    />
   );
 
   if (linkTo) {
