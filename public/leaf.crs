@@ -1,0 +1,45 @@
+﻿[Arrow]
+Path=Leaf Normal Select.cur
+
+[Help]
+Path=Leaf Help Select.cur
+
+[AppStarting]
+Path=Leaf Working in Background.ani
+
+[Wait]
+Path=Leaf Busy.ani
+
+[Crosshair]
+Path=Leaf Precision Select.cur
+
+[IBeam]
+Path=Leaf Text Select.cur
+
+[NWPen]
+Path=Leaf Handwriting.cur
+
+[No]
+Path=Leaf Unavailable.cur
+
+[SizeNS]
+Path=Leaf Vertical Resize.cur
+
+[SizeWE]
+Path=Leaf Horizontal Resize.cur
+
+[SizeNWSE]
+Path=Leaf Diagonal Resize 1.cur
+
+[SizeNESW]
+Path=Leaf Diagonal Resize 2.cur
+
+[SizeAll]
+Path=Leaf Move.cur
+
+[UpArrow]
+Path=Leaf Alternative Select.cur
+
+[Hand]
+Path=Leaf Link Select.cur
+
