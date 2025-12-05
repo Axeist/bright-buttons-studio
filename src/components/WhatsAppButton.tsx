@@ -124,8 +124,21 @@ export const WhatsAppButton = ({
       onClick={handleClick}
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
-      className={`inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#25D366] to-[#20BD5A] text-white rounded-full font-medium hover:from-[#20BD5A] hover:to-[#1DA851] transition-all duration-300 shadow-md hover:shadow-xl relative overflow-hidden group ${className}`}
+      className={`inline-flex items-center justify-center gap-2 h-11 px-8 bg-gradient-to-r from-[#25D366] to-[#20BD5A] text-white rounded-full font-medium hover:from-[#20BD5A] hover:to-[#1DA851] transition-all duration-300 shadow-xl hover:shadow-2xl relative overflow-hidden group ${className}`}
     >
+      {/* WhatsApp brand gradient overlay */}
+      <motion.div
+        className="absolute inset-0 rounded-full bg-gradient-to-br from-white/10 via-transparent to-[#128C7E]/20"
+        animate={{
+          opacity: [0.3, 0.5, 0.3],
+        }}
+        transition={{
+          duration: 2,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+      />
+
       {/* Animated background glow */}
       <motion.div
         className="absolute inset-0 rounded-full bg-white/20"
@@ -139,6 +152,14 @@ export const WhatsAppButton = ({
           ease: "easeInOut",
         }}
       />
+
+      {/* WhatsApp brand dots pattern */}
+      <div className="absolute inset-0 rounded-full opacity-10">
+        <div className="absolute top-2 left-3 w-1 h-1 bg-white rounded-full" />
+        <div className="absolute top-3 right-4 w-0.5 h-0.5 bg-white rounded-full" />
+        <div className="absolute bottom-3 left-4 w-0.5 h-0.5 bg-white rounded-full" />
+        <div className="absolute bottom-2 right-3 w-1 h-1 bg-white rounded-full" />
+      </div>
 
       {/* Sparkle effects on hover */}
       <motion.div
@@ -174,8 +195,15 @@ export const WhatsAppButton = ({
         transition={{ duration: 0.4 }}
       />
 
-      <MessageCircle className="w-5 h-5 relative z-10" />
-      <span className="relative z-10">{children || "Chat on WhatsApp"}</span>
+      {/* WhatsApp icon with brand styling */}
+      <motion.div
+        className="relative z-10"
+        whileHover={{ rotate: [0, -10, 10, 0] }}
+        transition={{ duration: 0.5 }}
+      >
+        <MessageCircle className="w-5 h-5" strokeWidth={2.5} />
+      </motion.div>
+      <span className="relative z-10 font-semibold">{children || "Chat on WhatsApp"}</span>
     </motion.button>
   );
 };

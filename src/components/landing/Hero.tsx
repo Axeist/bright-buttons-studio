@@ -163,7 +163,7 @@ export const Hero = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
-              className="flex flex-wrap gap-4 pt-6"
+              className="flex flex-wrap items-center gap-4 pt-6"
             >
               <motion.div
                 whileHover={{ scale: 1.05 }}
@@ -171,7 +171,7 @@ export const Hero = () => {
               >
                 <Button 
                   size="lg" 
-                  className="rounded-full shadow-xl hover:shadow-2xl transition-all bg-gradient-to-r from-primary to-primary-700 dark:from-primary-600 dark:to-primary-800 hover:from-primary-600 hover:to-primary-800 dark:hover:from-primary-500 dark:hover:to-primary-700"
+                  className="h-11 px-8 rounded-full shadow-xl hover:shadow-2xl transition-all bg-gradient-to-r from-primary to-primary-700 dark:from-primary-600 dark:to-primary-800 hover:from-primary-600 hover:to-primary-800 dark:hover:from-primary-500 dark:hover:to-primary-700"
                   onClick={scrollToCollections}
                 >
                   <Sparkles className="w-4 h-4 mr-2" />
