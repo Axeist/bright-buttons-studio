@@ -446,7 +446,7 @@ export const ConstructionPopup = () => {
                   transition={{ delay: 0.6 }}
                   className="flex items-center justify-center pt-2 border-t border-border/50"
                 >
-                  <span className="text-xs text-muted-foreground">Built with <3 by <span className="font-semibold text-primary">Cuephoria Tech</span></span>
+                  <span className="text-xs text-muted-foreground">Built with {'<3'} by <span className="font-semibold text-primary">Cuephoria Tech</span></span>
                 </motion.div>
               </div>
             </motion.div>
