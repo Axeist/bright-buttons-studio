@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Instagram, MessageCircle, Mail } from "lucide-react";
 import { Logo } from "./Logo";
+import { CuephoriaBranding } from "./CuephoriaBranding";
 
 const quickLinks = [
   { name: "Our Story", href: "/#story" },
@@ -136,9 +137,12 @@ export const Footer = () => {
 
         {/* Bottom Strip */}
         <div className="mt-6 pt-4 border-t border-border/50">
-          <p className="text-center text-sm text-muted-foreground">
-            © 2025 Bright Buttons. Handcrafted with love 💚
-          </p>
+          <div className="flex flex-col md:flex-row items-center justify-between gap-3">
+            <p className="text-center md:text-left text-sm text-muted-foreground">
+              © 2025 Bright Buttons. Handcrafted with love 💚
+            </p>
+            <CuephoriaBranding variant="footer" />
+          </div>
         </div>
       </div>
     </footer>

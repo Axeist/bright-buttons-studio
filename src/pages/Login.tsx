@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { CuephoriaBranding } from "@/components/CuephoriaBranding";
 import { z } from "zod";
 
 const loginSchema = z.object({
@@ -190,7 +191,7 @@ const Login = () => {
           </form>
 
           {/* Back to store */}
-          <div className="mt-8 pt-6 border-t border-border/50 text-center">
+          <div className="mt-8 pt-6 border-t border-border/50 text-center space-y-4">
             <Link 
               to="/" 
               className="text-sm text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1.5 group"
@@ -198,6 +199,9 @@ const Login = () => {
               <span>←</span>
               <span>Back to store</span>
             </Link>
+            <div className="flex justify-center">
+              <CuephoriaBranding variant="subtle" />
+            </div>
           </div>
         </div>
       </motion.div>

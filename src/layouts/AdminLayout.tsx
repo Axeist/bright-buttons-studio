@@ -16,6 +16,7 @@ import {
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { CuephoriaBranding } from "@/components/CuephoriaBranding";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -123,6 +124,9 @@ export const AdminLayout = ({ children, title }: AdminLayoutProps) => {
               <LogOut className="w-4 h-4 mr-2" />
               Logout
             </Button>
+            <div className="pt-2 mt-2 border-t border-border/50">
+              <CuephoriaBranding variant="subtle" className="text-[10px]" />
+            </div>
           </div>
         </div>
       </aside>
