@@ -189,128 +189,122 @@ export const Hero = () => {
             </motion.div>
           </motion.div>
 
-          {/* Right - Enhanced Hero Card */}
+          {/* Right - Process Showcase */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9, x: 30 }}
             animate={{ opacity: 1, scale: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.3 }}
             className="relative"
           >
-            <div className="relative aspect-[3/4] max-w-md mx-auto lg:max-w-none">
-              {/* Main Enhanced Card */}
+            <div className="relative max-w-lg mx-auto lg:max-w-none">
+              {/* Main Showcase Card */}
               <motion.div
                 whileHover={{ scale: 1.02 }}
                 transition={{ type: "spring", stiffness: 200 }}
-                className="absolute inset-0 bg-gradient-to-br from-primary-50 via-primary-100/50 to-earth-50 dark:from-primary-900/30 dark:via-primary-800/20 dark:to-card rounded-3xl shadow-2xl overflow-hidden border border-primary-200/50 dark:border-primary-800/30"
+                className="relative bg-gradient-to-br from-primary-50 via-earth-50 to-blush-50 dark:from-primary-900/20 dark:via-card dark:to-card rounded-3xl shadow-2xl overflow-hidden border border-primary-200/50 dark:border-primary-800/30 p-8 md:p-10"
               >
-                {/* Animated Background Pattern */}
-                <div className="absolute inset-0 opacity-30">
+                {/* Animated Background Elements */}
+                <div className="absolute inset-0 overflow-hidden">
                   <motion.div
                     animate={{
-                      x: [0, 100, 0],
-                      y: [0, 50, 0],
-                      rotate: [0, 5, 0]
+                      x: [0, 50, 0],
+                      y: [0, 30, 0],
+                      scale: [1, 1.2, 1]
                     }}
-                    transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-                    className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_30%,rgba(34,197,94,0.2),transparent_50%)]"
+                    transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute -top-10 -left-10 w-40 h-40 bg-primary-200/30 dark:bg-primary-800/20 rounded-full blur-2xl"
                   />
                   <motion.div
                     animate={{
-                      x: [0, -80, 0],
-                      y: [0, -40, 0],
-                      rotate: [0, -5, 0]
+                      x: [0, -40, 0],
+                      y: [0, -20, 0],
+                      scale: [1, 1.3, 1]
                     }}
-                    transition={{ duration: 15, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                    className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_70%_70%,rgba(251,146,60,0.15),transparent_50%)]"
+                    transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                    className="absolute -bottom-10 -right-10 w-48 h-48 bg-earth-200/30 dark:bg-earth-800/20 rounded-full blur-2xl"
                   />
                 </div>
 
-                {/* Central Content */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-8 relative z-10">
-                  <motion.div
-                    animate={{
-                      scale: [1, 1.1, 1],
-                      rotate: [0, 5, -5, 0]
-                    }}
-                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                    className="mb-6"
-                  >
-                    <div className="relative">
-                      <Leaf className="w-20 h-20 text-primary-500 dark:text-primary-400 mx-auto" />
+                <div className="relative z-10 space-y-6">
+                  {/* Header */}
+                  <div className="text-center">
+                    <motion.div
+                      animate={{
+                        scale: [1, 1.1, 1],
+                        rotate: [0, 5, -5, 0]
+                      }}
+                      transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                      className="inline-block mb-4"
+                    >
+                      <div className="relative">
+                        <Leaf className="w-16 h-16 text-primary-500 dark:text-primary-400 mx-auto" />
+                        <motion.div
+                          animate={{
+                            scale: [1, 1.3, 1],
+                            opacity: [0.4, 0.7, 0.4]
+                          }}
+                          transition={{ duration: 2, repeat: Infinity }}
+                          className="absolute inset-0 bg-primary-400/30 dark:bg-primary-500/20 rounded-full blur-xl"
+                        />
+                      </div>
+                    </motion.div>
+                    <h3 className="text-2xl md:text-3xl font-script text-primary-700 dark:text-primary-300 mb-2">
+                      The Art of Eco-Printing
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Where nature meets craftsmanship
+                    </p>
+                  </div>
+
+                  {/* Process Steps */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {[
+                      { icon: Leaf, label: "Leaf Selection", color: "primary" },
+                      { icon: Sparkles, label: "Natural Dyes", color: "earth" },
+                      { icon: Heart, label: "Handcrafted", color: "primary" },
+                      { icon: Sparkles, label: "Unique Prints", color: "earth" }
+                    ].map((step, index) => (
                       <motion.div
-                        animate={{
-                          scale: [1, 1.2, 1],
-                          opacity: [0.3, 0.6, 0.3]
-                        }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                        className="absolute inset-0 bg-primary-400/30 dark:bg-primary-500/20 rounded-full blur-xl"
-                      />
+                        key={step.label}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.8 + index * 0.1 }}
+                        whileHover={{ scale: 1.05, y: -2 }}
+                        className="glass-card p-4 text-center group cursor-default"
+                      >
+                        <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${
+                          step.color === "primary" 
+                            ? "from-primary-100 to-primary-200 dark:from-primary-900/50 dark:to-primary-800/50" 
+                            : "from-earth-100 to-earth-200 dark:from-earth-800/50 dark:to-earth-700/50"
+                        } flex items-center justify-center mx-auto mb-2 shadow-md group-hover:shadow-lg transition-shadow`}>
+                          <step.icon className={`w-6 h-6 ${
+                            step.color === "primary" 
+                              ? "text-primary-600 dark:text-primary-400" 
+                              : "text-earth-600 dark:text-earth-400"
+                          }`} />
+                        </div>
+                        <p className="text-xs font-semibold text-foreground">{step.label}</p>
+                      </motion.div>
+                    ))}
+                  </div>
+
+                  {/* Key Features */}
+                  <div className="pt-4 border-t border-primary-200/50 dark:border-primary-800/30">
+                    <div className="flex flex-wrap justify-center gap-3">
+                      {["100% Natural", "One-of-a-Kind", "Handmade"].map((feature, index) => (
+                        <motion.span
+                          key={feature}
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 1.2 + index * 0.1 }}
+                          className="px-3 py-1 bg-primary-100/80 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 text-xs font-medium rounded-full border border-primary-200/50 dark:border-primary-800/50"
+                        >
+                          {feature}
+                        </motion.span>
+                      ))}
                     </div>
-                  </motion.div>
-                  
-                  <h3 className="text-2xl md:text-3xl font-script text-primary-700 dark:text-primary-300 mb-2">
-                    Eco-Printed Fashion
-                  </h3>
-                  <p className="text-muted-foreground text-sm md:text-base text-center max-w-xs leading-relaxed">
-                    Each piece tells a unique story, printed by nature's own hand
-                  </p>
-                  
-                  {/* Decorative Elements */}
-                  <div className="absolute top-4 left-4 w-2 h-2 bg-primary-400 dark:bg-primary-500 rounded-full animate-pulse" />
-                  <div className="absolute bottom-4 right-4 w-2 h-2 bg-earth-400 dark:bg-earth-500 rounded-full animate-pulse" style={{ animationDelay: '1s' }} />
-                </div>
-              </motion.div>
-
-              {/* Enhanced Floating Technique Card */}
-              <motion.div
-                initial={{ opacity: 0, x: -30, y: -10 }}
-                animate={{ opacity: 1, x: 0, y: 0 }}
-                transition={{ delay: 0.8, type: "spring", stiffness: 200 }}
-                whileHover={{ scale: 1.05, x: -5 }}
-                className="absolute -left-6 top-1/4 glass-card p-4 shadow-xl border border-primary-200/50 dark:border-primary-800/50"
-              >
-                <div className="flex items-center gap-3">
-                  <motion.div
-                    animate={{ rotate: [0, 360] }}
-                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                    className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900/50 dark:to-primary-800/50 flex items-center justify-center shadow-md"
-                  >
-                    <Leaf className="w-6 h-6 text-primary-600 dark:text-primary-400" />
-                  </motion.div>
-                  <div>
-                    <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Technique</p>
-                    <p className="text-base font-semibold text-foreground">Eco Printing</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Botanical magic</p>
                   </div>
                 </div>
-                {/* Decorative corner accent */}
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary/20 rounded-full blur-sm" />
-              </motion.div>
-
-              {/* Enhanced Floating Material Card */}
-              <motion.div
-                initial={{ opacity: 0, x: 30, y: 10 }}
-                animate={{ opacity: 1, x: 0, y: 0 }}
-                transition={{ delay: 1, type: "spring", stiffness: 200 }}
-                whileHover={{ scale: 1.05, x: 5 }}
-                className="absolute -right-6 bottom-1/4 glass-card p-4 shadow-xl border border-earth-200/50 dark:border-earth-800/50"
-              >
-                <div className="flex items-center gap-3">
-                  <motion.div
-                    animate={{ rotate: [0, -360] }}
-                    transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-                    className="w-12 h-12 rounded-full bg-gradient-to-br from-earth-100 to-earth-200 dark:from-earth-800/50 dark:to-earth-700/50 flex items-center justify-center shadow-md"
-                  >
-                    <Sparkles className="w-6 h-6 text-earth-600 dark:text-earth-400" />
-                  </motion.div>
-                  <div>
-                    <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Material</p>
-                    <p className="text-base font-semibold text-foreground">Pure Silk</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Luxury feel</p>
-                  </div>
-                </div>
-                {/* Decorative corner accent */}
-                <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-earth-400/20 rounded-full blur-sm" />
               </motion.div>
             </div>
           </motion.div>
