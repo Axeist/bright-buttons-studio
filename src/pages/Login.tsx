@@ -53,13 +53,19 @@ const Login = () => {
 
     if (error) {
       let errorMessage = "Login failed. Please try again.";
+      const errorMsg = error?.message || String(error);
       
-      if (error.message.includes("Invalid login credentials")) {
-        errorMessage = "Invalid email or password.";
-      } else if (error.message.includes("Email not confirmed")) {
-        errorMessage = "Please confirm your email address first.";
+      if (errorMsg.includes("Invalid login credentials") || errorMsg.includes("Invalid credentials")) {
+        errorMessage = "Invalid email or password. Please check your credentials and try again.";
+      } else if (errorMsg.includes("Email not confirmed") || errorMsg.includes("email not confirmed")) {
+        errorMessage = "Please confirm your email address first. Check your inbox for a confirmation link.";
+      } else if (errorMsg.includes("Too many requests")) {
+        errorMessage = "Too many login attempts. Please wait a moment and try again.";
+      } else {
+        errorMessage = `Login failed: ${errorMsg}`;
       }
 
+      console.error("Login error details:", error);
       toast({
         title: "Login Error",
         description: errorMessage,

@@ -9,7 +9,7 @@ interface AuthContextType {
   session: Session | null;
   role: AppRole;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: any | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   isAdmin: boolean;
@@ -24,17 +24,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const fetchUserRole = async (userId: string) => {
-    const { data, error } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .maybeSingle();
-    
-    if (error) {
-      console.error("Error fetching user role:", error);
+    try {
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .maybeSingle();
+      
+      if (error) {
+        console.error("Error fetching user role:", error);
+        // Try using the database function as fallback
+        const { data: roleData, error: roleError } = await supabase
+          .rpc("get_user_role", { _user_id: userId });
+        
+        if (roleError) {
+          console.error("Error fetching user role via function:", roleError);
+          return null;
+        }
+        return roleData as AppRole;
+      }
+      
+      if (!data) {
+        console.warn(`No role found for user ${userId}. User may need role assignment.`);
+        return null;
+      }
+      
+      return data.role as AppRole;
+    } catch (err) {
+      console.error("Unexpected error fetching user role:", err);
       return null;
     }
-    return data?.role as AppRole;
   };
 
   useEffect(() => {
@@ -70,11 +89,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error };
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (error) {
+        console.error("Sign in error:", error);
+        return { error };
+      }
+      
+      // If sign in successful, fetch role immediately
+      if (data?.user) {
+        const userRole = await fetchUserRole(data.user.id);
+        setRole(userRole);
+        console.log("User signed in, role:", userRole);
+      }
+      
+      return { error: null };
+    } catch (err) {
+      console.error("Unexpected sign in error:", err);
+      return { error: err as Error };
+    }
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
