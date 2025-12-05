@@ -22,7 +22,7 @@ export const Hero = memo(() => {
       {/* Background Image Overlay - Green Leaf Pattern */}
       <div className="absolute inset-0 opacity-10 dark:opacity-5 z-0">
         <img 
-          src="https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1920&h=1080&fit=crop"
+          src="https://images.unsplash.com/photo-1527873722743-67759f0854aa?q=80&w=2874&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
           alt="Green leaf macro photography background - eco printing theme"
           className="w-full h-full object-cover"
           loading="lazy"
