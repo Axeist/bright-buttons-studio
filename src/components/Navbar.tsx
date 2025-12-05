@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ChevronDown } from "lucide-react";
+import { Menu, X, ChevronDown, LogIn } from "lucide-react";
 import { Logo } from "./Logo";
 import { WhatsAppButton } from "./WhatsAppButton";
 import { ThemeToggle } from "./ThemeToggle";
@@ -145,6 +145,14 @@ export const Navbar = () => {
               >
                 Shop Now
               </Button>
+              <Link
+                to="/login"
+                className="p-2 text-muted-foreground hover:text-primary transition-colors"
+                title="Staff Login"
+                aria-label="Staff Login"
+              >
+                <LogIn className="w-4 h-4" />
+              </Link>
               
               {/* Desktop Menu Toggle */}
               <div className="relative" ref={menuRef}>
@@ -207,6 +215,14 @@ export const Navbar = () => {
             <div className="flex items-center gap-2 sm:gap-3 lg:hidden">
               <ThemeToggle />
               <WhatsAppButton variant="ghost" />
+              <Link
+                to="/login"
+                className="p-2 text-muted-foreground hover:text-primary transition-colors touch-target"
+                title="Staff Login"
+                aria-label="Staff Login"
+              >
+                <LogIn className="w-5 h-5" />
+              </Link>
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 className="p-2.5 sm:p-2 text-foreground hover:text-primary transition-colors touch-target"
