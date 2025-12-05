@@ -141,7 +141,7 @@ export const Footer = () => {
             <p className="text-center md:text-left text-sm text-muted-foreground">
               © 2025 Bright Buttons. Handcrafted with love 💚
             </p>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 flex-wrap justify-center">
               <Link
                 to="/login"
                 className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"

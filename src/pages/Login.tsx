@@ -428,8 +428,8 @@ const Login = () => {
               <span className="group-hover:-translate-x-1 transition-transform">←</span>
               <span>Back to store</span>
             </Link>
-            <div className="flex justify-center">
-              <CuephoriaBranding variant="subtle" />
+            <div className="flex justify-center items-center">
+              <CuephoriaBranding variant="tag" />
             </div>
           </motion.div>
         </div>
