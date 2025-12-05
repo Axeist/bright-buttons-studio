@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { ConstructionPopup } from "@/components/ConstructionPopup";
 
 // Public Pages - Lazy loaded for better performance
 const Index = lazy(() => import("./pages/Index"));
@@ -107,6 +108,7 @@ const App = () => (
               </Routes>
             </Suspense>
           </BrowserRouter>
+          <ConstructionPopup />
         </AuthProvider>
       </TooltipProvider>
     </ThemeProvider>

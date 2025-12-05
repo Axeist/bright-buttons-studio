@@ -1,0 +1,303 @@
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { X, Construction, Wrench, Sparkles, Calendar, Rocket } from "lucide-react";
+import { CuephoriaBranding } from "./CuephoriaBranding";
+
+export const ConstructionPopup = () => {
+  const [isVisible, setIsVisible] = useState(false);
+  const [isClosed, setIsClosed] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState("");
+
+  useEffect(() => {
+    // Show popup after 3 seconds
+    const timer = setTimeout(() => {
+      const wasClosed = localStorage.getItem("construction-popup-closed");
+      if (!wasClosed) {
+        setIsVisible(true);
+      }
+    }, 3000);
+
+    // Calculate time remaining until Jan 10th
+    const calculateTimeRemaining = () => {
+      const now = new Date();
+      const deadline = new Date("2025-01-10T23:59:59");
+      const diff = deadline.getTime() - now.getTime();
+
+      if (diff <= 0) {
+        setTimeRemaining("Deadline passed!");
+        return;
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+      if (days > 0) {
+        setTimeRemaining(`${days} day${days > 1 ? 's' : ''} ${hours} hour${hours > 1 ? 's' : ''}`);
+      } else if (hours > 0) {
+        setTimeRemaining(`${hours} hour${hours > 1 ? 's' : ''} ${minutes} min${minutes > 1 ? 's' : ''}`);
+      } else {
+        setTimeRemaining(`${minutes} minute${minutes > 1 ? 's' : ''}`);
+      }
+    };
+
+    calculateTimeRemaining();
+    const interval = setInterval(calculateTimeRemaining, 60000); // Update every minute
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
+  }, []);
+
+  const handleClose = () => {
+    setIsClosed(true);
+    localStorage.setItem("construction-popup-closed", "true");
+  };
+
+  if (isClosed) return null;
+
+  return (
+    <AnimatePresence>
+      {isVisible && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={handleClose}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9998]"
+          />
+
+          {/* Popup */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.5, y: 50, rotate: -10 }}
+            animate={{ opacity: 1, scale: 1, y: 0, rotate: 0 }}
+            exit={{ opacity: 0, scale: 0.5, y: 50, rotate: 10 }}
+            transition={{ 
+              type: "spring", 
+              stiffness: 300, 
+              damping: 25,
+              duration: 0.6
+            }}
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] w-[90%] max-w-md"
+          >
+            <div className="relative bg-gradient-to-br from-primary-50 via-blush-50 to-earth-50 dark:from-card dark:via-card dark:to-card rounded-3xl shadow-2xl border-2 border-primary/30 dark:border-primary/20 overflow-hidden">
+              {/* Animated Background Elements */}
+              <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <motion.div
+                  animate={{
+                    rotate: [0, 360],
+                    scale: [1, 1.2, 1],
+                  }}
+                  transition={{
+                    duration: 8,
+                    repeat: Infinity,
+                    ease: "linear"
+                  }}
+                  className="absolute -top-10 -right-10 w-32 h-32 bg-primary-200/30 dark:bg-primary-800/20 rounded-full blur-2xl"
+                />
+                <motion.div
+                  animate={{
+                    rotate: [360, 0],
+                    scale: [1, 1.3, 1],
+                  }}
+                  transition={{
+                    duration: 10,
+                    repeat: Infinity,
+                    ease: "linear"
+                  }}
+                  className="absolute -bottom-10 -left-10 w-40 h-40 bg-blush-200/30 dark:bg-blush-800/20 rounded-full blur-2xl"
+                />
+              </div>
+
+              {/* Content */}
+              <div className="relative z-10 p-6 md:p-8">
+                {/* Close Button */}
+                <button
+                  onClick={handleClose}
+                  className="absolute top-4 right-4 w-8 h-8 rounded-full bg-background/80 dark:bg-background/60 hover:bg-background dark:hover:bg-background flex items-center justify-center transition-colors z-20 group"
+                  aria-label="Close"
+                >
+                  <X className="w-4 h-4 text-foreground group-hover:rotate-90 transition-transform" />
+                </button>
+
+                {/* Header with Animated Icons */}
+                <div className="text-center mb-6">
+                  <motion.div
+                    animate={{
+                      rotate: [0, 10, -10, 0],
+                      scale: [1, 1.1, 1],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      repeatDelay: 1
+                    }}
+                    className="inline-block mb-4"
+                  >
+                    <div className="relative">
+                      <Construction className="w-16 h-16 text-primary mx-auto" />
+                      <motion.div
+                        animate={{
+                          scale: [1, 1.3, 1],
+                          opacity: [0.5, 0.8, 0.5],
+                        }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity
+                        }}
+                        className="absolute inset-0 bg-primary/30 rounded-full blur-xl"
+                      />
+                    </div>
+                  </motion.div>
+
+                  <motion.h2
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="text-2xl md:text-3xl font-script text-primary mb-2"
+                  >
+                    🚧 Under Construction! 🚧
+                  </motion.h2>
+                  
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                    className="text-sm text-muted-foreground"
+                  >
+                    We're building something amazing!
+                  </motion.p>
+                </div>
+
+                {/* Funny Message */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="bg-white/80 dark:bg-background/80 backdrop-blur-sm rounded-2xl p-4 mb-4 border border-primary/20"
+                >
+                  <div className="flex items-start gap-3">
+                    <motion.div
+                      animate={{
+                        rotate: [0, 20, -20, 0],
+                      }}
+                      transition={{
+                        duration: 1.5,
+                        repeat: Infinity,
+                        repeatDelay: 2
+                      }}
+                      className="text-2xl flex-shrink-0"
+                    >
+                      👷‍♀️
+                    </motion.div>
+                    <div className="flex-1">
+                      <p className="text-sm text-foreground leading-relaxed mb-2">
+                        <span className="font-semibold text-primary">Oops!</span> Our website is still being polished by the amazing team at{" "}
+                        <span className="font-semibold text-primary">Cuephoria Tech</span>! 🎨
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Some features might be a bit wonky, but we're working hard to make everything perfect! 💪
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+
+                {/* Countdown Timer */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.5, type: "spring" }}
+                  className="bg-gradient-to-r from-primary-100 to-blush-100 dark:from-primary-900/40 dark:to-blush-900/40 rounded-2xl p-4 mb-4 border border-primary/30"
+                >
+                  <div className="flex items-center justify-center gap-3 mb-2">
+                    <Calendar className="w-5 h-5 text-primary" />
+                    <span className="text-sm font-semibold text-foreground">Launch Deadline</span>
+                    <Rocket className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="text-center">
+                    <motion.div
+                      key={timeRemaining}
+                      initial={{ scale: 1.2, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      className="text-2xl font-bold text-primary mb-1"
+                    >
+                      {timeRemaining}
+                    </motion.div>
+                    <p className="text-xs text-muted-foreground">Until Jan 10th, 2025</p>
+                  </div>
+                  
+                  {/* Progress Bar */}
+                  <div className="mt-3 h-2 bg-background/50 rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: "75%" }}
+                      transition={{ duration: 1, delay: 0.7, ease: "easeOut" }}
+                      className="h-full bg-gradient-to-r from-primary via-blush-500 to-primary rounded-full relative overflow-hidden"
+                    >
+                      <motion.div
+                        animate={{
+                          x: ["-100%", "100%"],
+                        }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                          ease: "linear"
+                        }}
+                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+                      />
+                    </motion.div>
+                  </div>
+                </motion.div>
+
+                {/* Cuephoria Tech Branding */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.6 }}
+                  className="flex items-center justify-center gap-2 pt-2 border-t border-border/50"
+                >
+                  <span className="text-xs text-muted-foreground">Built with ❤️ by</span>
+                  <CuephoriaBranding variant="inline" className="text-xs" />
+                </motion.div>
+
+                {/* Floating Emojis */}
+                <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                  {["🔨", "⚡", "✨", "🎨"].map((emoji, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{
+                        x: Math.random() * 100 + "%",
+                        y: Math.random() * 100 + "%",
+                        opacity: 0,
+                        scale: 0,
+                      }}
+                      animate={{
+                        y: [null, "-100%"],
+                        opacity: [0, 1, 1, 0],
+                        scale: [0, 1, 1, 0],
+                        rotate: [0, 360],
+                      }}
+                      transition={{
+                        duration: 3 + index * 0.5,
+                        repeat: Infinity,
+                        delay: index * 0.3,
+                        ease: "easeOut"
+                      }}
+                      className="absolute text-2xl"
+                    >
+                      {emoji}
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+};
+
