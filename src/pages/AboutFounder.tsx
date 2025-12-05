@@ -82,12 +82,18 @@ const AboutFounder = () => {
             >
               <div className="relative max-w-md mx-auto">
                 {/* Portrait Circle */}
-                <div className="aspect-square rounded-full bg-gradient-to-br from-primary-100 to-earth-100 p-4 shadow-2xl">
-                  <div className="w-full h-full rounded-full bg-gradient-to-br from-primary-50 to-blush-50 flex items-center justify-center border-4 border-white">
-                    <div className="text-center">
-                      <span className="text-6xl">👩‍🎨</span>
-                      <p className="text-primary-700 font-medium mt-4">Subhiksha Subramanian</p>
-                    </div>
+                <div className="aspect-square rounded-full bg-gradient-to-br from-primary-100 to-earth-100 p-4 shadow-2xl overflow-hidden">
+                  <div className="w-full h-full rounded-full bg-gradient-to-br from-primary-50 to-blush-50 flex items-center justify-center border-4 border-white relative overflow-hidden">
+                    <img 
+                      src="https://iili.io/fTMZhil.jpg"
+                      alt="Subhiksha Subramanian - Founder of Bright Buttons"
+                      className="w-full h-full object-cover rounded-full"
+                      loading="lazy"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
                   </div>
                 </div>
 

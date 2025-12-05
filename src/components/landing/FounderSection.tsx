@@ -158,7 +158,7 @@ export const FounderSection = () => {
 
                 <div className="w-full h-full rounded-full bg-gradient-to-br from-primary-50 via-earth-50 to-blush-50 dark:from-card dark:via-card dark:to-card flex items-center justify-center border-4 border-white dark:border-border relative z-10 overflow-hidden shadow-inner">
                   <img 
-                    src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=500&h=500&fit=crop&auto=format&q=80"
+                    src="https://iili.io/fTMZhil.jpg"
                     alt="Subhiksha Subramanian - Founder of Bright Buttons"
                     className="w-full h-full object-cover rounded-full scale-105"
                     loading="lazy"
