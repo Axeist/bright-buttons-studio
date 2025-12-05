@@ -9,7 +9,8 @@ import {
   AlertTriangle,
   ArrowUpRight,
   ArrowDownRight,
-  Sparkles
+  Sparkles,
+  ClipboardList
 } from "lucide-react";
 import { orders } from "@/data/orders";
 

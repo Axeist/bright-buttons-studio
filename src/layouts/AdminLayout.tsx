@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -39,9 +39,24 @@ const sidebarItems = [
 
 export const AdminLayout = ({ children, title }: AdminLayoutProps) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut, isAdmin } = useAuth();
+
+  // Check if desktop on mount and resize
+  useEffect(() => {
+    const checkDesktop = () => {
+      setIsDesktop(window.innerWidth >= 1024);
+      if (window.innerWidth >= 1024) {
+        setIsSidebarOpen(true);
+      }
+    };
+    
+    checkDesktop();
+    window.addEventListener('resize', checkDesktop);
+    return () => window.removeEventListener('resize', checkDesktop);
+  }, []);
 
   const handleLogout = async () => {
     await signOut();
@@ -110,10 +125,10 @@ export const AdminLayout = ({ children, title }: AdminLayoutProps) => {
       <motion.aside
         initial={false}
         animate={{
-          x: isSidebarOpen ? 0 : "-100%"
+          x: isDesktop ? 0 : (isSidebarOpen ? 0 : "-100%")
         }}
         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        className={`fixed top-0 left-0 bottom-0 w-72 bg-card/95 dark:bg-card/90 backdrop-blur-xl border-r border-primary-200/50 dark:border-primary-800/30 z-50 shadow-2xl lg:translate-x-0`}
+        className={`fixed top-0 left-0 bottom-0 w-72 bg-card/95 dark:bg-card/90 backdrop-blur-xl border-r border-primary-200/50 dark:border-primary-800/30 z-50 shadow-2xl`}
       >
         <div className="flex flex-col h-full">
           {/* Logo Section */}
