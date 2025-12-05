@@ -148,8 +148,22 @@ const Login = () => {
 
   return (
     <div className="min-h-screen gradient-hero flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background Image Overlay - Same as Hero */}
+      <div className="absolute inset-0 opacity-10 dark:opacity-5 z-0">
+        <img 
+          src="https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1920&h=1080&fit=crop"
+          alt="Eco-printed fabric background"
+          className="w-full h-full object-cover"
+          loading="eager"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.style.display = 'none';
+          }}
+        />
+      </div>
+      
       {/* Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
         <motion.div
           animate={{
             x: [0, 50, 0],
@@ -208,13 +222,14 @@ const Login = () => {
             transition={{ delay: 0.2 }}
             className="text-center mb-8"
           >
-            <div className="mb-6 flex justify-center">
+            <div className="mb-3 flex justify-center">
               <motion.div
                 whileHover={{ scale: 1.05, rotate: 5 }}
                 whileTap={{ scale: 0.95 }}
                 transition={{ type: "spring", stiffness: 300 }}
+                className="flex justify-center"
               >
-                <Logo size="xl" linkTo="/" className="mx-auto" />
+                <Logo size="2xl" linkTo="/" className="mx-auto" />
               </motion.div>
             </div>
             <motion.h1
