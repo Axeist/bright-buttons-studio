@@ -129,20 +129,59 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-    /* Custom leaf cursor - simple elegant leaf shape */
-    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath d='M10 2C6 2 3 5 3 9c0 4 7 10 7 10s7-6 7-10c0-4-3-7-7-7zm0 8c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z' fill='%2310b981'/%3E%3C/svg%3E") 10 10, auto;
+    /* Custom leaf cursor - using downloaded cursor files */
+    cursor: url("/Leaf Normal Select.cur"), auto;
   }
 
   /* Leaf cursor for interactive elements */
   a, button, [role='button'], input[type='button'], input[type='submit'], input[type='reset'], 
   [onclick], [tabindex]:not([tabindex='-1']), label, select, textarea {
-    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath d='M10 2C6 2 3 5 3 9c0 4 7 10 7 10s7-6 7-10c0-4-3-7-7-7zm0 8c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z' fill='%2310b981'/%3E%3C/svg%3E") 10 10, pointer;
+    cursor: url("/Leaf Link Select.cur"), pointer;
   }
 
   /* Text cursor for text inputs */
   input[type='text'], input[type='email'], input[type='password'], input[type='number'], 
   input[type='search'], input[type='tel'], input[type='url'], textarea {
-    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 20 20'%3E%3Cpath d='M10 2C6 2 3 5 3 9c0 4 7 10 7 10s7-6 7-10c0-4-3-7-7-7zm0 8c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z' fill='%2310b981'/%3E%3C/svg%3E") 9 9, text;
+    cursor: url("/Leaf Text Select.cur"), text;
+  }
+
+  /* Busy/loading cursor */
+  *[aria-busy='true'], .loading, button:disabled, input:disabled {
+    cursor: url("/Leaf Busy.ani"), wait;
+  }
+
+  /* Help cursor */
+  [title], [aria-label] {
+    cursor: url("/Leaf Help Select.cur"), help;
+  }
+
+  /* Move cursor */
+  [draggable='true'] {
+    cursor: url("/Leaf Move.cur"), move;
+  }
+
+  /* Unavailable cursor */
+  .disabled, [disabled] {
+    cursor: url("/Leaf Unavailable.cur"), not-allowed;
+  }
+
+  /* Precision select cursor */
+  input[type='range'], .slider, [style*='resize'] {
+    cursor: url("/Leaf Precision Select.cur"), crosshair;
+  }
+
+  /* Resize cursors */
+  [style*='resize: horizontal'], .resize-horizontal {
+    cursor: url("/Leaf Horizontal Resize.cur"), ew-resize;
+  }
+
+  [style*='resize: vertical'], .resize-vertical {
+    cursor: url("/Leaf Vertical Resize.cur"), ns-resize;
+  }
+
+  /* Working in background cursor */
+  .processing, [data-processing='true'] {
+    cursor: url("/Leaf Working in Background.ani"), progress;
   }
 
   /* Respect user's motion preferences */
