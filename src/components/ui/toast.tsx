@@ -27,7 +27,7 @@ const toastVariants = cva(
   {
     variants: {
       variant: {
-        default: "border-primary-200/50 dark:border-primary-800/30 bg-card/95 dark:bg-card/90 bg-gradient-to-br from-primary-50/50 via-transparent to-earth-50/50 dark:from-primary-900/20 dark:to-transparent text-foreground",
+        default: "border-primary-300/50 dark:border-primary-700/50 bg-white/95 dark:bg-card/90 backdrop-blur-xl shadow-2xl text-foreground glass-card",
         destructive: "destructive group border-destructive/50 dark:border-destructive/30 bg-destructive/95 dark:bg-destructive/90 backdrop-blur-xl text-destructive-foreground",
       },
     },
@@ -40,8 +40,21 @@ const toastVariants = cva(
 const Toast = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Root>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root> & VariantProps<typeof toastVariants>
->(({ className, variant, ...props }, ref) => {
-  return <ToastPrimitives.Root ref={ref} className={cn(toastVariants({ variant }), className)} {...props} />;
+>(({ className, variant, children, ...props }, ref) => {
+  return (
+    <ToastPrimitives.Root 
+      ref={ref} 
+      className={cn(toastVariants({ variant }), className, "relative")} 
+      {...props}
+    >
+      {variant !== "destructive" && (
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-50/40 via-transparent to-earth-50/40 dark:from-primary-900/20 dark:to-transparent pointer-events-none rounded-2xl" />
+      )}
+      <div className="relative z-10 w-full">
+        {children}
+      </div>
+    </ToastPrimitives.Root>
+  );
 });
 Toast.displayName = ToastPrimitives.Root.displayName;
 
