@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, ChevronDown } from "lucide-react";
 import { Logo } from "./Logo";
 import { WhatsAppButton } from "./WhatsAppButton";
+import { ThemeToggle } from "./ThemeToggle";
 import { Button } from "./ui/button";
 
 const navLinks = [
@@ -86,6 +87,7 @@ export const Navbar = () => {
 
             {/* Desktop Actions - Right Side */}
             <div className="hidden lg:flex items-center gap-4">
+              <ThemeToggle />
               <WhatsAppButton variant="ghost" />
               <Button 
                 size="sm" 
@@ -145,6 +147,7 @@ export const Navbar = () => {
 
             {/* Mobile Menu Button */}
             <div className="flex items-center gap-3 lg:hidden">
+              <ThemeToggle />
               <WhatsAppButton variant="ghost" />
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
