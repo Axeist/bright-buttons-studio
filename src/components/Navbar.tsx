@@ -160,17 +160,28 @@ export const Navbar = () => {
                     >
                       <div className="py-2">
                         {navLinks.map((link, index) => (
-                          <a
+                          <motion.a
                             key={link.name}
                             href={link.href}
                             onClick={(e) => {
                               e.preventDefault();
                               handleNavClick(link.href);
                             }}
-                            className="block px-4 py-2.5 text-sm text-foreground hover:bg-accent hover:text-primary transition-colors cursor-pointer"
+                            className="block px-4 py-2.5 text-sm text-foreground hover:bg-accent hover:text-primary transition-colors cursor-pointer relative overflow-hidden group"
+                            whileHover={{ x: 4 }}
+                            whileTap={{ scale: 0.98 }}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.05 }}
                           >
-                            {link.name}
-                          </a>
+                            <motion.span
+                              className="absolute left-0 top-0 bottom-0 w-1 bg-primary opacity-0 group-hover:opacity-100"
+                              initial={{ scaleY: 0 }}
+                              whileHover={{ scaleY: 1 }}
+                              transition={{ duration: 0.2 }}
+                            />
+                            <span className="relative z-10">{link.name}</span>
+                          </motion.a>
                         ))}
                       </div>
                     </motion.div>
@@ -209,18 +220,29 @@ export const Navbar = () => {
               className="overflow-hidden lg:hidden border-t border-border/50"
             >
               <div className="container-custom py-4 space-y-1">
-                {navLinks.map((link) => (
-                  <a
+                {navLinks.map((link, index) => (
+                  <motion.a
                     key={link.name}
                     href={link.href}
                     onClick={(e) => {
                       e.preventDefault();
                       handleNavClick(link.href);
                     }}
-                    className="block px-4 py-3 text-base font-medium text-foreground hover:bg-accent hover:text-primary rounded-lg transition-colors cursor-pointer"
+                    className="block px-4 py-3 text-base font-medium text-foreground hover:bg-accent hover:text-primary rounded-lg transition-colors cursor-pointer relative overflow-hidden group"
+                    whileHover={{ x: 4 }}
+                    whileTap={{ scale: 0.98 }}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
                   >
-                    {link.name}
-                  </a>
+                    <motion.span
+                      className="absolute left-0 top-0 bottom-0 w-1 bg-primary opacity-0 group-hover:opacity-100 rounded-l-lg"
+                      initial={{ scaleY: 0 }}
+                      whileHover={{ scaleY: 1 }}
+                      transition={{ duration: 0.2 }}
+                    />
+                    <span className="relative z-10">{link.name}</span>
+                  </motion.a>
                 ))}
                 <div className="pt-4 mt-4 border-t border-border/50">
                   <Button 

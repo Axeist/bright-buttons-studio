@@ -1,4 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { Instagram, MessageCircle, Mail } from "lucide-react";
 import { Logo } from "./Logo";
 
@@ -68,16 +69,27 @@ export const Footer = () => {
           <div>
             <h3 className="font-semibold text-foreground mb-4">Quick Links</h3>
             <ul className="space-y-2">
-              {quickLinks.map((link) => (
-                <li key={link.name}>
-                  <Link
-                    to={link.href}
+              {quickLinks.map((link, index) => (
+                <motion.li
+                  key={link.name}
+                  initial={{ opacity: 0, x: -10 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <motion.a
+                    href={link.href}
                     onClick={(e) => handleLinkClick(e, link.href)}
-                    className="text-muted-foreground hover:text-primary transition-colors"
+                    className="text-muted-foreground hover:text-primary transition-colors inline-block relative group"
+                    whileHover={{ x: 4 }}
+                    whileTap={{ scale: 0.95 }}
                   >
-                    {link.name}
-                  </Link>
-                </li>
+                    <motion.span
+                      className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary group-hover:w-full transition-all duration-300"
+                    />
+                    <span className="relative">{link.name}</span>
+                  </motion.a>
+                </motion.li>
               ))}
             </ul>
           </div>
