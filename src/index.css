@@ -137,11 +137,9 @@
   h1.font-script,
   h2.font-script,
   h3.font-script {
-    line-height: 1.8 !important;
-    padding-top: 0.6em !important;
-    padding-bottom: 0.6em !important;
-    margin-top: 0.4em;
-    margin-bottom: 0.4em;
+    line-height: 1.5 !important;
+    padding-top: 0.2em !important;
+    padding-bottom: 0.2em !important;
     overflow: visible !important;
     display: block;
     position: relative;
@@ -153,9 +151,9 @@
   .text-5xl.font-script,
   .text-6xl.font-script,
   .text-7xl.font-script {
-    padding-top: 0.8em !important;
-    padding-bottom: 0.8em !important;
-    line-height: 1.9 !important;
+    padding-top: 0.3em !important;
+    padding-bottom: 0.3em !important;
+    line-height: 1.6 !important;
   }
 }
 
@@ -241,9 +239,9 @@
 @layer utilities {
   .font-script {
     font-family: 'Pacifico', cursive;
-    line-height: 1.6 !important;
-    padding-top: 0.5em;
-    padding-bottom: 0.5em;
+    line-height: 1.5 !important;
+    padding-top: 0.2em;
+    padding-bottom: 0.2em;
     overflow: visible;
     display: block;
   }
