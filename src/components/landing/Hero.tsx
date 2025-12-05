@@ -19,6 +19,19 @@ export const Hero = memo(() => {
 
   return (
     <section id="hero" className="relative min-h-[90vh] gradient-hero overflow-hidden">
+      {/* Background Image Overlay */}
+      <div className="absolute inset-0 opacity-10 dark:opacity-5 z-0">
+        <img 
+          src="https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=1920&h=1080&fit=crop&auto=format&q=80"
+          alt="Eco-printed fabric background"
+          className="w-full h-full object-cover"
+          loading="eager"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.style.display = 'none';
+          }}
+        />
+      </div>
       {/* Enhanced Decorative Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
@@ -103,11 +116,11 @@ export const Hero = memo(() => {
               <motion.div
                 animate={{ rotate: [0, 10, -10, 0] }}
                 transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-              >
-                <Leaf className="w-4 h-4" />
+            >
+              <Leaf className="w-4 h-4" />
               </motion.div>
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary-700 to-primary-500 dark:from-primary-300 dark:to-primary-400">
-                Eco-Printed · Handmade · One-of-a-Kind
+              Eco-Printed · Handmade · One-of-a-Kind
               </span>
             </motion.div>
 
@@ -123,7 +136,7 @@ export const Hero = memo(() => {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.4 }}
                 className="block"
-              >
+            >
                 Nature's Artistry
               </motion.span>
               <motion.span
@@ -179,8 +192,8 @@ export const Hero = memo(() => {
                   
                   <span className="relative z-10 flex items-center gap-1.5">
                     <Leaf className="w-3 h-3 opacity-70 group-hover:opacity-100 transition-opacity" />
-                    {technique}
-                  </span>
+                  {technique}
+                </span>
                 </motion.span>
               ))}
             </motion.div>
@@ -195,23 +208,23 @@ export const Hero = memo(() => {
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-              >
+            >
                 <Button 
                   size="lg" 
                   className="h-11 px-8 rounded-full shadow-xl hover:shadow-2xl transition-all bg-gradient-to-r from-primary to-primary-700 dark:from-primary-600 dark:to-primary-800 hover:from-primary-600 hover:to-primary-800 dark:hover:from-primary-500 dark:hover:to-primary-700"
                   onClick={scrollToCollections}
                 >
                   <Sparkles className="w-4 h-4 mr-2" />
-                  Shop Now
-                </Button>
+                Shop Now
+              </Button>
               </motion.div>
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <WhatsAppButton variant="inline">
-                  Chat on WhatsApp
-                </WhatsAppButton>
+              <WhatsAppButton variant="inline">
+                Chat on WhatsApp
+              </WhatsAppButton>
               </motion.div>
             </motion.div>
           </motion.div>
@@ -287,7 +300,7 @@ export const Hero = memo(() => {
                           transition={{ duration: 2, repeat: Infinity }}
                           className="absolute inset-0 bg-primary-400/30 dark:bg-primary-500/20 rounded-full blur-xl"
                         />
-                      </div>
+                  </div>
                     </motion.div>
                     <h3 className="text-2xl md:text-3xl font-script text-primary-700 dark:text-primary-300 mb-2">
                       The Art of Eco-Printing
@@ -305,14 +318,14 @@ export const Hero = memo(() => {
                       { icon: Heart, label: "Handcrafted", color: "primary" },
                       { icon: Sparkles, label: "Unique Prints", color: "earth" }
                     ].map((step, index) => (
-                      <motion.div
+              <motion.div
                         key={step.label}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.8 + index * 0.1 }}
                         whileHover={{ scale: 1.05, y: -2 }}
                         className="glass-card p-4 text-center group cursor-default"
-                      >
+              >
                         <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${
                           step.color === "primary" 
                             ? "from-primary-100 to-primary-200 dark:from-primary-900/50 dark:to-primary-800/50" 

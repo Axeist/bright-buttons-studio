@@ -63,14 +63,38 @@ export const ProductQuickView = ({ product, isOpen, onClose }: ProductQuickViewP
               <Dialog.Panel className="w-full max-w-3xl bg-card rounded-3xl shadow-2xl overflow-hidden">
                 <div className="grid md:grid-cols-2">
                   {/* Image */}
-                  <div className="relative aspect-square md:aspect-auto bg-gradient-to-br from-primary-50 dark:from-primary-900/20 to-earth-50 dark:to-card">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-center p-8">
-                        <Leaf className="w-20 h-20 text-primary-400 dark:text-primary-500 mx-auto mb-4" />
-                        <p className="text-primary-600 dark:text-primary-400 font-medium">{product.technique}</p>
-                        <p className="text-muted-foreground text-sm mt-1">{product.fabric}</p>
+                  <div className="relative aspect-square md:aspect-auto bg-gradient-to-br from-primary-50 dark:from-primary-900/20 to-earth-50 dark:to-card overflow-hidden">
+                    {product.image && product.image !== "/placeholder.svg" ? (
+                      <>
+                        <img 
+                          src={product.image} 
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const fallback = target.nextElementSibling as HTMLElement;
+                            if (fallback) fallback.style.display = 'flex';
+                          }}
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center" style={{ display: 'none' }}>
+                          <div className="text-center p-8">
+                            <Leaf className="w-20 h-20 text-primary-400 dark:text-primary-500 mx-auto mb-4" />
+                            <p className="text-primary-600 dark:text-primary-400 font-medium">{product.technique}</p>
+                            <p className="text-muted-foreground text-sm mt-1">{product.fabric}</p>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="text-center p-8">
+                          <Leaf className="w-20 h-20 text-primary-400 dark:text-primary-500 mx-auto mb-4" />
+                          <p className="text-primary-600 dark:text-primary-400 font-medium">{product.technique}</p>
+                          <p className="text-muted-foreground text-sm mt-1">{product.fabric}</p>
+                        </div>
                       </div>
-                    </div>
+                    )}
                     
                     {/* Close button - mobile */}
                     <button

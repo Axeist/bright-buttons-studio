@@ -106,25 +106,18 @@ export const FounderSection = () => {
                   <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_70%_70%,rgba(251,146,60,0.3),transparent_50%)]" />
                 </div>
 
-                <div className="w-full h-full rounded-full bg-gradient-to-br from-primary-50 via-earth-50 to-blush-50 dark:from-card dark:via-card dark:to-card flex items-center justify-center border-4 border-white dark:border-border relative z-10">
-                  <div className="text-center p-8">
-                    <motion.div
-                      animate={{ 
-                        rotate: [0, 5, -5, 0],
-                        scale: [1, 1.05, 1]
-                      }}
-                      transition={{ 
-                        duration: 4,
-                        repeat: Infinity,
-                        repeatDelay: 2
-                      }}
-                      className="text-7xl mb-4"
-                    >
-                      👩‍🎨
-                    </motion.div>
-                    <p className="text-primary-700 dark:text-primary-300 font-semibold text-lg">Subhiksha</p>
-                    <p className="text-primary-600 dark:text-primary-400 font-medium">Subramanian</p>
-                  </div>
+                <div className="w-full h-full rounded-full bg-gradient-to-br from-primary-50 via-earth-50 to-blush-50 dark:from-card dark:via-card dark:to-card flex items-center justify-center border-4 border-white dark:border-border relative z-10 overflow-hidden">
+                  <img 
+                    src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=500&h=500&fit=crop&auto=format&q=80"
+                    alt="Subhiksha Subramanian - Founder of Bright Buttons"
+                    className="w-full h-full object-cover rounded-full"
+                    loading="lazy"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary-200/20 via-transparent to-earth-200/20 rounded-full" />
                 </div>
 
                 {/* Floating Decorative Elements */}

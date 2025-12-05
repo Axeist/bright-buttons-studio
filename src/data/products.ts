@@ -16,7 +16,7 @@ export const products: Product[] = [
     category: "Sarees",
     fabric: "Silk",
     technique: "Eco printing",
-    image: "/placeholder.svg",
+    image: "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=800&h=1000&fit=crop&auto=format&q=80",
     tagline: "Leaf-printed silk saree inspired by monsoon greens",
     price: "₹8,500"
   },
@@ -26,7 +26,7 @@ export const products: Product[] = [
     category: "Kurthas & Co-ords",
     fabric: "Cotton",
     technique: "Eco printing",
-    image: "/placeholder.svg",
+    image: "https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?w=800&h=1000&fit=crop&auto=format&q=80",
     tagline: "Botanical cotton co-ord with natural fern impressions",
     price: "₹4,200"
   },
@@ -36,7 +36,7 @@ export const products: Product[] = [
     category: "Shawls",
     fabric: "Linen",
     technique: "Shibori",
-    image: "/placeholder.svg",
+    image: "https://images.unsplash.com/photo-1601925260368-ae2f83d8a24d?w=800&h=1000&fit=crop&auto=format&q=80",
     tagline: "Hand-tied indigo shawl with flowing wave patterns",
     price: "₹2,800"
   },
@@ -46,7 +46,7 @@ export const products: Product[] = [
     category: "Men's Shirts",
     fabric: "Cotton",
     technique: "Batik",
-    image: "/placeholder.svg",
+    image: "https://images.unsplash.com/photo-1603252109303-2751441dd157?w=800&h=1000&fit=crop&auto=format&q=80",
     tagline: "Hand-batik shirt in warm earth tones",
     price: "₹3,500"
   },
@@ -56,7 +56,7 @@ export const products: Product[] = [
     category: "T-Shirts",
     fabric: "Cotton",
     technique: "Eco printing",
-    image: "/placeholder.svg",
+    image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&h=1000&fit=crop&auto=format&q=80",
     tagline: "Casual tee with delicate wildflower prints",
     price: "₹1,800"
   },
@@ -66,7 +66,7 @@ export const products: Product[] = [
     category: "Kidswear",
     fabric: "Cotton",
     technique: "Eco printing",
-    image: "/placeholder.svg",
+    image: "https://images.unsplash.com/photo-1503919005314-30ad5f4f8fda?w=800&h=1000&fit=crop&auto=format&q=80",
     tagline: "Playful eco-printed dress for little ones",
     price: "₹1,500"
   },
@@ -76,7 +76,7 @@ export const products: Product[] = [
     category: "Sarees",
     fabric: "Tussar",
     technique: "Kalamkari",
-    image: "/placeholder.svg",
+    image: "https://images.unsplash.com/photo-1601925260368-ae2f83d8a24d?w=800&h=1000&fit=crop&auto=format&q=80",
     tagline: "Hand-painted Kalamkari on luxurious Tussar silk",
     price: "₹12,000"
   },
@@ -86,7 +86,7 @@ export const products: Product[] = [
     category: "Kurthas & Co-ords",
     fabric: "Georgette",
     technique: "Tie & Dye",
-    image: "/placeholder.svg",
+    image: "https://images.unsplash.com/photo-1594633313593-bab3825d0caf?w=800&h=1000&fit=crop&auto=format&q=80",
     tagline: "Ethereal tie-dye kurtha in jade and emerald",
     price: "₹5,500"
   },
@@ -96,7 +96,7 @@ export const products: Product[] = [
     category: "Shawls",
     fabric: "Silk",
     technique: "Eco printing",
-    image: "/placeholder.svg",
+    image: "https://images.unsplash.com/photo-1601925260368-ae2f83d8a24d?w=800&h=1000&fit=crop&auto=format&q=80",
     tagline: "Rich maple leaf prints on pure silk",
     price: "₹4,800"
   },
@@ -106,7 +106,7 @@ export const products: Product[] = [
     category: "Men's Shirts",
     fabric: "Linen",
     technique: "Shibori",
-    image: "/placeholder.svg",
+    image: "https://images.unsplash.com/photo-1603252109303-2751441dd157?w=800&h=1000&fit=crop&auto=format&q=80",
     tagline: "Deep indigo shibori on breathable linen",
     price: "₹4,200"
   },
@@ -116,7 +116,7 @@ export const products: Product[] = [
     category: "T-Shirts",
     fabric: "Cotton",
     technique: "Batik",
-    image: "/placeholder.svg",
+    image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&h=1000&fit=crop&auto=format&q=80",
     tagline: "Vibrant batik patterns for everyday style",
     price: "₹2,200"
   },
@@ -126,7 +126,7 @@ export const products: Product[] = [
     category: "Kidswear",
     fabric: "Cotton",
     technique: "Tie & Dye",
-    image: "/placeholder.svg",
+    image: "https://images.unsplash.com/photo-1503919005314-30ad5f4f8fda?w=800&h=1000&fit=crop&auto=format&q=80",
     tagline: "Cheerful tie-dye set for active kids",
     price: "₹1,800"
   }

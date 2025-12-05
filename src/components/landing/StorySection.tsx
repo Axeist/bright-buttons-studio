@@ -89,27 +89,48 @@ export const StorySection = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="grid grid-cols-2 gap-4"
           >
-            {[1, 2, 3, 4].map((_, index) => (
+            {[
+              { 
+                image: "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=600&h=750&fit=crop&auto=format&q=80",
+                label: "Leaf Selection",
+                aspect: "aspect-[4/5]"
+              },
+              { 
+                image: "https://images.unsplash.com/photo-1601925260368-ae2f83d8a24d?w=600&h=600&fit=crop&auto=format&q=80",
+                label: "Bundling Process",
+                aspect: "aspect-square"
+              },
+              { 
+                image: "https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?w=600&h=600&fit=crop&auto=format&q=80",
+                label: "Natural Dyes",
+                aspect: "aspect-square"
+              },
+              { 
+                image: "https://images.unsplash.com/photo-1594633313593-bab3825d0caf?w=600&h=750&fit=crop&auto=format&q=80",
+                label: "Final Reveal",
+                aspect: "aspect-[4/5]"
+              }
+            ].map((item, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={isInView ? { opacity: 1, scale: 1 } : {}}
                 transition={{ duration: 0.5, delay: 0.1 * index }}
-                className={`${index === 0 || index === 3 ? 'aspect-[4/5]' : 'aspect-square'} 
-                  bg-gradient-to-br from-primary-100 dark:from-primary-900/40 to-earth-100 dark:to-card rounded-2xl overflow-hidden shadow-lg
-                  flex items-center justify-center`}
+                className={`${item.aspect} rounded-2xl overflow-hidden shadow-lg relative group`}
               >
-                <div className="text-center p-4">
-                  <Leaf className={`w-8 h-8 mx-auto mb-2 ${
-                    index === 0 ? 'text-primary-500 dark:text-primary-400' : 
-                    index === 1 ? 'text-earth-500 dark:text-earth-400' : 
-                    index === 2 ? 'text-primary-600 dark:text-primary-400' : 'text-earth-600 dark:text-earth-400'
-                  }`} />
-                  <p className="text-xs text-muted-foreground">
-                    {index === 0 ? 'Leaf Selection' : 
-                     index === 1 ? 'Bundling Process' : 
-                     index === 2 ? 'Natural Dyes' : 'Final Reveal'}
-                  </p>
+                <img 
+                  src={item.image} 
+                  alt={item.label}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                  loading="lazy"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=600&h=600&fit=crop&auto=format&q=80";
+                  }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute bottom-4 left-4 right-4 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <p className="text-sm font-medium">{item.label}</p>
                 </div>
               </motion.div>
             ))}
