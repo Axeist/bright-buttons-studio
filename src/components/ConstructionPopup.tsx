@@ -7,15 +7,26 @@ export const ConstructionPopup = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [isClosed, setIsClosed] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState("");
+  const [currentDate, setCurrentDate] = useState("");
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    // Show popup after 3 seconds
+    // Show popup after 3 seconds - always show
     const timer = setTimeout(() => {
-      const wasClosed = localStorage.getItem("construction-popup-closed");
-      if (!wasClosed) {
-        setIsVisible(true);
-      }
+      setIsVisible(true);
     }, 3000);
+
+    // Update current date
+    const updateCurrentDate = () => {
+      const now = new Date();
+      const options: Intl.DateTimeFormatOptions = { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      };
+      setCurrentDate(now.toLocaleDateString('en-US', options));
+    };
 
     // Calculate time remaining until Jan 10th
     const calculateTimeRemaining = () => {
@@ -23,8 +34,14 @@ export const ConstructionPopup = () => {
       const deadline = new Date("2025-01-10T23:59:59");
       const diff = deadline.getTime() - now.getTime();
 
+      // Calculate progress percentage (assuming we started from a certain date)
+      const totalDuration = deadline.getTime() - new Date("2024-12-01T00:00:00").getTime();
+      const elapsed = totalDuration - diff;
+      const progressPercent = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+      setProgress(progressPercent);
+
       if (diff <= 0) {
-        setTimeRemaining("Deadline passed!");
+        setTimeRemaining("Grand Opening Soon!");
         return;
       }
 
@@ -41,18 +58,21 @@ export const ConstructionPopup = () => {
       }
     };
 
+    updateCurrentDate();
     calculateTimeRemaining();
-    const interval = setInterval(calculateTimeRemaining, 60000); // Update every minute
+    
+    const dateInterval = setInterval(updateCurrentDate, 60000); // Update every minute
+    const countdownInterval = setInterval(calculateTimeRemaining, 60000); // Update every minute
 
     return () => {
       clearTimeout(timer);
-      clearInterval(interval);
+      clearInterval(dateInterval);
+      clearInterval(countdownInterval);
     };
   }, []);
 
   const handleClose = () => {
     setIsClosed(true);
-    localStorage.setItem("construction-popup-closed", "true");
   };
 
   if (isClosed) return null;
@@ -81,7 +101,8 @@ export const ConstructionPopup = () => {
               damping: 25,
               duration: 0.6
             }}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] w-[95%] sm:w-[90%] max-w-md mx-4"
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] w-[95%] sm:w-[90%] max-w-md"
+            style={{ transform: 'translate(-50%, -50%)' }}
           >
             <div className="relative bg-gradient-to-br from-primary-50 via-blush-50 to-earth-50 dark:from-card dark:via-card dark:to-card rounded-3xl shadow-2xl border-2 border-primary/30 dark:border-primary/20 overflow-hidden">
               {/* Animated Background Elements */}
@@ -205,19 +226,34 @@ export const ConstructionPopup = () => {
                   </div>
                 </motion.div>
 
-                {/* Countdown Timer */}
+                {/* Current Date */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.45 }}
+                  className="bg-white/60 dark:bg-background/60 backdrop-blur-sm rounded-xl p-3 mb-3 border border-primary/20"
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <Calendar className="w-4 h-4 text-primary" />
+                    <p className="text-xs sm:text-sm text-muted-foreground font-medium">
+                      Today: <span className="text-foreground font-semibold">{currentDate}</span>
+                    </p>
+                  </div>
+                </motion.div>
+
+                {/* Grand Opening Countdown */}
                 <motion.div
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.5, type: "spring" }}
                   className="bg-gradient-to-r from-primary-100 to-blush-100 dark:from-primary-900/40 dark:to-blush-900/40 rounded-2xl p-4 mb-4 border border-primary/30"
                 >
-                  <div className="flex items-center justify-center gap-3 mb-2">
-                    <Calendar className="w-5 h-5 text-primary" />
-                    <span className="text-sm font-semibold text-foreground">Launch Deadline</span>
+                  <div className="flex items-center justify-center gap-3 mb-3">
+                    <Rocket className="w-5 h-5 text-primary" />
+                    <span className="text-sm font-semibold text-foreground">Grand Opening Date</span>
                     <Rocket className="w-5 h-5 text-primary" />
                   </div>
-                  <div className="text-center">
+                  <div className="text-center mb-3">
                     <motion.div
                       key={timeRemaining}
                       initial={{ scale: 1.2, opacity: 0 }}
@@ -229,25 +265,55 @@ export const ConstructionPopup = () => {
                     <p className="text-[10px] sm:text-xs text-muted-foreground">Until Jan 10th, 2025</p>
                   </div>
                   
-                  {/* Progress Bar */}
-                  <div className="mt-3 h-2 bg-background/50 rounded-full overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: "75%" }}
-                      transition={{ duration: 1, delay: 0.7, ease: "easeOut" }}
-                      className="h-full bg-gradient-to-r from-primary via-blush-500 to-primary rounded-full relative overflow-hidden"
-                    >
+                  {/* Fancy Progress Loader */}
+                  <div className="relative">
+                    <div className="h-3 bg-background/50 rounded-full overflow-hidden shadow-inner">
                       <motion.div
-                        animate={{
-                          x: ["-100%", "100%"],
-                        }}
-                        transition={{
-                          duration: 2,
-                          repeat: Infinity,
-                          ease: "linear"
-                        }}
-                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
-                      />
+                        initial={{ width: 0 }}
+                        animate={{ width: `${progress}%` }}
+                        transition={{ duration: 1.5, delay: 0.7, ease: "easeOut" }}
+                        className="h-full bg-gradient-to-r from-primary via-blush-500 via-primary-500 to-primary rounded-full relative overflow-hidden"
+                      >
+                        {/* Animated shimmer effect */}
+                        <motion.div
+                          animate={{
+                            x: ["-100%", "100%"],
+                          }}
+                          transition={{
+                            duration: 2,
+                            repeat: Infinity,
+                            ease: "linear"
+                          }}
+                          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
+                        />
+                        {/* Pulsing dots */}
+                        {[0, 1, 2].map((i) => (
+                          <motion.div
+                            key={i}
+                            animate={{
+                              scale: [1, 1.5, 1],
+                              opacity: [0.5, 1, 0.5],
+                            }}
+                            transition={{
+                              duration: 1.5,
+                              repeat: Infinity,
+                              delay: i * 0.3,
+                              ease: "easeInOut"
+                            }}
+                            className="absolute top-1/2 -translate-y-1/2 w-2 h-2 bg-white rounded-full"
+                            style={{ left: `${20 + i * 30}%` }}
+                          />
+                        ))}
+                      </motion.div>
+                    </div>
+                    {/* Progress percentage */}
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 1 }}
+                      className="absolute -top-5 right-0 text-[10px] font-bold text-primary"
+                    >
+                      {Math.round(progress)}%
                     </motion.div>
                   </div>
                 </motion.div>
