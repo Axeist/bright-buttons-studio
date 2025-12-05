@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Construction, Wrench, Sparkles, Calendar, Rocket } from "lucide-react";
-import { CuephoriaBranding } from "./CuephoriaBranding";
 
 export const ConstructionPopup = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -445,73 +444,10 @@ export const ConstructionPopup = () => {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.6 }}
-                  className="flex items-center justify-center gap-2 pt-2 border-t border-border/50"
+                  className="flex items-center justify-center pt-2 border-t border-border/50"
                 >
-                  <span className="text-xs text-muted-foreground">Built with ❤️ by</span>
-                  <CuephoriaBranding variant="inline" className="text-xs" />
+                  <span className="text-xs text-muted-foreground">Built with <3 by <span className="font-semibold text-primary">Cuephoria Tech</span></span>
                 </motion.div>
-
-                {/* Floating Emojis - More and Funnier */}
-                <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                  {["🔨", "⚡", "✨", "🎨", "🚀", "💡", "🎯", "🌟"].map((emoji, index) => (
-                    <motion.div
-                      key={index}
-                      initial={{
-                        x: Math.random() * 80 + 10 + "%",
-                        y: "100%",
-                        opacity: 0,
-                        scale: 0,
-                        rotate: 0,
-                      }}
-                      animate={{
-                        y: ["100%", "-20%"],
-                        opacity: [0, 1, 1, 0],
-                        scale: [0, 1.2, 1, 0.8, 0],
-                        rotate: [0, 180, 360],
-                        x: [
-                          null,
-                          (Math.random() * 20 - 10) + "%"
-                        ]
-                      }}
-                      transition={{
-                        duration: 4 + index * 0.3,
-                        repeat: Infinity,
-                        delay: index * 0.4,
-                        ease: "easeOut"
-                      }}
-                      className="absolute text-2xl sm:text-3xl"
-                    >
-                      {emoji}
-                    </motion.div>
-                  ))}
-                </div>
-
-                {/* Sparkle Effects */}
-                <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                  {[...Array(12)].map((_, i) => (
-                    <motion.div
-                      key={`sparkle-${i}`}
-                      initial={{
-                        x: Math.random() * 100 + "%",
-                        y: Math.random() * 100 + "%",
-                        opacity: 0,
-                        scale: 0,
-                      }}
-                      animate={{
-                        opacity: [0, 1, 0],
-                        scale: [0, 1, 0],
-                        rotate: [0, 180, 360],
-                      }}
-                      transition={{
-                        duration: 2 + Math.random() * 2,
-                        repeat: Infinity,
-                        delay: Math.random() * 3,
-                        ease: "easeInOut"
-                      }}
-                      className="absolute w-1 h-1 bg-primary rounded-full"
-                    />
-                  ))}
-                </div>
               </div>
             </motion.div>
           </motion.div>
