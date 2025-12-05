@@ -54,8 +54,8 @@ export const Footer = () => {
   };
 
   return (
-    <footer className="bg-earth-50 dark:bg-card border-t border-border">
-      <div className="container-custom py-8 md:py-12">
+    <footer className="bg-earth-50 dark:bg-card border-t border-border pb-20 md:pb-24">
+      <div className="container-custom pt-8 md:pt-12 pb-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-12">
           {/* Brand Column */}
           <div className="space-y-4">
@@ -134,7 +134,7 @@ export const Footer = () => {
         </div>
 
         {/* Bottom Strip */}
-        <div className="mt-8 pt-6 border-t border-border/50">
+        <div className="mt-6 pt-4 border-t border-border/50">
           <p className="text-center text-sm text-muted-foreground">
             © 2025 Bright Buttons. Handcrafted with love 💚
           </p>
