@@ -98,39 +98,38 @@ const Login = () => {
         transition={{ duration: 0.5 }}
         className="w-full max-w-md"
       >
-        <div className="glass-card p-8">
+        <div className="glass-card p-8 md:p-10">
           {/* Logo */}
           <div className="text-center mb-8">
-            <Logo size="lg" linkTo="/" className="mx-auto" />
-            <p className="text-muted-foreground mt-2">Staff Portal</p>
+            <Logo size="xl" linkTo="/" className="mx-auto mb-4" />
+            <h1 className="text-3xl font-bold text-foreground mb-2">Staff Portal</h1>
+            <p className="text-muted-foreground text-sm">Sign in to access your dashboard</p>
           </div>
 
-          {/* Title */}
-          <h1 className="text-2xl font-semibold text-foreground text-center mb-6">
-            Staff Login
-          </h1>
-
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">
-                Email
+          <form onSubmit={handleSubmit} className="space-y-5 mt-8">
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-foreground">
+                Email Address
               </label>
               <Input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                className={`rounded-xl ${errors.email ? "border-destructive" : ""}`}
+                placeholder="you@example.com"
+                className={`h-12 rounded-xl text-base ${errors.email ? "border-destructive focus-visible:ring-destructive" : ""}`}
                 disabled={isSubmitting}
               />
               {errors.email && (
-                <p className="text-sm text-destructive mt-1">{errors.email}</p>
+                <p className="text-sm text-destructive mt-1.5 flex items-center gap-1">
+                  <span>•</span>
+                  <span>{errors.email}</span>
+                </p>
               )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-foreground">
                 Password
               </label>
               <div className="relative">
@@ -139,31 +138,35 @@ const Login = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
-                  className={`rounded-xl pr-10 ${errors.password ? "border-destructive" : ""}`}
+                  className={`h-12 rounded-xl text-base pr-12 ${errors.password ? "border-destructive focus-visible:ring-destructive" : ""}`}
                   disabled={isSubmitting}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
               {errors.password && (
-                <p className="text-sm text-destructive mt-1">{errors.password}</p>
+                <p className="text-sm text-destructive mt-1.5 flex items-center gap-1">
+                  <span>•</span>
+                  <span>{errors.password}</span>
+                </p>
               )}
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between pt-2">
+              <div className="flex items-center gap-2.5">
                 <Checkbox
                   id="remember"
                   checked={rememberMe}
                   onCheckedChange={(checked) => setRememberMe(checked as boolean)}
                   disabled={isSubmitting}
                 />
-                <label htmlFor="remember" className="text-sm text-muted-foreground cursor-pointer">
+                <label htmlFor="remember" className="text-sm text-muted-foreground cursor-pointer select-none">
                   Remember me
                 </label>
               </div>
@@ -171,25 +174,29 @@ const Login = () => {
 
             <Button 
               type="submit" 
-              className="w-full rounded-full" 
+              className="w-full h-12 rounded-xl text-base font-semibold shadow-lg hover:shadow-xl transition-all" 
               size="lg"
               disabled={isSubmitting}
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Logging in...
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Signing in...
                 </>
               ) : (
-                "Login"
+                "Sign In"
               )}
             </Button>
           </form>
 
           {/* Back to store */}
-          <div className="mt-6 text-center">
-            <Link to="/" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-              ← Back to store
+          <div className="mt-8 pt-6 border-t border-border/50 text-center">
+            <Link 
+              to="/" 
+              className="text-sm text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1.5 group"
+            >
+              <span>←</span>
+              <span>Back to store</span>
             </Link>
           </div>
         </div>

@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ChevronDown } from "lucide-react";
 import { Logo } from "./Logo";
 import { WhatsAppButton } from "./WhatsAppButton";
 import { Button } from "./ui/button";
@@ -19,8 +19,9 @@ const navLinks = [
 
 export const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -30,8 +31,29 @@ export const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    if (isMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.body.style.overflow = "";
+    };
+  }, [isMenuOpen]);
+
   const handleNavClick = (href: string) => {
-    setIsMobileMenuOpen(false);
+    setIsMenuOpen(false);
     
     if (href.startsWith("/#")) {
       const sectionId = href.replace("/#", "");
@@ -51,35 +73,19 @@ export const Navbar = () => {
         animate={{ y: 0 }}
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           isScrolled 
-            ? "bg-background/80 backdrop-blur-xl shadow-soft border-b border-border/50" 
-            : "bg-transparent"
+            ? "bg-background/95 backdrop-blur-xl shadow-md border-b border-border/50" 
+            : "bg-background/80 backdrop-blur-sm"
         }`}
       >
         <nav className="container-custom">
           <div className="flex items-center justify-between h-16 md:h-20">
-            <Logo size="lg" />
+            {/* Logo */}
+            <Link to="/" className="flex-shrink-0">
+              <Logo size="lg" linkTo={undefined} />
+            </Link>
 
-            {/* Desktop Navigation */}
-            <div className="hidden lg:flex items-center gap-1">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.name}
-                  to={link.href}
-                  onClick={(e) => {
-                    if (link.href.startsWith("/#")) {
-                      e.preventDefault();
-                      handleNavClick(link.href);
-                    }
-                  }}
-                  className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {link.name}
-                </Link>
-              ))}
-            </div>
-
-            {/* Desktop Actions */}
-            <div className="hidden lg:flex items-center gap-3">
+            {/* Desktop Actions - Right Side */}
+            <div className="hidden lg:flex items-center gap-4">
               <WhatsAppButton variant="ghost" />
               <Button 
                 size="sm" 
@@ -88,70 +94,100 @@ export const Navbar = () => {
               >
                 Shop Now
               </Button>
+              
+              {/* Desktop Menu Toggle */}
+              <div className="relative" ref={menuRef}>
+                <button
+                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors"
+                  aria-label="Toggle menu"
+                >
+                  <span>Menu</span>
+                  <ChevronDown 
+                    className={`w-4 h-4 transition-transform duration-200 ${
+                      isMenuOpen ? "rotate-180" : ""
+                    }`} 
+                  />
+                </button>
+
+                {/* Desktop Dropdown Menu */}
+                <AnimatePresence>
+                  {isMenuOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute top-full right-0 mt-2 w-56 bg-background border border-border rounded-lg shadow-xl overflow-hidden"
+                    >
+                      <div className="py-2">
+                        {navLinks.map((link, index) => (
+                          <Link
+                            key={link.name}
+                            to={link.href}
+                            onClick={(e) => {
+                              if (link.href.startsWith("/#")) {
+                                e.preventDefault();
+                                handleNavClick(link.href);
+                              }
+                            }}
+                            className="block px-4 py-2.5 text-sm text-foreground hover:bg-accent hover:text-primary transition-colors"
+                          >
+                            {link.name}
+                          </Link>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
 
             {/* Mobile Menu Button */}
-            <button
-              onClick={() => setIsMobileMenuOpen(true)}
-              className="lg:hidden p-2 text-foreground"
-              aria-label="Open menu"
-            >
-              <Menu className="w-6 h-6" />
-            </button>
+            <div className="flex items-center gap-3 lg:hidden">
+              <WhatsAppButton variant="ghost" />
+              <button
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="p-2 text-foreground hover:text-primary transition-colors"
+                aria-label="Toggle menu"
+              >
+                {isMenuOpen ? (
+                  <X className="w-6 h-6" />
+                ) : (
+                  <Menu className="w-6 h-6" />
+                )}
+              </button>
+            </div>
           </div>
         </nav>
-      </motion.header>
 
-      {/* Mobile Menu */}
-      <AnimatePresence>
-        {isMobileMenuOpen && (
-          <>
+        {/* Mobile/Tablet Expandable Menu */}
+        <AnimatePresence>
+          {isMenuOpen && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-50 lg:hidden"
-              onClick={() => setIsMobileMenuOpen(false)}
-            />
-            <motion.div
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed top-0 right-0 bottom-0 w-80 max-w-[85vw] bg-background shadow-2xl z-50 lg:hidden"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+              className="overflow-hidden lg:hidden border-t border-border/50"
             >
-              <div className="flex flex-col h-full">
-                <div className="flex items-center justify-between p-4 border-b border-border">
-                  <Logo size="md" linkTo={undefined} />
-                  <button
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="p-2 text-foreground"
-                    aria-label="Close menu"
-                  >
-                    <X className="w-6 h-6" />
-                  </button>
-                </div>
-
-                <div className="flex-1 overflow-y-auto py-4">
-                  {navLinks.map((link) => (
-                    <Link
-                      key={link.name}
-                      to={link.href}
-                      onClick={(e) => {
-                        if (link.href.startsWith("/#")) {
-                          e.preventDefault();
-                        }
+              <div className="container-custom py-4 space-y-1">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.name}
+                    to={link.href}
+                    onClick={(e) => {
+                      if (link.href.startsWith("/#")) {
+                        e.preventDefault();
                         handleNavClick(link.href);
-                      }}
-                      className="block px-6 py-3 text-foreground hover:bg-accent transition-colors"
-                    >
-                      {link.name}
-                    </Link>
-                  ))}
-                </div>
-
-                <div className="p-4 border-t border-border space-y-3">
-                  <WhatsAppButton variant="inline" className="w-full justify-center" />
+                      }
+                    }}
+                    className="block px-4 py-3 text-base font-medium text-foreground hover:bg-accent hover:text-primary rounded-lg transition-colors"
+                  >
+                    {link.name}
+                  </Link>
+                ))}
+                <div className="pt-4 mt-4 border-t border-border/50">
                   <Button 
                     className="w-full rounded-full"
                     onClick={() => handleNavClick("/#collections")}
@@ -161,9 +197,9 @@ export const Navbar = () => {
                 </div>
               </div>
             </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>
+      </motion.header>
     </>
   );
 };
