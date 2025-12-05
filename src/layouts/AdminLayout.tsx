@@ -138,13 +138,20 @@ export const AdminLayout = ({ children, title }: AdminLayoutProps) => {
             transition={{ duration: 0.5 }}
             className="p-6 border-b border-primary-200/50 dark:border-primary-800/30 bg-gradient-to-br from-primary-50/50 via-transparent to-earth-50/50 dark:from-primary-900/20 dark:to-transparent"
           >
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-6">
               <motion.div
-                whileHover={{ scale: 1.05 }}
-                className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 dark:bg-primary-900/30 rounded-full border border-primary/20 dark:border-primary-800/50"
+                whileHover={{ scale: 1.05, y: -2 }}
+                className="inline-flex items-center gap-2.5 px-4 py-2.5 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 dark:from-primary-900/40 dark:via-primary-900/20 dark:to-primary-900/40 rounded-full border border-primary/30 dark:border-primary-800/50 shadow-lg backdrop-blur-sm"
               >
-                <Sparkles className="w-3.5 h-3.5 text-primary" />
-                <span className="text-xs font-semibold text-primary">Admin Portal</span>
+                <motion.div
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                >
+                  <Sparkles className="w-4 h-4 text-primary" />
+                </motion.div>
+                <span className="text-sm font-script text-gradient bg-clip-text text-transparent bg-gradient-to-r from-primary-700 via-primary-500 to-primary-700 dark:from-primary-300 dark:via-primary-400 dark:to-primary-300">
+                  Admin Portal
+                </span>
               </motion.div>
               <button
                 onClick={() => setIsSidebarOpen(false)}
@@ -156,8 +163,9 @@ export const AdminLayout = ({ children, title }: AdminLayoutProps) => {
             <motion.div
               whileHover={{ scale: 1.02 }}
               transition={{ type: "spring", stiffness: 300 }}
+              className="flex justify-center"
             >
-              <Logo size="xl" linkTo="/dashboard" className="mx-auto" />
+              <Logo size="2xl" linkTo="/dashboard" className="mx-auto" />
             </motion.div>
           </motion.div>
 
@@ -222,8 +230,31 @@ export const AdminLayout = ({ children, title }: AdminLayoutProps) => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="p-4 border-t border-primary-200/50 dark:border-primary-800/30 space-y-2 bg-gradient-to-t from-primary-50/30 via-transparent to-transparent dark:from-primary-900/10"
+            className="p-4 border-t border-primary-200/50 dark:border-primary-800/30 space-y-3 bg-gradient-to-t from-primary-50/30 via-transparent to-transparent dark:from-primary-900/10"
           >
+            {/* User Info */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.4 }}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 dark:from-primary-900/30 dark:via-primary-900/20 border border-primary/20 dark:border-primary-800/40 backdrop-blur-sm"
+            >
+              <motion.div
+                whileHover={{ scale: 1.1, rotate: 5 }}
+                className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary-700 dark:from-primary-600 dark:to-primary-800 flex items-center justify-center text-white text-sm font-semibold shadow-lg flex-shrink-0"
+              >
+                {user?.email?.charAt(0).toUpperCase() || "U"}
+              </motion.div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground truncate">
+                  {user?.email?.split("@")[0] || "User"}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {user?.email || "admin@brightbuttons.com"}
+                </p>
+              </div>
+            </motion.div>
+
             <Link to="/">
               <motion.div whileHover={{ x: 4 }} whileTap={{ scale: 0.98 }}>
                 <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground hover:text-primary transition-colors rounded-xl">
@@ -272,30 +303,12 @@ export const AdminLayout = ({ children, title }: AdminLayoutProps) => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.2 }}
-                className="text-xl font-script text-gradient"
+                className="text-3xl md:text-4xl lg:text-5xl font-script text-gradient"
               >
                 {pageTitle}
               </motion.h1>
             </div>
             
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-              className="flex items-center gap-3"
-            >
-              <div className="flex items-center gap-3 px-4 py-2 rounded-full bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 dark:from-primary-900/30 dark:via-primary-900/20 border border-primary/20 dark:border-primary-800/40 backdrop-blur-sm">
-                <motion.div
-                  whileHover={{ scale: 1.1, rotate: 5 }}
-                  className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary-700 dark:from-primary-600 dark:to-primary-800 flex items-center justify-center text-white text-sm font-semibold shadow-lg"
-                >
-                  {user?.email?.charAt(0).toUpperCase() || "U"}
-                </motion.div>
-                <span className="text-sm font-medium text-foreground hidden sm:block">
-                  {user?.email?.split("@")[0] || "User"}
-                </span>
-              </div>
-            </motion.div>
           </div>
         </motion.header>
 
