@@ -446,7 +446,19 @@ export const ConstructionPopup = () => {
                   transition={{ delay: 0.6 }}
                   className="flex items-center justify-center pt-2 border-t border-border/50"
                 >
-                  <span className="text-xs text-muted-foreground">Built with {'<3'} by <span className="font-semibold text-primary">Cuephoria Tech</span></span>
+                  <span className="text-xs text-muted-foreground">
+                    Built with{' '}
+                    <a
+                      href="https://tech.cuephoria.in"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block hover:scale-110 transition-transform"
+                      aria-label="Cuephoria Tech"
+                    >
+                      ❤️
+                    </a>
+                    {' '}by <span className="font-semibold text-primary">Cuephoria Tech</span>
+                  </span>
                 </motion.div>
               </div>
             </motion.div>
