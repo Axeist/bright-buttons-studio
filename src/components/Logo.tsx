@@ -4,7 +4,7 @@ import logoImage from "@/assets/logo.jpg";
 interface LogoProps {
   className?: string;
   linkTo?: string;
-  size?: "sm" | "md" | "lg" | "xl";
+  size?: "sm" | "md" | "lg" | "xl" | "2xl" | "3xl";
 }
 
 export const Logo = ({ className = "", linkTo = "/", size = "md" }: LogoProps) => {
@@ -12,7 +12,9 @@ export const Logo = ({ className = "", linkTo = "/", size = "md" }: LogoProps) =
     sm: "h-10",
     md: "h-16",
     lg: "h-20",
-    xl: "h-24"
+    xl: "h-24",
+    "2xl": "h-28",
+    "3xl": "h-32"
   };
 
   const content = (
