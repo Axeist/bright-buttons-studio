@@ -20,7 +20,7 @@ export const Logo = ({ className = "", linkTo = "/", size = "md" }: LogoProps) =
   const content = (
     <img 
       src={logoImage} 
-      alt="Bb's Bright Buttons" 
+      alt="Bright Buttons" 
       className={`${sizes[size]} w-auto object-contain dark:brightness-110 dark:contrast-110 ${className}`}
     />
   );

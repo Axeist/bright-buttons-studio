@@ -55,7 +55,7 @@ export const Footer = () => {
 
   return (
     <footer className="bg-earth-50 dark:bg-card border-t border-border">
-      <div className="container-custom py-12 md:py-16">
+      <div className="container-custom py-8 md:py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-12">
           {/* Brand Column */}
           <div className="space-y-4">
@@ -117,7 +117,7 @@ export const Footer = () => {
                   className="flex items-center gap-3 text-muted-foreground hover:text-[#E4405F] transition-colors"
                 >
                   <Instagram className="w-5 h-5" />
-                  <span>BB's Bright Buttons</span>
+                  <span>Bright Buttons</span>
                 </a>
               </li>
               <li>
@@ -134,9 +134,9 @@ export const Footer = () => {
         </div>
 
         {/* Bottom Strip */}
-        <div className="mt-12 pt-6 border-t border-border/50">
+        <div className="mt-8 pt-6 border-t border-border/50">
           <p className="text-center text-sm text-muted-foreground">
-            © 2025 Bb's Bright Buttons. Handcrafted with love 💚
+            © 2025 Bright Buttons. Handcrafted with love 💚
           </p>
         </div>
       </div>

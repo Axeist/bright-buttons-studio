@@ -109,7 +109,7 @@ export const ContactSection = () => {
                 </div>
                 <div>
                   <p className="font-medium text-foreground">Instagram</p>
-                  <p className="text-sm text-muted-foreground">BB's Bright Buttons</p>
+                  <p className="text-sm text-muted-foreground">Bright Buttons</p>
                 </div>
               </a>
 

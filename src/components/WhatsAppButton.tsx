@@ -31,7 +31,7 @@ export const WhatsAppButton = ({
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
         onClick={handleClick}
-        className={`fixed bottom-4 right-4 md:bottom-6 md:right-6 z-50 w-14 h-14 md:w-16 md:h-16 rounded-full bg-gradient-to-br from-[#25D366] to-[#20BD5A] text-white shadow-lg hover:shadow-2xl flex items-center justify-center group relative overflow-hidden ${className}`}
+        className={`fixed bottom-6 right-6 z-[100] w-14 h-14 md:w-16 md:h-16 rounded-full bg-gradient-to-br from-[#25D366] to-[#20BD5A] text-white shadow-lg hover:shadow-2xl flex items-center justify-center group relative overflow-hidden ${className}`}
         aria-label="Chat on WhatsApp"
       >
         {/* Animated background glow */}

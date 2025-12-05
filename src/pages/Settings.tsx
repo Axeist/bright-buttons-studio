@@ -36,7 +36,7 @@ const Settings = () => {
           <div className="grid gap-4">
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">Shop Name</label>
-              <Input defaultValue="Bb's Bright Buttons" className="rounded-xl" />
+              <Input defaultValue="Bright Buttons" className="rounded-xl" />
             </div>
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
