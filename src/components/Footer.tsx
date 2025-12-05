@@ -69,7 +69,7 @@ export const Footer = () => {
           {/* Quick Links */}
           <div>
             <h3 className="font-semibold text-foreground mb-4">Quick Links</h3>
-            <ul className="space-y-0.5">
+            <ul className="space-y-0">
               {quickLinks.map((link, index) => (
                 <motion.li
                   key={link.name}
@@ -82,7 +82,7 @@ export const Footer = () => {
                   <motion.a
                     href={link.href}
                     onClick={(e) => handleLinkClick(e, link.href)}
-                    className="text-muted-foreground hover:text-primary transition-colors inline-block relative group py-1 touch-target"
+                    className="text-muted-foreground hover:text-primary transition-colors inline-block relative group py-0.5 touch-target"
                     whileHover={{ x: 4 }}
                     whileTap={{ scale: 0.95 }}
                   >
@@ -99,13 +99,13 @@ export const Footer = () => {
           {/* Connect */}
           <div>
             <h3 className="font-semibold text-foreground mb-4">Connect With Us</h3>
-            <ul className="space-y-1">
+            <ul className="space-y-0">
               <li>
                 <a
                   href="https://wa.me/919952655555"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-3 text-muted-foreground hover:text-[#25D366] transition-colors py-1 touch-target"
+                  className="flex items-center gap-3 text-muted-foreground hover:text-[#25D366] transition-colors py-0.5 touch-target"
                 >
                   <MessageCircle className="w-5 h-5" />
                   <span>+91 99526 55555</span>
@@ -116,7 +116,7 @@ export const Footer = () => {
                   href="https://instagram.com/brightbuttons"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-3 text-muted-foreground hover:text-[#E4405F] transition-colors py-1 touch-target"
+                  className="flex items-center gap-3 text-muted-foreground hover:text-[#E4405F] transition-colors py-0.5 touch-target"
                 >
                   <Instagram className="w-5 h-5" />
                   <span>Bright Buttons</span>
@@ -125,7 +125,7 @@ export const Footer = () => {
               <li>
                 <a
                   href="mailto:hello@brightbuttons.com"
-                  className="flex items-center gap-3 text-muted-foreground hover:text-primary transition-colors py-1 touch-target"
+                  className="flex items-center gap-3 text-muted-foreground hover:text-primary transition-colors py-0.5 touch-target"
                 >
                   <Mail className="w-5 h-5" />
                   <span className="break-all">hello@brightbuttons.com</span>
