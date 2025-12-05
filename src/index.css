@@ -1,0 +1,222 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Primary - Eco Green */
+    --primary: 160 84% 39%;
+    --primary-foreground: 0 0% 100%;
+    --primary-50: 152 81% 96%;
+    --primary-100: 149 80% 90%;
+    --primary-300: 156 72% 67%;
+    --primary-500: 160 84% 39%;
+    --primary-700: 163 94% 24%;
+
+    /* Earth tones */
+    --earth-50: 48 100% 96%;
+    --earth-100: 48 96% 89%;
+    --earth-200: 27 96% 83%;
+    --earth-400: 38 92% 50%;
+    --earth-600: 32 95% 31%;
+    --earth-800: 28 73% 26%;
+
+    /* Blush */
+    --blush-50: 327 73% 97%;
+    --blush-100: 326 78% 95%;
+    --blush-200: 352 83% 91%;
+
+    /* Base colors */
+    --background: 48 100% 99%;
+    --foreground: 20 14% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 20 14% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 14% 15%;
+
+    --secondary: 48 100% 96%;
+    --secondary-foreground: 20 14% 15%;
+
+    --muted: 45 30% 94%;
+    --muted-foreground: 20 10% 45%;
+
+    --accent: 160 60% 95%;
+    --accent-foreground: 160 84% 25%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 45 20% 88%;
+    --input: 45 20% 88%;
+    --ring: 160 84% 39%;
+
+    --radius: 0.75rem;
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 20 14% 15%;
+    --sidebar-primary: 160 84% 39%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 160 60% 95%;
+    --sidebar-accent-foreground: 160 84% 25%;
+    --sidebar-border: 45 20% 90%;
+    --sidebar-ring: 160 84% 39%;
+  }
+
+  .dark {
+    --background: 20 14% 8%;
+    --foreground: 45 30% 94%;
+
+    --card: 20 14% 10%;
+    --card-foreground: 45 30% 94%;
+
+    --popover: 20 14% 10%;
+    --popover-foreground: 45 30% 94%;
+
+    --primary: 160 72% 47%;
+    --primary-foreground: 20 14% 8%;
+
+    --secondary: 20 14% 15%;
+    --secondary-foreground: 45 30% 94%;
+
+    --muted: 20 14% 18%;
+    --muted-foreground: 45 20% 60%;
+
+    --accent: 160 50% 15%;
+    --accent-foreground: 160 72% 67%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 20 14% 20%;
+    --input: 20 14% 20%;
+    --ring: 160 72% 47%;
+
+    --sidebar-background: 20 14% 8%;
+    --sidebar-foreground: 45 30% 94%;
+    --sidebar-primary: 160 72% 47%;
+    --sidebar-primary-foreground: 20 14% 8%;
+    --sidebar-accent: 160 50% 15%;
+    --sidebar-accent-foreground: 160 72% 67%;
+    --sidebar-border: 20 14% 20%;
+    --sidebar-ring: 160 72% 47%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-white/70 backdrop-blur-xl border border-white/20 shadow-lg;
+  }
+
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-xl border border-white/30 shadow-xl rounded-2xl;
+  }
+
+  .gradient-hero {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--earth-50)) 0%,
+      hsl(var(--blush-50)) 50%,
+      hsl(var(--primary-50)) 100%
+    );
+  }
+
+  .gradient-earth {
+    background: linear-gradient(
+      180deg,
+      hsl(var(--earth-50)) 0%,
+      hsl(var(--background)) 100%
+    );
+  }
+
+  .gradient-primary {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--primary-500)) 0%,
+      hsl(var(--primary-700)) 100%
+    );
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(
+      135deg,
+      hsl(var(--primary-700)) 0%,
+      hsl(var(--primary-500)) 50%,
+      hsl(var(--earth-600)) 100%
+    );
+  }
+
+  .section-padding {
+    @apply py-16 md:py-24 lg:py-32;
+  }
+
+  .container-custom {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+}
+
+@layer utilities {
+  .font-script {
+    font-family: 'Pacifico', cursive;
+  }
+
+  .font-body {
+    font-family: 'Inter', sans-serif;
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-float-delayed {
+    animation: float 6s ease-in-out infinite;
+    animation-delay: 2s;
+  }
+
+  .animate-pulse-soft {
+    animation: pulse-soft 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-20px);
+    }
+  }
+
+  @keyframes pulse-soft {
+    0%, 100% {
+      opacity: 0.6;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
+  .hover-lift {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  .hover-lift:hover {
+    @apply -translate-y-1 shadow-xl;
+  }
+}

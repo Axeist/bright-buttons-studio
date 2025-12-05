@@ -1,0 +1,162 @@
+import { Dialog, Transition } from "@headlessui/react";
+import { Fragment } from "react";
+import { X, Leaf, MessageCircle, Palette, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { type Product } from "@/data/products";
+import { getWhatsAppLink } from "@/components/WhatsAppButton";
+
+interface ProductQuickViewProps {
+  product: Product | null;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export const ProductQuickView = ({ product, isOpen, onClose }: ProductQuickViewProps) => {
+  if (!product) return null;
+
+  const handleWhatsAppEnquiry = () => {
+    window.open(getWhatsAppLink(product.name, product.category, product.fabric), "_blank");
+  };
+
+  const handleCustomRequest = () => {
+    window.open(
+      getWhatsAppLink() + encodeURIComponent(` I'd like to request a custom design similar to ${product.name}.`),
+      "_blank"
+    );
+  };
+
+  const features = [
+    "Handmade with care",
+    `Technique: ${product.technique}`,
+    `Fabric: ${product.fabric}`,
+    "Each piece is unique",
+  ];
+
+  return (
+    <Transition show={isOpen} as={Fragment}>
+      <Dialog onClose={onClose} className="relative z-50">
+        {/* Backdrop */}
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="fixed inset-0 bg-foreground/20 backdrop-blur-sm" />
+        </Transition.Child>
+
+        {/* Modal */}
+        <div className="fixed inset-0 overflow-y-auto">
+          <div className="flex min-h-full items-center justify-center p-4">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0 scale-95"
+              enterTo="opacity-100 scale-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100 scale-100"
+              leaveTo="opacity-0 scale-95"
+            >
+              <Dialog.Panel className="w-full max-w-3xl bg-card rounded-3xl shadow-2xl overflow-hidden">
+                <div className="grid md:grid-cols-2">
+                  {/* Image */}
+                  <div className="relative aspect-square md:aspect-auto bg-gradient-to-br from-primary-50 to-earth-50">
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="text-center p-8">
+                        <Leaf className="w-20 h-20 text-primary-400 mx-auto mb-4" />
+                        <p className="text-primary-600 font-medium">{product.technique}</p>
+                        <p className="text-muted-foreground text-sm mt-1">{product.fabric}</p>
+                      </div>
+                    </div>
+                    
+                    {/* Close button - mobile */}
+                    <button
+                      onClick={onClose}
+                      className="absolute top-4 right-4 md:hidden w-10 h-10 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center text-foreground"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-6 md:p-8 relative">
+                    {/* Close button - desktop */}
+                    <button
+                      onClick={onClose}
+                      className="hidden md:flex absolute top-4 right-4 w-10 h-10 rounded-full bg-secondary items-center justify-center text-foreground hover:bg-accent transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+
+                    <div className="space-y-4">
+                      <div>
+                        <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-medium rounded-full">
+                          {product.category}
+                        </span>
+                      </div>
+
+                      <Dialog.Title className="text-2xl font-semibold text-foreground">
+                        {product.name}
+                      </Dialog.Title>
+
+                      <p className="text-muted-foreground">
+                        {product.tagline}
+                      </p>
+
+                      {product.price && (
+                        <p className="text-2xl font-bold text-primary">{product.price}</p>
+                      )}
+
+                      {/* Features */}
+                      <div className="space-y-2 py-4 border-y border-border">
+                        {features.map((feature, index) => (
+                          <div key={index} className="flex items-center gap-2 text-sm text-foreground">
+                            <Check className="w-4 h-4 text-primary" />
+                            {feature}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Care Info */}
+                      <div className="bg-earth-50 rounded-xl p-4">
+                        <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
+                          <Palette className="w-4 h-4 text-earth-600" />
+                          Care Instructions
+                        </h4>
+                        <p className="text-xs text-muted-foreground">
+                          Hand wash or cold machine wash with mild detergent, air dry in shade, 
+                          and iron on reverse to preserve colors and prints.
+                        </p>
+                      </div>
+
+                      {/* CTAs */}
+                      <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                        <Button 
+                          className="flex-1 rounded-full bg-[#25D366] hover:bg-[#20BD5A] text-white"
+                          onClick={handleWhatsAppEnquiry}
+                        >
+                          <MessageCircle className="w-4 h-4 mr-2" />
+                          Enquire on WhatsApp
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          className="flex-1 rounded-full"
+                          onClick={handleCustomRequest}
+                        >
+                          Request Custom Design
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Dialog.Panel>
+            </Transition.Child>
+          </div>
+        </div>
+      </Dialog>
+    </Transition>
+  );
+};
