@@ -89,7 +89,7 @@ export const Hero = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-script text-gradient mb-2"
+              className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-script text-gradient mb-4"
             >
               <motion.span
                 initial={{ opacity: 0, x: -20 }}
@@ -97,7 +97,7 @@ export const Hero = () => {
                 transition={{ delay: 0.4 }}
                 className="block"
               >
-                Curator of
+                Nature's Artistry
               </motion.span>
               <motion.span
                 initial={{ opacity: 0, x: 20 }}
@@ -105,19 +105,26 @@ export const Hero = () => {
                 transition={{ delay: 0.5 }}
                 className="block bg-clip-text text-transparent bg-gradient-to-r from-primary-700 via-primary-500 to-earth-600 dark:from-primary-300 dark:via-primary-400 dark:to-earth-400"
               >
-                Comfort & Style
+                Woven into Fashion
               </motion.span>
             </motion.h1>
 
-            {/* Subheading */}
-            <motion.p
+            {/* Enhanced Subheading */}
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="text-lg md:text-xl text-muted-foreground max-w-lg"
+              transition={{ delay: 0.5 }}
+              className="space-y-3 max-w-lg"
             >
-              Unique, eco-printed clothing where no two pieces are ever the same.
-            </motion.p>
+              <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">
+                Where every leaf tells a story, and every garment carries nature's unique signature. 
+                Experience the magic of eco-printing, where real botanicals meet premium fabrics.
+              </p>
+              <p className="text-base md:text-lg text-muted-foreground/80 leading-relaxed">
+                Each piece is handcrafted using ancient techniques passed down through generations, 
+                creating wearable art that's as unique as you are.
+              </p>
+            </motion.div>
 
             {/* Technique Pills */}
             <motion.div
@@ -167,7 +174,7 @@ export const Hero = () => {
             </motion.div>
           </motion.div>
 
-          {/* Right - Hero Image */}
+          {/* Right - Enhanced Hero Card */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9, x: 30 }}
             animate={{ opacity: 1, scale: 1, x: 0 }}
@@ -175,50 +182,120 @@ export const Hero = () => {
             className="relative"
           >
             <div className="relative aspect-[3/4] max-w-md mx-auto lg:max-w-none">
-              {/* Main Image Card */}
-              <div className="absolute inset-0 bg-gradient-to-br from-primary-100 dark:from-primary-900/40 to-earth-100 dark:to-card rounded-3xl shadow-2xl overflow-hidden">
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center p-8">
-                    <Leaf className="w-16 h-16 text-primary-500 dark:text-primary-400 mx-auto mb-4" />
-                    <p className="text-primary-700 dark:text-primary-300 font-medium">Eco-Printed Fashion</p>
-                    <p className="text-muted-foreground text-sm mt-2">Each piece tells a unique story</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Floating Cards */}
+              {/* Main Enhanced Card */}
               <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.8 }}
-                className="absolute -left-4 top-1/4 glass-card p-3 shadow-lg"
+                whileHover={{ scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 200 }}
+                className="absolute inset-0 bg-gradient-to-br from-primary-50 via-primary-100/50 to-earth-50 dark:from-primary-900/30 dark:via-primary-800/20 dark:to-card rounded-3xl shadow-2xl overflow-hidden border border-primary-200/50 dark:border-primary-800/30"
               >
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center">
-                    <Leaf className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Technique</p>
-                    <p className="text-sm font-medium text-foreground">Eco Printing</p>
-                  </div>
+                {/* Animated Background Pattern */}
+                <div className="absolute inset-0 opacity-30">
+                  <motion.div
+                    animate={{
+                      x: [0, 100, 0],
+                      y: [0, 50, 0],
+                      rotate: [0, 5, 0]
+                    }}
+                    transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_30%,rgba(34,197,94,0.2),transparent_50%)]"
+                  />
+                  <motion.div
+                    animate={{
+                      x: [0, -80, 0],
+                      y: [0, -40, 0],
+                      rotate: [0, -5, 0]
+                    }}
+                    transition={{ duration: 15, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                    className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_70%_70%,rgba(251,146,60,0.15),transparent_50%)]"
+                  />
+                </div>
+
+                {/* Central Content */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-8 relative z-10">
+                  <motion.div
+                    animate={{
+                      scale: [1, 1.1, 1],
+                      rotate: [0, 5, -5, 0]
+                    }}
+                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                    className="mb-6"
+                  >
+                    <div className="relative">
+                      <Leaf className="w-20 h-20 text-primary-500 dark:text-primary-400 mx-auto" />
+                      <motion.div
+                        animate={{
+                          scale: [1, 1.2, 1],
+                          opacity: [0.3, 0.6, 0.3]
+                        }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                        className="absolute inset-0 bg-primary-400/30 dark:bg-primary-500/20 rounded-full blur-xl"
+                      />
+                    </div>
+                  </motion.div>
+                  
+                  <h3 className="text-2xl md:text-3xl font-script text-primary-700 dark:text-primary-300 mb-2">
+                    Eco-Printed Fashion
+                  </h3>
+                  <p className="text-muted-foreground text-sm md:text-base text-center max-w-xs leading-relaxed">
+                    Each piece tells a unique story, printed by nature's own hand
+                  </p>
+                  
+                  {/* Decorative Elements */}
+                  <div className="absolute top-4 left-4 w-2 h-2 bg-primary-400 dark:bg-primary-500 rounded-full animate-pulse" />
+                  <div className="absolute bottom-4 right-4 w-2 h-2 bg-earth-400 dark:bg-earth-500 rounded-full animate-pulse" style={{ animationDelay: '1s' }} />
                 </div>
               </motion.div>
 
+              {/* Enhanced Floating Technique Card */}
               <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 1 }}
-                className="absolute -right-4 bottom-1/4 glass-card p-3 shadow-lg"
+                initial={{ opacity: 0, x: -30, y: -10 }}
+                animate={{ opacity: 1, x: 0, y: 0 }}
+                transition={{ delay: 0.8, type: "spring", stiffness: 200 }}
+                whileHover={{ scale: 1.05, x: -5 }}
+                className="absolute -left-6 top-1/4 glass-card p-4 shadow-xl border border-primary-200/50 dark:border-primary-800/50"
               >
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-full bg-earth-100 dark:bg-earth-800/40 flex items-center justify-center">
-                    <Sparkles className="w-5 h-5 text-earth-600 dark:text-earth-400" />
-                  </div>
+                <div className="flex items-center gap-3">
+                  <motion.div
+                    animate={{ rotate: [0, 360] }}
+                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                    className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900/50 dark:to-primary-800/50 flex items-center justify-center shadow-md"
+                  >
+                    <Leaf className="w-6 h-6 text-primary-600 dark:text-primary-400" />
+                  </motion.div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Material</p>
-                    <p className="text-sm font-medium text-foreground">Pure Silk</p>
+                    <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Technique</p>
+                    <p className="text-base font-semibold text-foreground">Eco Printing</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Botanical magic</p>
                   </div>
                 </div>
+                {/* Decorative corner accent */}
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary/20 rounded-full blur-sm" />
+              </motion.div>
+
+              {/* Enhanced Floating Material Card */}
+              <motion.div
+                initial={{ opacity: 0, x: 30, y: 10 }}
+                animate={{ opacity: 1, x: 0, y: 0 }}
+                transition={{ delay: 1, type: "spring", stiffness: 200 }}
+                whileHover={{ scale: 1.05, x: 5 }}
+                className="absolute -right-6 bottom-1/4 glass-card p-4 shadow-xl border border-earth-200/50 dark:border-earth-800/50"
+              >
+                <div className="flex items-center gap-3">
+                  <motion.div
+                    animate={{ rotate: [0, -360] }}
+                    transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+                    className="w-12 h-12 rounded-full bg-gradient-to-br from-earth-100 to-earth-200 dark:from-earth-800/50 dark:to-earth-700/50 flex items-center justify-center shadow-md"
+                  >
+                    <Sparkles className="w-6 h-6 text-earth-600 dark:text-earth-400" />
+                  </motion.div>
+                  <div>
+                    <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Material</p>
+                    <p className="text-base font-semibold text-foreground">Pure Silk</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Luxury feel</p>
+                  </div>
+                </div>
+                {/* Decorative corner accent */}
+                <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-earth-400/20 rounded-full blur-sm" />
               </motion.div>
             </div>
           </motion.div>
