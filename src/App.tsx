@@ -12,6 +12,10 @@ import { ConstructionPopup } from "@/components/ConstructionPopup";
 // Public Pages - Lazy loaded for better performance
 const Index = lazy(() => import("./pages/Index"));
 const AboutFounder = lazy(() => import("./pages/AboutFounder"));
+const TermsConditions = lazy(() => import("./pages/TermsConditions"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const RefundPolicy = lazy(() => import("./pages/RefundPolicy"));
+const ShippingPolicy = lazy(() => import("./pages/ShippingPolicy"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Admin Pages - Lazy loaded
@@ -57,6 +61,10 @@ const App = () => (
                 {/* Public Routes */}
                 <Route path="/" element={<Index />} />
                 <Route path="/about-founder" element={<AboutFounder />} />
+                <Route path="/terms-conditions" element={<TermsConditions />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                <Route path="/refund-policy" element={<RefundPolicy />} />
+                <Route path="/shipping-policy" element={<ShippingPolicy />} />
                 
                 {/* Auth Routes */}
                 <Route path="/login" element={<Login />} />

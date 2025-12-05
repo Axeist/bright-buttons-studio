@@ -137,20 +137,54 @@ export const Footer = () => {
 
         {/* Bottom Strip */}
         <div className="mt-6 pt-4 border-t border-border/50">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-3">
-            <p className="text-center md:text-left text-sm text-muted-foreground">
-              © 2025 Bright Buttons. Handcrafted with love 💚
-            </p>
-            <div className="flex items-center gap-4 flex-wrap justify-center">
+          <div className="flex flex-col gap-4">
+            {/* Policy Links */}
+            <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
               <Link
-                to="/login"
-                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
-                title="Staff Login"
+                to="/terms-conditions"
+                className="hover:text-primary transition-colors"
               >
-                <LogIn className="w-3.5 h-3.5" />
-                <span>Staff Login</span>
+                Terms & Conditions
               </Link>
-              <CuephoriaBranding variant="footer" />
+              <span>•</span>
+              <Link
+                to="/privacy-policy"
+                className="hover:text-primary transition-colors"
+              >
+                Privacy Policy
+              </Link>
+              <span>•</span>
+              <Link
+                to="/refund-policy"
+                className="hover:text-primary transition-colors"
+              >
+                Refund Policy
+              </Link>
+              <span>•</span>
+              <Link
+                to="/shipping-policy"
+                className="hover:text-primary transition-colors"
+              >
+                Shipping Policy
+              </Link>
+            </div>
+            
+            {/* Copyright and Actions */}
+            <div className="flex flex-col md:flex-row items-center justify-between gap-3">
+              <p className="text-center md:text-left text-sm text-muted-foreground">
+                © 2025 Bright Buttons. Handcrafted with love 💚
+              </p>
+              <div className="flex items-center gap-4 flex-wrap justify-center">
+                <Link
+                  to="/login"
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
+                  title="Staff Login"
+                >
+                  <LogIn className="w-3.5 h-3.5" />
+                  <span>Staff Login</span>
+                </Link>
+                <CuephoriaBranding variant="footer" />
+              </div>
             </div>
           </div>
         </div>
