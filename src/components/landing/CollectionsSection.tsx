@@ -68,6 +68,7 @@ export const CollectionsSection = () => {
               initial={{ opacity: 0, y: 30 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.5, delay: 0.1 * (index % 6) }}
+              className="h-full"
             >
               <ProductCard
                 product={product}

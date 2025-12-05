@@ -14,7 +14,7 @@ export const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
   };
 
   return (
-    <div className="group bg-card rounded-2xl overflow-hidden shadow-soft hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+    <div className="group bg-card rounded-2xl overflow-hidden shadow-soft hover:shadow-xl transition-all duration-300 hover:-translate-y-1 h-full flex flex-col">
       {/* Image */}
       <div className="relative aspect-[4/5] overflow-hidden bg-gradient-to-br from-primary-50 dark:from-primary-900/20 to-earth-50 dark:to-card">
         {product.image && product.image !== "/placeholder.svg" ? (
@@ -59,7 +59,7 @@ export const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
       </div>
 
       {/* Content */}
-      <div className="p-5">
+      <div className="p-5 flex-1 flex flex-col">
         <h3 className="font-semibold text-foreground mb-1 line-clamp-1">
           {product.name}
         </h3>
@@ -84,11 +84,11 @@ export const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
         )}
 
         {/* Actions */}
-        <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-2">
+        <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-2 mt-auto">
           <Button 
             variant="outline" 
             size="sm" 
-            className="flex-1 rounded-full w-full sm:w-auto"
+            className="flex-1 rounded-full w-full sm:w-auto min-h-[44px]"
             onClick={onQuickView}
           >
             <Eye className="w-4 h-4 mr-1" />
@@ -96,7 +96,7 @@ export const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
           </Button>
           <Button 
             size="sm" 
-            className="flex-1 rounded-full bg-[#25D366] hover:bg-[#20BD5A] text-white w-full sm:w-auto"
+            className="flex-1 rounded-full bg-[#25D366] hover:bg-[#20BD5A] text-white w-full sm:w-auto min-h-[44px]"
             onClick={handleWhatsAppEnquiry}
           >
             <MessageCircle className="w-4 h-4 mr-1" />
