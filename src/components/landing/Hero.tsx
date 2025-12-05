@@ -22,8 +22,8 @@ export const Hero = memo(() => {
       {/* Background Image Overlay */}
       <div className="absolute inset-0 opacity-10 dark:opacity-5 z-0">
         <img 
-          src="https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=1920&h=1080&fit=crop&auto=format&q=80"
-          alt="Eco-printed fabric background"
+          src="https://source.unsplash.com/q1-dAZuhs7I/1920x1080"
+          alt="Green leaf macro photography background - eco printing theme"
           className="w-full h-full object-cover"
           loading="eager"
           onError={(e) => {
