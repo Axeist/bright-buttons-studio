@@ -229,7 +229,7 @@ const Login = () => {
                 transition={{ type: "spring", stiffness: 300 }}
                 className="flex justify-center"
               >
-                <Logo size="2xl" linkTo="/" className="mx-auto" />
+                <Logo size="3xl" linkTo="/" className="mx-auto !h-36 md:!h-40" />
               </motion.div>
             </div>
             <motion.h1
