@@ -78,6 +78,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      setup_initial_admin: { Args: { admin_email: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "staff"
