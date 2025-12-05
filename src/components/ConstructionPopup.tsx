@@ -201,33 +201,26 @@ export const ConstructionPopup = () => {
                   </motion.div>
 
                   <motion.h2
-                    initial={{ opacity: 0, y: -10, scale: 0.8 }}
+                    initial={{ opacity: 0, y: -10 }}
                     animate={{ 
                       opacity: 1, 
-                      y: 0, 
-                      scale: 1,
-                      rotate: [0, -2, 2, -1, 1, 0]
+                      y: 0
                     }}
                     transition={{ 
                       delay: 0.2,
-                      rotate: {
-                        duration: 3,
-                        repeat: Infinity,
-                        repeatType: "reverse",
-                        ease: "easeInOut"
-                      }
+                      duration: 0.5
                     }}
                     className="text-xl sm:text-2xl md:text-3xl font-script text-primary mb-2"
                   >
                     <motion.span
                       animate={{ 
-                        rotate: [0, 10, -10, 0],
-                        scale: [1, 1.1, 1]
+                        rotate: [0, 5, -5, 0]
                       }}
                       transition={{
-                        duration: 2,
+                        duration: 3,
                         repeat: Infinity,
-                        repeatDelay: 0.5
+                        repeatDelay: 2,
+                        ease: "easeInOut"
                       }}
                       className="inline-block"
                     >
@@ -236,13 +229,13 @@ export const ConstructionPopup = () => {
                     {" "}Under Construction!{" "}
                     <motion.span
                       animate={{ 
-                        rotate: [0, -10, 10, 0],
-                        scale: [1, 1.1, 1]
+                        rotate: [0, -5, 5, 0]
                       }}
                       transition={{
-                        duration: 2,
+                        duration: 3,
                         repeat: Infinity,
-                        repeatDelay: 0.7
+                        repeatDelay: 2.5,
+                        ease: "easeInOut"
                       }}
                       className="inline-block"
                     >
@@ -251,20 +244,13 @@ export const ConstructionPopup = () => {
                   </motion.h2>
                   
                   <motion.p
-                    initial={{ opacity: 0, scale: 0.9 }}
+                    initial={{ opacity: 0 }}
                     animate={{ 
-                      opacity: 1, 
-                      scale: 1,
-                      y: [0, -3, 0]
+                      opacity: 1
                     }}
                     transition={{ 
                       delay: 0.3,
-                      y: {
-                        duration: 2,
-                        repeat: Infinity,
-                        repeatType: "reverse",
-                        ease: "easeInOut"
-                      }
+                      duration: 0.5
                     }}
                     className="text-xs sm:text-sm text-muted-foreground"
                   >
@@ -274,48 +260,39 @@ export const ConstructionPopup = () => {
 
                 {/* Funny Message */}
                 <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ 
                     opacity: 1, 
-                    y: 0, 
-                    scale: 1,
-                    rotate: [0, 0.5, -0.5, 0]
+                    y: 0
                   }}
                   transition={{ 
                     delay: 0.4,
-                    rotate: {
-                      duration: 4,
-                      repeat: Infinity,
-                      repeatType: "reverse",
-                      ease: "easeInOut"
-                    }
+                    duration: 0.5
                   }}
                   className="bg-white/80 dark:bg-background/80 backdrop-blur-sm rounded-2xl p-4 mb-4 border border-primary/20 relative overflow-hidden"
                 >
-                  {/* Animated background pattern */}
+                  {/* Subtle animated background pattern */}
                   <motion.div
                     animate={{
                       x: ["-100%", "100%"],
                     }}
                     transition={{
-                      duration: 10,
+                      duration: 15,
                       repeat: Infinity,
                       ease: "linear"
                     }}
-                    className="absolute inset-0 opacity-5 bg-gradient-to-r from-transparent via-primary to-transparent"
+                    className="absolute inset-0 opacity-3 bg-gradient-to-r from-transparent via-primary to-transparent"
                   />
                   
                   <div className="flex items-start gap-3 relative z-10">
                     <motion.div
                       animate={{
-                        rotate: [0, 15, -15, 10, -10, 0],
-                        scale: [1, 1.2, 1, 1.1, 1],
-                        y: [0, -5, 0]
+                        rotate: [0, 5, -5, 0]
                       }}
                       transition={{
-                        duration: 2,
+                        duration: 4,
                         repeat: Infinity,
-                        repeatDelay: 1,
+                        repeatDelay: 2,
                         ease: "easeInOut"
                       }}
                       className="text-3xl flex-shrink-0"
@@ -323,88 +300,16 @@ export const ConstructionPopup = () => {
                       👷‍♀️
                     </motion.div>
                     <div className="flex-1">
-                      <motion.p 
-                        className="text-xs sm:text-sm text-foreground leading-relaxed mb-2"
-                        animate={{
-                          x: [0, 2, -2, 0]
-                        }}
-                        transition={{
-                          duration: 3,
-                          repeat: Infinity,
-                          repeatType: "reverse",
-                          ease: "easeInOut"
-                        }}
-                      >
-                        <motion.span 
-                          className="font-semibold text-primary inline-block"
-                          animate={{
-                            scale: [1, 1.1, 1],
-                            rotate: [0, -5, 5, 0]
-                          }}
-                          transition={{
-                            duration: 1.5,
-                            repeat: Infinity,
-                            ease: "easeInOut"
-                          }}
-                        >
-                          Oops!
-                        </motion.span>{" "}
+                      <p className="text-xs sm:text-sm text-foreground leading-relaxed mb-2">
+                        <span className="font-semibold text-primary">Oops!</span>{" "}
                         Our website is still being polished by the amazing team at{" "}
-                        <motion.span 
-                          className="font-semibold text-primary inline-block"
-                          animate={{
-                            scale: [1, 1.05, 1]
-                          }}
-                          transition={{
-                            duration: 2,
-                            repeat: Infinity,
-                            ease: "easeInOut"
-                          }}
-                        >
-                          Cuephoria Tech
-                        </motion.span>!{" "}
-                        <motion.span
-                          animate={{
-                            rotate: [0, 360],
-                            scale: [1, 1.2, 1]
-                          }}
-                          transition={{
-                            duration: 2,
-                            repeat: Infinity,
-                            ease: "easeInOut"
-                          }}
-                          className="inline-block"
-                        >
-                          🎨
-                        </motion.span>
-                      </motion.p>
-                      <motion.p 
-                        className="text-[10px] sm:text-xs text-muted-foreground"
-                        animate={{
-                          opacity: [0.7, 1, 0.7]
-                        }}
-                        transition={{
-                          duration: 2,
-                          repeat: Infinity,
-                          ease: "easeInOut"
-                        }}
-                      >
+                        <span className="font-semibold text-primary">Cuephoria Tech</span>!{" "}
+                        <span className="inline-block">🎨</span>
+                      </p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">
                         Some features might be a bit wonky, but we're working hard to make everything perfect!{" "}
-                        <motion.span
-                          animate={{
-                            rotate: [0, 20, -20, 0],
-                            scale: [1, 1.3, 1]
-                          }}
-                          transition={{
-                            duration: 1.5,
-                            repeat: Infinity,
-                            ease: "easeInOut"
-                          }}
-                          className="inline-block"
-                        >
-                          💪
-                        </motion.span>
-                      </motion.p>
+                        <span className="inline-block">💪</span>
+                      </p>
                     </div>
                   </div>
                 </motion.div>
@@ -434,41 +339,28 @@ export const ConstructionPopup = () => {
                   <div className="flex items-center justify-center gap-3 mb-3">
                     <motion.div
                       animate={{
-                        rotate: [0, 15, -15, 0],
-                        y: [0, -5, 0],
-                        scale: [1, 1.2, 1]
+                        rotate: [0, 5, -5, 0]
                       }}
                       transition={{
-                        duration: 2,
+                        duration: 4,
                         repeat: Infinity,
+                        repeatDelay: 2,
                         ease: "easeInOut"
                       }}
                     >
                       <Rocket className="w-5 h-5 text-primary" />
                     </motion.div>
-                    <motion.span 
-                      className="text-sm font-semibold text-foreground"
-                      animate={{
-                        scale: [1, 1.05, 1]
-                      }}
-                      transition={{
-                        duration: 2.5,
-                        repeat: Infinity,
-                        ease: "easeInOut"
-                      }}
-                    >
+                    <span className="text-sm font-semibold text-foreground">
                       Grand Opening Date
-                    </motion.span>
+                    </span>
                     <motion.div
                       animate={{
-                        rotate: [0, -15, 15, 0],
-                        y: [0, -5, 0],
-                        scale: [1, 1.2, 1]
+                        rotate: [0, -5, 5, 0]
                       }}
                       transition={{
-                        duration: 2,
+                        duration: 4,
                         repeat: Infinity,
-                        delay: 0.5,
+                        repeatDelay: 2.5,
                         ease: "easeInOut"
                       }}
                     >
@@ -478,55 +370,21 @@ export const ConstructionPopup = () => {
                   <div className="text-center mb-3">
                     <motion.div
                       key={timeRemaining}
-                      initial={{ scale: 1.3, opacity: 0, y: 20 }}
+                      initial={{ opacity: 0, y: 10 }}
                       animate={{ 
-                        scale: 1, 
                         opacity: 1, 
-                        y: 0,
-                        rotate: [0, -1, 1, -0.5, 0.5, 0]
+                        y: 0
                       }}
                       transition={{
-                        rotate: {
-                          duration: 3,
-                          repeat: Infinity,
-                          repeatType: "reverse",
-                          ease: "easeInOut"
-                        }
+                        duration: 0.5
                       }}
                       className="text-lg sm:text-2xl font-bold text-primary mb-1"
                     >
-                      {timeRemaining.split(' ').map((word, i) => (
-                        <motion.span
-                          key={i}
-                          animate={{
-                            y: [0, -3, 0],
-                            scale: [1, 1.05, 1]
-                          }}
-                          transition={{
-                            duration: 2,
-                            repeat: Infinity,
-                            delay: i * 0.2,
-                            ease: "easeInOut"
-                          }}
-                          className="inline-block mx-0.5"
-                        >
-                          {word}
-                        </motion.span>
-                      ))}
+                      {timeRemaining}
                     </motion.div>
-                    <motion.p 
-                      className="text-[10px] sm:text-xs text-muted-foreground"
-                      animate={{
-                        opacity: [0.6, 1, 0.6]
-                      }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        ease: "easeInOut"
-                      }}
-                    >
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">
                       Until Jan 10th, 2026
-                    </motion.p>
+                    </p>
                   </div>
                   
                   {/* Fancy Progress Loader */}
