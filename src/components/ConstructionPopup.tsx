@@ -28,10 +28,10 @@ export const ConstructionPopup = () => {
       setCurrentDate(now.toLocaleDateString('en-US', options));
     };
 
-    // Calculate time remaining until Jan 10th
+    // Calculate time remaining until Jan 10th, 2026
     const calculateTimeRemaining = () => {
       const now = new Date();
-      const deadline = new Date("2025-01-10T23:59:59");
+      const deadline = new Date("2026-01-10T23:59:59");
       const diff = deadline.getTime() - now.getTime();
 
       // Calculate progress percentage (assuming we started from a certain date)
@@ -262,7 +262,7 @@ export const ConstructionPopup = () => {
                     >
                       {timeRemaining}
                     </motion.div>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground">Until Jan 10th, 2025</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">Until Jan 10th, 2026</p>
                   </div>
                   
                   {/* Fancy Progress Loader */}
