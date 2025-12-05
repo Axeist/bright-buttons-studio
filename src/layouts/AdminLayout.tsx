@@ -42,7 +42,7 @@ export const AdminLayout = ({ children, title }: AdminLayoutProps) => {
   const [isDesktop, setIsDesktop] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, signOut, isAdmin } = useAuth();
+  const { user, signOut, isAdmin, role } = useAuth();
 
   // Check if desktop on mount and resize
   useEffect(() => {
@@ -138,21 +138,7 @@ export const AdminLayout = ({ children, title }: AdminLayoutProps) => {
             transition={{ duration: 0.5 }}
             className="p-6 border-b border-primary-200/50 dark:border-primary-800/30 bg-gradient-to-br from-primary-50/50 via-transparent to-earth-50/50 dark:from-primary-900/20 dark:to-transparent"
           >
-            <div className="flex items-center justify-between mb-6">
-              <motion.div
-                whileHover={{ scale: 1.05, y: -2 }}
-                className="inline-flex items-center gap-2.5 px-4 py-2.5 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 dark:from-primary-900/40 dark:via-primary-900/20 dark:to-primary-900/40 rounded-full border border-primary/30 dark:border-primary-800/50 shadow-lg backdrop-blur-sm"
-              >
-                <motion.div
-                  animate={{ rotate: [0, 10, -10, 0] }}
-                  transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-                >
-                  <Sparkles className="w-4 h-4 text-primary" />
-                </motion.div>
-                <span className="text-sm font-script text-gradient bg-clip-text text-transparent bg-gradient-to-r from-primary-700 via-primary-500 to-primary-700 dark:from-primary-300 dark:via-primary-400 dark:to-primary-300">
-                  Admin Portal
-                </span>
-              </motion.div>
+            <div className="flex items-center justify-between mb-4">
               <button
                 onClick={() => setIsSidebarOpen(false)}
                 className="lg:hidden p-2 text-foreground hover:text-primary transition-colors rounded-lg hover:bg-accent"
@@ -163,10 +149,26 @@ export const AdminLayout = ({ children, title }: AdminLayoutProps) => {
             <motion.div
               whileHover={{ scale: 1.02 }}
               transition={{ type: "spring", stiffness: 300 }}
-              className="flex justify-center"
+              className="flex justify-center mb-4"
             >
               <Logo size="2xl" linkTo="/dashboard" className="mx-auto" />
             </motion.div>
+            <div className="flex justify-center">
+              <motion.div
+                whileHover={{ scale: 1.05, y: -2 }}
+                className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 dark:from-primary-900/40 dark:via-primary-900/20 dark:to-primary-900/40 rounded-full border border-primary/30 dark:border-primary-800/50 shadow-md backdrop-blur-sm"
+              >
+                <motion.div
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-primary" />
+                </motion.div>
+                <span className="text-xs font-script text-gradient bg-clip-text text-transparent bg-gradient-to-r from-primary-700 via-primary-500 to-primary-700 dark:from-primary-300 dark:via-primary-400 dark:to-primary-300">
+                  Management Portal
+                </span>
+              </motion.div>
+            </div>
           </motion.div>
 
           {/* Navigation */}
@@ -249,9 +251,16 @@ export const AdminLayout = ({ children, title }: AdminLayoutProps) => {
                 <p className="text-sm font-semibold text-foreground truncate">
                   {user?.email?.split("@")[0] || "User"}
                 </p>
-                <p className="text-xs text-muted-foreground truncate">
+                <p className="text-xs text-muted-foreground truncate mb-1">
                   {user?.email || "admin@brightbuttons.com"}
                 </p>
+                <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
+                  isAdmin 
+                    ? "bg-primary/20 text-primary border border-primary/30" 
+                    : "bg-earth-100 dark:bg-earth-900/40 text-earth-700 dark:text-earth-400 border border-earth-300 dark:border-earth-700"
+                }`}>
+                  {isAdmin ? "Admin" : (role || "Staff")}
+                </span>
               </div>
             </motion.div>
 
@@ -303,7 +312,7 @@ export const AdminLayout = ({ children, title }: AdminLayoutProps) => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.2 }}
-                className="text-3xl md:text-4xl lg:text-5xl font-script text-gradient"
+                className="text-2xl md:text-3xl font-script text-gradient"
               >
                 {pageTitle}
               </motion.h1>
