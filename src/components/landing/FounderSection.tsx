@@ -46,15 +46,51 @@ export const FounderSection = () => {
   };
 
   return (
-    <section id="founder" className="section-padding relative overflow-hidden">
+    <section id="founder" className="section-padding relative overflow-hidden bg-gradient-to-b from-background via-primary-50/30 to-background dark:from-background dark:via-primary-900/10 dark:to-background">
       {/* Background Gradient */}
-      <div className="absolute inset-0 gradient-hero opacity-50" />
+      <div className="absolute inset-0 gradient-hero opacity-40 dark:opacity-20" />
       
       {/* Decorative Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 right-20 w-96 h-96 bg-primary-300/20 dark:bg-primary-700/20 rounded-full blur-3xl animate-float" />
-        <div className="absolute bottom-20 left-20 w-80 h-80 bg-blush-200/30 dark:bg-blush-800/20 rounded-full blur-3xl animate-float-delayed" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-earth-200/20 dark:bg-earth-800/20 rounded-full blur-2xl animate-pulse-soft" />
+        <motion.div
+          animate={{
+            x: [0, 30, 0],
+            y: [0, -20, 0],
+            scale: [1, 1.1, 1]
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          className="absolute top-20 right-20 w-96 h-96 bg-primary-300/30 dark:bg-primary-700/20 rounded-full blur-3xl"
+        />
+        <motion.div
+          animate={{
+            x: [0, -25, 0],
+            y: [0, 25, 0],
+            scale: [1, 1.15, 1]
+          }}
+          transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 1
+          }}
+          className="absolute bottom-20 left-20 w-80 h-80 bg-blush-200/40 dark:bg-blush-800/20 rounded-full blur-3xl"
+        />
+        <motion.div
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.3, 0.5, 0.3]
+          }}
+          transition={{
+            duration: 6,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-earth-200/30 dark:bg-earth-800/20 rounded-full blur-2xl"
+        />
       </div>
 
       <div className="container-custom relative z-10">
@@ -71,9 +107,23 @@ export const FounderSection = () => {
             transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
             className="inline-block mb-6"
           >
-            <span className="px-4 py-2 bg-primary/10 dark:bg-primary-900/30 text-primary dark:text-primary-300 rounded-full text-sm font-medium">
+            <motion.span 
+              className="px-5 py-2.5 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 dark:from-primary-900/40 dark:via-primary-900/20 dark:to-primary-900/40 text-primary dark:text-primary-300 rounded-full text-sm font-semibold border border-primary/30 dark:border-primary-800/50 shadow-md backdrop-blur-sm"
+              animate={{
+                boxShadow: [
+                  "0 4px 15px -3px rgba(16, 185, 129, 0.2)",
+                  "0 6px 20px -3px rgba(16, 185, 129, 0.3)",
+                  "0 4px 15px -3px rgba(16, 185, 129, 0.2)",
+                ]
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+            >
               The Creative Force
-            </span>
+            </motion.span>
           </motion.div>
           <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-script text-gradient mb-4 sm:mb-6">
             Meet Subhiksha
@@ -98,7 +148,7 @@ export const FounderSection = () => {
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={isBioInView ? { scale: 1, opacity: 1 } : {}}
                 transition={{ delay: 0.2, type: "spring", stiffness: 100 }}
-                className="aspect-square rounded-full bg-gradient-to-br from-primary-200 via-earth-200 to-blush-200 dark:from-primary-900/50 dark:via-earth-900/50 dark:to-blush-900/50 p-6 shadow-2xl relative overflow-hidden"
+                className="aspect-square rounded-full bg-gradient-to-br from-primary-200 via-earth-200 to-blush-200 dark:from-primary-900/50 dark:via-earth-900/50 dark:to-blush-900/50 p-4 sm:p-6 shadow-2xl relative overflow-hidden mb-16 sm:mb-20"
               >
                 {/* Animated Background Pattern */}
                 <div className="absolute inset-0 opacity-20">
@@ -106,18 +156,20 @@ export const FounderSection = () => {
                   <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_70%_70%,rgba(251,146,60,0.3),transparent_50%)]" />
                 </div>
 
-                <div className="w-full h-full rounded-full bg-gradient-to-br from-primary-50 via-earth-50 to-blush-50 dark:from-card dark:via-card dark:to-card flex items-center justify-center border-4 border-white dark:border-border relative z-10 overflow-hidden">
+                <div className="w-full h-full rounded-full bg-gradient-to-br from-primary-50 via-earth-50 to-blush-50 dark:from-card dark:via-card dark:to-card flex items-center justify-center border-4 border-white dark:border-border relative z-10 overflow-hidden shadow-inner">
                   <img 
                     src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=500&h=500&fit=crop&auto=format&q=80"
                     alt="Subhiksha Subramanian - Founder of Bright Buttons"
-                    className="w-full h-full object-cover rounded-full"
+                    className="w-full h-full object-cover rounded-full scale-105"
                     loading="lazy"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.style.display = 'none';
                     }}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary-200/20 via-transparent to-earth-200/20 rounded-full" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary-200/30 via-transparent to-earth-200/30 rounded-full" />
+                  {/* Shine effect */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/20 to-transparent rounded-full" />
                 </div>
 
                 {/* Floating Decorative Elements */}
@@ -160,15 +212,15 @@ export const FounderSection = () => {
                 className="absolute inset-2 rounded-full border border-dotted border-earth-300 dark:border-earth-700/50 opacity-30"
               />
               
-              {/* Badge */}
+              {/* Badge - Better positioned */}
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={isBioInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.5, delay: 0.5 }}
-                className="absolute -bottom-6 left-1/2 -translate-x-1/2 px-6 py-3 bg-gradient-to-r from-primary to-primary-700 dark:from-primary-600 dark:to-primary-800 text-primary-foreground rounded-full text-sm font-semibold shadow-xl flex items-center gap-2"
+                initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                animate={isBioInView ? { opacity: 1, scale: 1, y: 0 } : {}}
+                transition={{ duration: 0.5, delay: 0.5, type: "spring", stiffness: 200 }}
+                className="absolute bottom-4 left-1/2 -translate-x-1/2 px-5 py-2.5 bg-gradient-to-r from-primary via-primary-600 to-primary-700 dark:from-primary-600 dark:via-primary-700 dark:to-primary-800 text-white rounded-full text-xs sm:text-sm font-semibold shadow-2xl flex items-center gap-2 z-20 border-2 border-white/20 backdrop-blur-sm"
               >
-                <Sparkles className="w-4 h-4" />
-                <span>Founder & Creative Director</span>
+                <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="whitespace-nowrap">Founder & Creative Director</span>
               </motion.div>
             </div>
           </motion.div>
@@ -181,10 +233,18 @@ export const FounderSection = () => {
             className="space-y-6"
           >
             <div>
-              <h3 className="text-2xl sm:text-3xl md:text-4xl font-script text-gradient mb-3 sm:mb-4">
+              <motion.h3 
+                className="text-2xl sm:text-3xl md:text-4xl font-script text-gradient mb-3 sm:mb-4"
+                animate={isBioInView ? {} : {}}
+              >
                 Subhiksha Subramanian
-              </h3>
-              <div className="h-1 w-24 bg-gradient-to-r from-primary to-transparent rounded-full mb-6" />
+              </motion.h3>
+              <motion.div 
+                className="h-1.5 w-32 bg-gradient-to-r from-primary via-primary-500 to-transparent rounded-full mb-6"
+                initial={{ width: 0 }}
+                animate={isBioInView ? { width: 128 } : {}}
+                transition={{ duration: 0.8, delay: 0.4 }}
+              />
             </div>
 
             <div className="space-y-4 text-muted-foreground leading-relaxed">
@@ -203,20 +263,56 @@ export const FounderSection = () => {
 
             {/* Quote Card */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={isBioInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className="glass-card p-6 md:p-8 mt-8 relative overflow-hidden"
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={isBioInView ? { opacity: 1, y: 0, scale: 1 } : {}}
+              transition={{ duration: 0.6, delay: 0.4, type: "spring" }}
+              className="glass-card p-6 md:p-8 mt-8 relative overflow-hidden border-2 border-primary/20 dark:border-primary/30 shadow-xl"
             >
-              <div className="absolute top-0 left-0 w-20 h-20 bg-primary/10 dark:bg-primary-900/20 rounded-full blur-2xl" />
+              {/* Animated background gradient */}
+              <motion.div 
+                className="absolute inset-0 bg-gradient-to-br from-primary-50/50 via-transparent to-earth-50/50 dark:from-primary-900/20 dark:to-earth-900/20"
+                animate={{
+                  opacity: [0.5, 0.8, 0.5],
+                }}
+                transition={{
+                  duration: 4,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+              />
+              <div className="absolute top-0 left-0 w-32 h-32 bg-primary/10 dark:bg-primary-900/20 rounded-full blur-3xl" />
+              <div className="absolute bottom-0 right-0 w-24 h-24 bg-earth-200/20 dark:bg-earth-800/20 rounded-full blur-2xl" />
               <div className="relative z-10">
-                <Quote className="w-8 h-8 text-primary mb-4 opacity-50" />
-                <blockquote className="text-foreground italic text-lg mb-4 leading-relaxed">
+                <motion.div
+                  animate={{
+                    rotate: [0, 5, -5, 0],
+                    scale: [1, 1.05, 1]
+                  }}
+                  transition={{
+                    duration: 3,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                >
+                  <Quote className="w-10 h-10 text-primary mb-4 opacity-60" />
+                </motion.div>
+                <blockquote className="text-foreground italic text-base sm:text-lg mb-4 leading-relaxed font-medium">
                   "I believe every garment should carry a piece of nature's magic and the warmth of human hands. At Bright Buttons, we don't just make clothes—we create wearable art that makes you feel special and look beautiful, naturally."
                 </blockquote>
-                <div className="flex items-center gap-2">
-                  <Heart className="w-4 h-4 text-primary fill-primary" />
-                  <p className="text-primary font-script text-lg">— Subhiksha Subramanian</p>
+                <div className="flex items-center gap-2 pt-2 border-t border-primary/20">
+                  <motion.div
+                    animate={{
+                      scale: [1, 1.2, 1]
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                  >
+                    <Heart className="w-4 h-4 text-primary fill-primary" />
+                  </motion.div>
+                  <p className="text-primary font-script text-base sm:text-lg">— Subhiksha Subramanian</p>
                 </div>
               </div>
             </motion.div>
@@ -226,25 +322,35 @@ export const FounderSection = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={isBioInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.6, delay: 0.6 }}
-              className="flex flex-wrap gap-4 pt-4"
+              className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 pt-6"
             >
-              <Button 
-                onClick={handleInstagram} 
-                variant="outline" 
-                className="rounded-full border-2 hover:scale-105 transition-transform"
-                size="lg"
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                <Instagram className="w-4 h-4 mr-2" />
-                Follow Her Journey
-              </Button>
-              <Button 
-                onClick={handleWhatsApp} 
-                className="rounded-full bg-[#25D366] hover:bg-[#20BD5A] text-white hover:scale-105 transition-transform"
-                size="lg"
+                <Button 
+                  onClick={handleInstagram} 
+                  variant="outline" 
+                  className="w-full sm:w-auto rounded-full border-2 hover:border-primary/50 transition-all shadow-md hover:shadow-lg min-h-[48px]"
+                  size="lg"
+                >
+                  <Instagram className="w-4 h-4 mr-2" />
+                  Follow Her Journey
+                </Button>
+              </motion.div>
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                <MessageCircle className="w-4 h-4 mr-2" />
-                Say Hello on WhatsApp
-              </Button>
+                <Button 
+                  onClick={handleWhatsApp} 
+                  className="w-full sm:w-auto rounded-full bg-[#25D366] hover:bg-[#20BD5A] text-white transition-all shadow-lg hover:shadow-xl min-h-[48px]"
+                  size="lg"
+                >
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  Say Hello on WhatsApp
+                </Button>
+              </motion.div>
             </motion.div>
           </motion.div>
         </div>
