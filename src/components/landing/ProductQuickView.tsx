@@ -63,11 +63,11 @@ export const ProductQuickView = ({ product, isOpen, onClose }: ProductQuickViewP
               <Dialog.Panel className="w-full max-w-3xl bg-card rounded-3xl shadow-2xl overflow-hidden">
                 <div className="grid md:grid-cols-2">
                   {/* Image */}
-                  <div className="relative aspect-square md:aspect-auto bg-gradient-to-br from-primary-50 to-earth-50">
+                  <div className="relative aspect-square md:aspect-auto bg-gradient-to-br from-primary-50 dark:from-primary-900/20 to-earth-50 dark:to-card">
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="text-center p-8">
-                        <Leaf className="w-20 h-20 text-primary-400 mx-auto mb-4" />
-                        <p className="text-primary-600 font-medium">{product.technique}</p>
+                        <Leaf className="w-20 h-20 text-primary-400 dark:text-primary-500 mx-auto mb-4" />
+                        <p className="text-primary-600 dark:text-primary-400 font-medium">{product.technique}</p>
                         <p className="text-muted-foreground text-sm mt-1">{product.fabric}</p>
                       </div>
                     </div>
@@ -121,9 +121,9 @@ export const ProductQuickView = ({ product, isOpen, onClose }: ProductQuickViewP
                       </div>
 
                       {/* Care Info */}
-                      <div className="bg-earth-50 rounded-xl p-4">
+                      <div className="bg-earth-50 dark:bg-earth-900/30 rounded-xl p-4">
                         <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
-                          <Palette className="w-4 h-4 text-earth-600" />
+                          <Palette className="w-4 h-4 text-earth-600 dark:text-earth-400" />
                           Care Instructions
                         </h4>
                         <p className="text-xs text-muted-foreground">

@@ -14,7 +14,7 @@ const quickLinks = [
 
 export const Footer = () => {
   return (
-    <footer className="bg-earth-50 border-t border-border">
+    <footer className="bg-earth-50 dark:bg-card border-t border-border">
       <div className="container-custom py-12 md:py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-12">
           {/* Brand Column */}

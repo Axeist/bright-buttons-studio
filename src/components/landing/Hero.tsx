@@ -39,7 +39,7 @@ export const Hero = () => {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.2 }}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-100 rounded-full text-sm text-primary-700 font-medium"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-100 dark:bg-primary-900/30 rounded-full text-sm text-primary-700 dark:text-primary-300 font-medium"
             >
               <Leaf className="w-4 h-4" />
               Eco-Printed · Handmade · One-of-a-Kind
@@ -107,11 +107,11 @@ export const Hero = () => {
           >
             <div className="relative aspect-[3/4] max-w-md mx-auto lg:max-w-none">
               {/* Main Image Card */}
-              <div className="absolute inset-0 bg-gradient-to-br from-primary-100 to-earth-100 rounded-3xl shadow-2xl overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary-100 dark:from-primary-900/40 to-earth-100 dark:to-card rounded-3xl shadow-2xl overflow-hidden">
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center p-8">
-                    <Leaf className="w-16 h-16 text-primary-500 mx-auto mb-4" />
-                    <p className="text-primary-700 font-medium">Eco-Printed Fashion</p>
+                    <Leaf className="w-16 h-16 text-primary-500 dark:text-primary-400 mx-auto mb-4" />
+                    <p className="text-primary-700 dark:text-primary-300 font-medium">Eco-Printed Fashion</p>
                     <p className="text-muted-foreground text-sm mt-2">Each piece tells a unique story</p>
                   </div>
                 </div>
@@ -125,12 +125,12 @@ export const Hero = () => {
                 className="absolute -left-4 top-1/4 glass-card p-3 shadow-lg"
               >
                 <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
-                    <Leaf className="w-5 h-5 text-primary-600" />
+                  <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center">
+                    <Leaf className="w-5 h-5 text-primary-600 dark:text-primary-400" />
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Technique</p>
-                    <p className="text-sm font-medium">Eco Printing</p>
+                    <p className="text-sm font-medium text-foreground">Eco Printing</p>
                   </div>
                 </div>
               </motion.div>
@@ -142,12 +142,12 @@ export const Hero = () => {
                 className="absolute -right-4 bottom-1/4 glass-card p-3 shadow-lg"
               >
                 <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-full bg-earth-100 flex items-center justify-center">
-                    <Sparkles className="w-5 h-5 text-earth-600" />
+                  <div className="w-10 h-10 rounded-full bg-earth-100 dark:bg-earth-800/40 flex items-center justify-center">
+                    <Sparkles className="w-5 h-5 text-earth-600 dark:text-earth-400" />
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Material</p>
-                    <p className="text-sm font-medium">Pure Silk</p>
+                    <p className="text-sm font-medium text-foreground">Pure Silk</p>
                   </div>
                 </div>
               </motion.div>
@@ -166,8 +166,8 @@ export const Hero = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
               {trustPoints.map((point, index) => (
                 <div key={index} className="flex items-center justify-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
-                    <point.icon className="w-5 h-5 text-primary-600" />
+                  <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center flex-shrink-0">
+                    <point.icon className="w-5 h-5 text-primary-600 dark:text-primary-400" />
                   </div>
                   <span className="text-foreground font-medium">{point.text}</span>
                 </div>

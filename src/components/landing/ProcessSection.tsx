@@ -35,7 +35,7 @@ export const ProcessSection = () => {
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
-    <section id="process" className="section-padding bg-earth-50" ref={ref}>
+    <section id="process" className="section-padding bg-earth-50 dark:bg-card" ref={ref}>
       <div className="container-custom">
         {/* Header */}
         <motion.div
@@ -55,7 +55,7 @@ export const ProcessSection = () => {
         {/* Desktop Timeline */}
         <div className="hidden md:block relative">
           {/* Connection Line */}
-          <div className="absolute top-16 left-0 right-0 h-0.5 bg-gradient-to-r from-primary-100 via-primary-300 to-primary-100" />
+          <div className="absolute top-16 left-0 right-0 h-0.5 bg-gradient-to-r from-primary-100 dark:from-primary-900/40 via-primary-300 dark:via-primary-700 to-primary-100 dark:to-primary-900/40" />
           
           <div className="grid grid-cols-5 gap-4">
             {steps.map((step, index) => (
@@ -75,8 +75,8 @@ export const ProcessSection = () => {
 
                 {/* Content Card */}
                 <div className="mt-8 glass-card p-5 w-full hover-lift">
-                  <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center mx-auto mb-3">
-                    <step.icon className="w-5 h-5 text-primary-600" />
+                  <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center mx-auto mb-3">
+                    <step.icon className="w-5 h-5 text-primary-600 dark:text-primary-400" />
                   </div>
                   <h3 className="font-semibold text-foreground mb-2 text-sm">
                     {step.title}
@@ -106,7 +106,7 @@ export const ProcessSection = () => {
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    <step.icon className="w-5 h-5 text-primary-600" />
+                    <step.icon className="w-5 h-5 text-primary-600 dark:text-primary-400" />
                     <h3 className="font-semibold text-foreground">
                       {step.title}
                     </h3>

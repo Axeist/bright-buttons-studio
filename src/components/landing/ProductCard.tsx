@@ -16,11 +16,11 @@ export const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
   return (
     <div className="group bg-card rounded-2xl overflow-hidden shadow-soft hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
       {/* Image */}
-      <div className="relative aspect-[4/5] overflow-hidden bg-gradient-to-br from-primary-50 to-earth-50">
+      <div className="relative aspect-[4/5] overflow-hidden bg-gradient-to-br from-primary-50 dark:from-primary-900/20 to-earth-50 dark:to-card">
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center p-6">
-            <Leaf className="w-12 h-12 text-primary-400 mx-auto mb-3 group-hover:scale-110 transition-transform duration-300" />
-            <p className="text-primary-600 font-medium text-sm">{product.technique}</p>
+            <Leaf className="w-12 h-12 text-primary-400 dark:text-primary-500 mx-auto mb-3 group-hover:scale-110 transition-transform duration-300" />
+            <p className="text-primary-600 dark:text-primary-400 font-medium text-sm">{product.technique}</p>
           </div>
         </div>
         
@@ -50,7 +50,7 @@ export const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
           <span className="px-2 py-1 bg-secondary text-secondary-foreground text-xs rounded-full">
             {product.category}
           </span>
-          <span className="px-2 py-1 bg-earth-100 text-earth-800 text-xs rounded-full">
+          <span className="px-2 py-1 bg-earth-100 dark:bg-earth-800/40 text-earth-800 dark:text-earth-300 text-xs rounded-full">
             {product.fabric}
           </span>
         </div>
