@@ -126,20 +126,35 @@ export const Hero = () => {
               </p>
             </motion.div>
 
-            {/* Technique Pills */}
+            {/* Enhanced Technique Pills */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="flex flex-wrap gap-2"
+              className="flex flex-wrap gap-3"
             >
               {techniques.map((technique, index) => (
-                <span
+                <motion.span
                   key={technique}
-                  className="px-3 py-1.5 bg-background/80 backdrop-blur-sm border border-border rounded-full text-sm text-foreground"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.6 + index * 0.1 }}
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  className="group relative px-4 py-2 bg-gradient-to-r from-primary-50 via-primary-100/50 to-earth-50 dark:from-primary-900/30 dark:via-primary-800/20 dark:to-card border border-primary-200/60 dark:border-primary-800/40 rounded-full text-sm font-medium text-primary-700 dark:text-primary-300 shadow-md hover:shadow-lg transition-all duration-300 cursor-default overflow-hidden"
                 >
-                  {technique}
-                </span>
+                  {/* Animated background on hover */}
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-primary-100 to-primary-200 dark:from-primary-800/40 dark:to-primary-700/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full"
+                  />
+                  
+                  {/* Decorative dot */}
+                  <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-primary-400 dark:bg-primary-500 rounded-full opacity-60 group-hover:opacity-100 transition-opacity" />
+                  
+                  <span className="relative z-10 flex items-center gap-1.5">
+                    <Leaf className="w-3 h-3 opacity-70 group-hover:opacity-100 transition-opacity" />
+                    {technique}
+                  </span>
+                </motion.span>
               ))}
             </motion.div>
 
