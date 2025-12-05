@@ -89,7 +89,7 @@ export const Hero = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-script text-gradient leading-tight mb-2"
+              className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-script text-gradient mb-2"
             >
               <motion.span
                 initial={{ opacity: 0, x: -20 }}

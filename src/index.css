@@ -129,6 +129,33 @@
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-semibold tracking-tight;
+    overflow: visible;
+  }
+
+  /* Prevent cropping for script font headings */
+  .font-script,
+  h1.font-script,
+  h2.font-script,
+  h3.font-script {
+    line-height: 1.8 !important;
+    padding-top: 0.6em !important;
+    padding-bottom: 0.6em !important;
+    margin-top: 0.4em;
+    margin-bottom: 0.4em;
+    overflow: visible !important;
+    display: block;
+    position: relative;
+  }
+
+  /* Extra padding for larger script headings */
+  h1.font-script,
+  .text-4xl.font-script,
+  .text-5xl.font-script,
+  .text-6xl.font-script,
+  .text-7xl.font-script {
+    padding-top: 0.8em !important;
+    padding-bottom: 0.8em !important;
+    line-height: 1.9 !important;
   }
 }
 
@@ -214,6 +241,11 @@
 @layer utilities {
   .font-script {
     font-family: 'Pacifico', cursive;
+    line-height: 1.6 !important;
+    padding-top: 0.5em;
+    padding-bottom: 0.5em;
+    overflow: visible;
+    display: block;
   }
 
   .font-body {
@@ -258,4 +290,13 @@
   .hover-lift:hover {
     @apply -translate-y-1 shadow-xl;
   }
+
+  /* Script heading wrapper to prevent cropping */
+  .script-heading-wrapper {
+    padding-top: 0.5em;
+    padding-bottom: 0.5em;
+    overflow: visible;
+    display: block;
+  }
+
 }
