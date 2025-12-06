@@ -2,7 +2,7 @@ import { Dialog, Transition } from "@headlessui/react";
 import { Fragment, useState, useEffect } from "react";
 import { X, Leaf, MessageCircle, Palette, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { type Product } from "@/data/products";
+import { type Product } from "@/types/product";
 import { getWhatsAppLink } from "@/components/WhatsAppButton";
 
 interface ProductQuickViewProps {

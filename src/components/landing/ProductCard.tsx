@@ -1,6 +1,6 @@
 import { Leaf, Eye, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { type Product } from "@/data/products";
+import { type Product } from "@/types/product";
 import { getWhatsAppLink } from "@/components/WhatsAppButton";
 
 interface ProductCardProps {

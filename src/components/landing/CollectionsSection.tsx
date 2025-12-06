@@ -1,14 +1,50 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, useInView } from "framer-motion";
-import { products, categories, type Product } from "@/data/products";
+import { supabase } from "@/integrations/supabase/client";
 import { ProductCard } from "./ProductCard";
 import { ProductQuickView } from "./ProductQuickView";
+
+interface Product {
+  id: string;
+  name: string;
+  category: string;
+  fabric: string | null;
+  technique: string | null;
+  image_url: string | null;
+  tagline: string | null;
+  price: number;
+}
+
+const categories = ['All', 'Kurthas & Co-ords', 'Sarees', 'Shawls', "Men's Shirts", 'T-Shirts', 'Kidswear'];
 
 export const CollectionsSection = () => {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("products")
+        .select("id, name, category, fabric, technique, image_url, tagline, price")
+        .eq("status", "active")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredProducts = activeCategory === "All" 
     ? products 
@@ -56,35 +92,64 @@ export const CollectionsSection = () => {
         </motion.div>
 
         {/* Products Grid */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={isInView ? { opacity: 1 } : {}}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8"
-        >
-          {filteredProducts.map((product, index) => (
-            <motion.div
-              key={product.id}
-              initial={{ opacity: 0, y: 30 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.5, delay: 0.1 * (index % 6) }}
-              className="h-full"
-            >
-              <ProductCard
-                product={product}
-                onQuickView={() => setSelectedProduct(product)}
-              />
-            </motion.div>
-          ))}
-        </motion.div>
-      </div>
+        {loading ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">Loading products...</p>
+          </div>
+        ) : filteredProducts.length > 0 ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={isInView ? { opacity: 1 } : {}}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+          >
+            {filteredProducts.map((product, index) => (
+              <motion.div
+                key={product.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={isInView ? { opacity: 1, y: 0 } : {}}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+              >
+                <ProductCard
+                  product={{
+                    id: parseInt(product.id.split("-")[0]) || 0,
+                    name: product.name,
+                    category: product.category as any,
+                    fabric: product.fabric as any,
+                    technique: product.technique as any,
+                    image: product.image_url || "",
+                    tagline: product.tagline || "",
+                    price: `₹${product.price.toLocaleString()}`,
+                  }}
+                  onQuickView={() => setSelectedProduct(product)}
+                />
+              </motion.div>
+            ))}
+          </motion.div>
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">No products found in this category.</p>
+          </div>
+        )}
 
-      {/* Quick View Modal */}
-      <ProductQuickView
-        product={selectedProduct}
-        isOpen={!!selectedProduct}
-        onClose={() => setSelectedProduct(null)}
-      />
+        {/* Quick View Modal */}
+        {selectedProduct && (
+          <ProductQuickView
+            product={{
+              id: parseInt(selectedProduct.id.split("-")[0]) || 0,
+              name: selectedProduct.name,
+              category: selectedProduct.category as any,
+              fabric: selectedProduct.fabric as any,
+              technique: selectedProduct.technique as any,
+              image: selectedProduct.image_url || "",
+              tagline: selectedProduct.tagline || "",
+              price: `₹${selectedProduct.price.toLocaleString()}`,
+            }}
+            isOpen={!!selectedProduct}
+            onClose={() => setSelectedProduct(null)}
+          />
+        )}
+      </div>
     </section>
   );
 };
