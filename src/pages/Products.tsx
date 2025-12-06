@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AdminLayout } from "@/layouts/AdminLayout";
-import { Search, Plus, Edit, Trash2, Leaf, Sparkles, Package, Scan, Loader2, AlertCircle } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Leaf, Sparkles, Package, Scan, Loader2, AlertCircle, Upload, Download, FileText, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,8 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { useAuth } from "@/hooks/useAuth";
+import { generateBarcode } from "@/lib/barcode";
+import { parseCSV, validateCSVData, generateSampleCSV, CSVProductRow, CSVValidationError } from "@/lib/csvImport";
 
 const categories = [
   'Kurthas & Co-ords',
@@ -63,6 +65,11 @@ const Products = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importErrors, setImportErrors] = useState<CSVValidationError[]>([]);
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState({
     name: "",
@@ -160,6 +167,9 @@ const Products = () => {
         return;
       }
 
+      // Generate barcode if not provided
+      let barcodeValue = formData.barcode || null;
+      
       const { data: product, error: productError } = await supabase
         .from("products")
         .insert({
@@ -170,7 +180,7 @@ const Products = () => {
           technique: formData.technique || null,
           price,
           cost_price: formData.cost_price ? parseFloat(formData.cost_price) : null,
-          barcode: formData.barcode || null,
+          barcode: barcodeValue,
           sku: formData.sku || null,
           low_stock_threshold: parseInt(formData.low_stock_threshold) || 5,
           image_url: formData.image_url || null,
@@ -181,6 +191,15 @@ const Products = () => {
         .single();
 
       if (productError) throw productError;
+
+      // Auto-generate barcode if not provided
+      if (!barcodeValue) {
+        barcodeValue = generateBarcode(product.id);
+        await supabase
+          .from("products")
+          .update({ barcode: barcodeValue })
+          .eq("id", product.id);
+      }
 
       // Add inventory if stock is provided
       if (formData.stock) {
@@ -345,6 +364,184 @@ const Products = () => {
     });
   };
 
+  const handleDownloadSampleCSV = () => {
+    const csvContent = generateSampleCSV();
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'product_import_sample.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast({
+      title: "Sample CSV Downloaded",
+      description: "Fill in the sample CSV and import it to add products",
+    });
+  };
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.csv')) {
+      toast({
+        title: "Invalid File",
+        description: "Please select a CSV file",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setCsvFile(file);
+    setImportErrors([]);
+
+    try {
+      const text = await file.text();
+      const rows = parseCSV(text);
+      const validation = validateCSVData(rows);
+      
+      if (validation.errors.length > 0) {
+        setImportErrors(validation.errors);
+        toast({
+          title: "Validation Errors Found",
+          description: `Found ${validation.errors.length} error(s). Please fix them before importing.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "File Validated",
+          description: `Found ${validation.valid.length} valid product(s) ready to import`,
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error Reading File",
+        description: error.message || "Failed to read CSV file",
+        variant: "destructive",
+      });
+      setCsvFile(null);
+    }
+  };
+
+  const handleImportProducts = async () => {
+    if (!csvFile) return;
+
+    setIsImporting(true);
+    try {
+      const text = await csvFile.text();
+      const rows = parseCSV(text);
+      const validation = validateCSVData(rows);
+
+      if (validation.errors.length > 0) {
+        setImportErrors(validation.errors);
+        toast({
+          title: "Cannot Import",
+          description: "Please fix validation errors before importing",
+          variant: "destructive",
+        });
+        setIsImporting(false);
+        return;
+      }
+
+      if (validation.valid.length === 0) {
+        toast({
+          title: "No Valid Products",
+          description: "No valid products found in the CSV file",
+          variant: "destructive",
+        });
+        setIsImporting(false);
+        return;
+      }
+
+      // Import products one by one
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const productData of validation.valid) {
+        try {
+          const price = parseFloat(productData.price.replace(/[₹,]/g, ''));
+          
+          // Insert product
+          const { data: product, error: productError } = await supabase
+            .from("products")
+            .insert({
+              name: productData.name,
+              description: productData.description || null,
+              category: productData.category,
+              fabric: productData.fabric || null,
+              technique: productData.technique || null,
+              price,
+              cost_price: productData.cost_price ? parseFloat(productData.cost_price.replace(/[₹,]/g, '')) : null,
+              sku: productData.sku || null,
+              low_stock_threshold: productData.low_stock_threshold ? parseInt(productData.low_stock_threshold) : 5,
+              image_url: productData.image_url || null,
+              tagline: productData.tagline || null,
+              status: "active",
+            })
+            .select()
+            .single();
+
+          if (productError) throw productError;
+
+          // Auto-generate barcode
+          const barcodeValue = generateBarcode(product.id);
+          await supabase
+            .from("products")
+            .update({ barcode: barcodeValue })
+            .eq("id", product.id);
+
+          // Add inventory if stock is provided
+          if (productData.stock) {
+            const stockQty = parseInt(productData.stock);
+            if (stockQty > 0) {
+              await supabase.from("inventory").insert({
+                product_id: product.id,
+                quantity: stockQty,
+              });
+
+              await supabase.from("stock_movements").insert({
+                product_id: product.id,
+                quantity_change: stockQty,
+                movement_type: "purchase",
+                reference_type: "purchase",
+                notes: "Initial stock from CSV import",
+                created_by: user?.id || null,
+              });
+            }
+          }
+
+          successCount++;
+        } catch (error: any) {
+          console.error(`Error importing product ${productData.name}:`, error);
+          errorCount++;
+        }
+      }
+
+      toast({
+        title: "Import Complete",
+        description: `Successfully imported ${successCount} product(s)${errorCount > 0 ? `. ${errorCount} failed.` : ''}`,
+      });
+
+      setIsImportModalOpen(false);
+      setCsvFile(null);
+      setImportErrors([]);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      fetchProducts();
+    } catch (error: any) {
+      toast({
+        title: "Import Failed",
+        description: error.message || "Failed to import products",
+        variant: "destructive",
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   const openEditModal = (product: Product) => {
     setEditingProduct(product);
     setFormData({
@@ -422,6 +619,16 @@ const Products = () => {
           >
             <Scan className="w-5 h-5 mr-2" />
             Scan
+          </Button>
+        </motion.div>
+        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <Button
+            onClick={() => setIsImportModalOpen(true)}
+            variant="outline"
+            className="rounded-full h-12"
+          >
+            <Upload className="w-5 h-5 mr-2" />
+            Import
           </Button>
         </motion.div>
         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -696,7 +903,7 @@ const Products = () => {
                   <Input
                     value={formData.barcode}
                     onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
-                    placeholder="Scan or enter"
+                    placeholder="Auto-generated if left empty"
                     className="rounded-xl h-12"
                   />
                   <Button
@@ -708,6 +915,9 @@ const Products = () => {
                     <Scan className="w-4 h-4" />
                   </Button>
                 </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Leave empty to auto-generate a scannable barcode
+                </p>
               </div>
               <div>
                 <Label>SKU</Label>
@@ -885,7 +1095,7 @@ const Products = () => {
                   <Input
                     value={formData.barcode}
                     onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
-                    placeholder="Scan or enter"
+                    placeholder="Auto-generated if left empty"
                     className="rounded-xl h-12"
                   />
                   <Button
@@ -897,6 +1107,9 @@ const Products = () => {
                     <Scan className="w-4 h-4" />
                   </Button>
                 </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Leave empty to auto-generate a scannable barcode
+                </p>
               </div>
               <div>
                 <Label>SKU</Label>
@@ -954,6 +1167,154 @@ const Products = () => {
         onScan={handleBarcodeScan}
         onClose={() => setIsScannerOpen(false)}
       />
+
+      {/* Import Products Modal */}
+      <Dialog open={isImportModalOpen} onOpenChange={setIsImportModalOpen}>
+        <DialogContent className="sm:max-w-2xl rounded-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-script text-gradient flex items-center gap-2">
+              <Upload className="w-6 h-6 text-primary" />
+              Import Products from CSV
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground pt-2">
+              Upload a CSV file to import multiple products at once
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 mt-4">
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={handleDownloadSampleCSV}
+                variant="outline"
+                className="rounded-xl"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Download Sample CSV
+              </Button>
+              <p className="text-sm text-muted-foreground">
+                Download the sample file to see the required format
+              </p>
+            </div>
+
+            <div className="border-2 border-dashed border-primary-200 dark:border-primary-800 rounded-xl p-6">
+              <div className="flex flex-col items-center justify-center gap-4">
+                <FileText className="w-12 h-12 text-muted-foreground" />
+                <div className="text-center">
+                  <Label htmlFor="csv-file" className="cursor-pointer">
+                    <span className="text-primary font-semibold hover:underline">
+                      Click to select CSV file
+                    </span>
+                    <input
+                      ref={fileInputRef}
+                      id="csv-file"
+                      type="file"
+                      accept=".csv"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+                  </Label>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    or drag and drop
+                  </p>
+                </div>
+                {csvFile && (
+                  <div className="flex items-center gap-2 mt-2">
+                    <FileText className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-medium">{csvFile.name}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setCsvFile(null);
+                        setImportErrors([]);
+                        if (fileInputRef.current) {
+                          fileInputRef.current.value = '';
+                        }
+                      }}
+                      className="h-6 w-6 p-0"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {importErrors.length > 0 && (
+              <div className="border border-destructive/50 rounded-xl p-4 bg-destructive/10">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertCircle className="w-5 h-5 text-destructive" />
+                  <h4 className="font-semibold text-destructive">
+                    Validation Errors ({importErrors.length})
+                  </h4>
+                </div>
+                <div className="max-h-48 overflow-y-auto space-y-1">
+                  {importErrors.map((error, index) => (
+                    <div key={index} className="text-sm text-destructive">
+                      <span className="font-medium">Row {error.row}</span>: {error.field} - {error.message}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="bg-muted/50 rounded-xl p-4">
+              <h4 className="font-semibold mb-2">Required Columns:</h4>
+              <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                <li><strong>name</strong> - Product name (required)</li>
+                <li><strong>category</strong> - Product category (required)</li>
+                <li><strong>price</strong> - Product price in ₹ (required)</li>
+                <li><strong>description</strong> - Product description (optional)</li>
+                <li><strong>fabric</strong> - Fabric type (optional)</li>
+                <li><strong>technique</strong> - Printing technique (optional)</li>
+                <li><strong>tagline</strong> - Product tagline (optional)</li>
+                <li><strong>cost_price</strong> - Cost price in ₹ (optional)</li>
+                <li><strong>stock</strong> - Initial stock quantity (optional)</li>
+                <li><strong>sku</strong> - Stock keeping unit (optional)</li>
+                <li><strong>low_stock_threshold</strong> - Low stock alert threshold (optional, default: 5)</li>
+                <li><strong>image_url</strong> - Product image URL (optional)</li>
+              </ul>
+              <p className="text-xs text-muted-foreground mt-2">
+                Note: Barcodes will be automatically generated for all imported products.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex gap-3 mt-6">
+            <Button 
+              variant="outline" 
+              className="flex-1 rounded-xl" 
+              onClick={() => {
+                setIsImportModalOpen(false);
+                setCsvFile(null);
+                setImportErrors([]);
+                if (fileInputRef.current) {
+                  fileInputRef.current.value = '';
+                }
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="flex-1 rounded-xl bg-gradient-to-r from-primary to-primary-700 dark:from-primary-600 dark:to-primary-800"
+              onClick={handleImportProducts}
+              disabled={!csvFile || isImporting || importErrors.length > 0}
+            >
+              {isImporting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Importing...
+                </>
+              ) : (
+                <>
+                  <Upload className="w-4 h-4 mr-2" />
+                  Import Products
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 };
