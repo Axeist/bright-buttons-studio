@@ -55,8 +55,18 @@ const POS = () => {
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerName, setCustomerName] = useState("");
-  const [customer, setCustomer] = useState<{ id: string; name: string; phone: string } | null>(null);
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [customer, setCustomer] = useState<{ id: string; name: string; phone: string; email?: string | null } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<"cash" | "upi" | "card" | "split" | null>(null);
+  const [isSplitModalOpen, setIsSplitModalOpen] = useState(false);
+  const [splitCashAmount, setSplitCashAmount] = useState("");
+  const [splitOtherAmount, setSplitOtherAmount] = useState("");
+  const [splitOtherMethod, setSplitOtherMethod] = useState<"upi" | "card">("upi");
+  const [discountType, setDiscountType] = useState<"percentage" | "rupees">("percentage");
+  const [discountValue, setDiscountValue] = useState(0);
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{ id: string; code: string; discount_type: "percentage" | "rupees"; discount_value: number } | null>(null);
 
   useEffect(() => {
     fetchProducts();
@@ -160,6 +170,78 @@ const POS = () => {
     setCart(cart.filter((item) => item.id !== id));
   };
 
+  const applyCoupon = async () => {
+    if (!couponCode.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a coupon code",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("coupons")
+        .select("*")
+        .eq("code", couponCode.toUpperCase().trim())
+        .eq("is_active", true)
+        .single();
+
+      if (error || !data) {
+        toast({
+          title: "Invalid Coupon",
+          description: "The coupon code is invalid or expired",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check if coupon is redeemable in POS
+      if (!data.redeemable_in_pos) {
+        toast({
+          title: "Coupon Not Valid",
+          description: "This coupon cannot be used in POS",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check expiration
+      if (data.expires_at && new Date(data.expires_at) < new Date()) {
+        toast({
+          title: "Coupon Expired",
+          description: "This coupon has expired",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setAppliedCoupon({
+        id: data.id,
+        code: data.code,
+        discount_type: data.discount_type,
+        discount_value: data.discount_value,
+      });
+      setCouponCode("");
+      toast({
+        title: "Coupon Applied!",
+        description: `Discount: ${data.discount_type === "percentage" ? `${data.discount_value}%` : `₹${data.discount_value}`}`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to apply coupon",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode("");
+  };
+
   const lookupCustomer = async (phone: string) => {
     if (!phone) {
       setCustomer(null);
@@ -168,13 +250,14 @@ const POS = () => {
 
     const { data } = await supabase
       .from("customers")
-      .select("id, name, phone")
+      .select("id, name, phone, email")
       .eq("phone", phone)
       .single();
 
     if (data) {
       setCustomer(data);
       setCustomerName(data.name);
+      setCustomerEmail(data.email || "");
     } else {
       setCustomer(null);
     }
@@ -200,6 +283,7 @@ const POS = () => {
       .insert({
         name: customerName || "Walk-in Customer",
         phone: customerPhone,
+        email: customerEmail || null,
       })
       .select()
       .single();
@@ -214,6 +298,13 @@ const POS = () => {
 
       if (existing) {
         setCustomer(existing);
+        // Update customer if email is provided
+        if (customerEmail && existing.email !== customerEmail) {
+          await supabase
+            .from("customers")
+            .update({ email: customerEmail, name: customerName || existing.name })
+            .eq("id", existing.id);
+        }
         return existing.id;
       }
 
@@ -250,7 +341,24 @@ const POS = () => {
 
       // Calculate totals
       const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-      const discountAmount = (subtotal * discount) / 100;
+      
+      // Calculate discount (from coupon or manual discount)
+      let discountAmount = 0;
+      if (appliedCoupon) {
+        if (appliedCoupon.discount_type === "percentage") {
+          discountAmount = (subtotal * appliedCoupon.discount_value) / 100;
+        } else {
+          discountAmount = appliedCoupon.discount_value;
+        }
+      } else if (discountType === "percentage") {
+        discountAmount = (subtotal * discountValue) / 100;
+      } else {
+        discountAmount = discountValue;
+      }
+      
+      // Ensure discount doesn't exceed subtotal
+      discountAmount = Math.min(discountAmount, subtotal);
+      
       const taxRate = 0.18;
       const tax = (subtotal - discountAmount) * taxRate;
       const total = subtotal - discountAmount + tax;
@@ -333,14 +441,56 @@ const POS = () => {
         }
       }
 
-      // Create payment record
-      await supabase.from("payments").insert({
-        order_id: order.id,
-        amount: total,
-        payment_method: method,
-        status: "paid",
-        created_by: user?.id || null,
-      });
+      // Create payment record(s)
+      if (method === "split") {
+        const cashAmount = splitCashAmount ? parseFloat(splitCashAmount) : 0;
+        const otherAmount = splitOtherAmount ? parseFloat(splitOtherAmount) : 0;
+        
+        // Cash payment
+        if (cashAmount > 0) {
+          await supabase.from("payments").insert({
+            order_id: order.id,
+            amount: cashAmount,
+            payment_method: "cash",
+            status: "paid",
+            created_by: user?.id || null,
+          });
+        }
+        
+        // Other payment method
+        if (otherAmount > 0) {
+          await supabase.from("payments").insert({
+            order_id: order.id,
+            amount: otherAmount,
+            payment_method: splitOtherMethod,
+            status: "paid",
+            created_by: user?.id || null,
+          });
+        }
+      } else {
+        await supabase.from("payments").insert({
+          order_id: order.id,
+          amount: total,
+          payment_method: method,
+          status: "paid",
+          created_by: user?.id || null,
+        });
+      }
+      
+      // Record coupon usage if applied
+      if (appliedCoupon) {
+        try {
+          await supabase.from("coupon_redemptions").insert({
+            coupon_id: appliedCoupon.id,
+            order_id: order.id,
+            discount_amount: discountAmount,
+            redeemed_by: user?.id || null,
+          });
+        } catch (couponError) {
+          // Log but don't fail the sale if coupon redemption fails
+          console.error("Failed to record coupon redemption:", couponError);
+        }
+      }
 
       toast({
         title: "Sale Completed!",
@@ -349,10 +499,17 @@ const POS = () => {
 
       // Reset
       setCart([]);
-      setDiscount(0);
+      setDiscountValue(0);
+      setDiscountType("percentage");
       setCustomer(null);
       setCustomerPhone("");
       setCustomerName("");
+      setCustomerEmail("");
+      setSelectedPaymentMethod(null);
+      setCouponCode("");
+      setAppliedCoupon(null);
+      setSplitCashAmount("");
+      setSplitOtherAmount("");
       fetchProducts(); // Refresh inventory
     } catch (error: any) {
       toast({
@@ -376,9 +533,28 @@ const POS = () => {
   });
 
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const discountAmount = (subtotal * discount) / 100;
+  
+  // Calculate discount
+  let discountAmount = 0;
+  if (appliedCoupon) {
+    if (appliedCoupon.discount_type === "percentage") {
+      discountAmount = (subtotal * appliedCoupon.discount_value) / 100;
+    } else {
+      discountAmount = appliedCoupon.discount_value;
+    }
+  } else if (discountType === "percentage") {
+    discountAmount = (subtotal * discountValue) / 100;
+  } else {
+    discountAmount = discountValue;
+  }
+  discountAmount = Math.min(discountAmount, subtotal);
+  
   const tax = (subtotal - discountAmount) * 0.18;
   const total = subtotal - discountAmount + tax;
+  
+  // Calculate split payment amounts
+  const splitCash = splitCashAmount ? parseFloat(splitCashAmount) : 0;
+  const splitOther = splitOtherAmount ? parseFloat(splitOtherAmount) : 0;
 
   if (loading) {
     return (
@@ -393,29 +569,56 @@ const POS = () => {
   return (
     <AdminLayout title="Point of Sale">
       {/* Customer Info */}
-      <div className="flex items-center gap-4 mb-4">
-        <div className="flex-1 flex items-center gap-2">
-          <User className="w-4 h-4 text-muted-foreground" />
-          <Input
-            value={customerPhone}
-            onChange={(e) => {
-              setCustomerPhone(e.target.value);
-              lookupCustomer(e.target.value);
-            }}
-            placeholder="Customer phone (optional)"
-            className="rounded-xl h-10"
-          />
-          {customer && (
-            <span className="text-sm text-muted-foreground">- {customer.name}</span>
-          )}
-        </div>
-        <Button
-          variant="outline"
-          onClick={() => setIsCustomerModalOpen(true)}
-          className="rounded-xl"
-        >
-          {customer ? "Change" : "Add"} Customer
-        </Button>
+      <div className="mb-4">
+        {customer ? (
+          <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-primary/10 to-primary/5 dark:from-primary-900/30 dark:to-primary-900/20 rounded-xl border border-primary/20 dark:border-primary-800/40">
+            <div className="w-12 h-12 rounded-full bg-primary/20 dark:bg-primary-900/40 flex items-center justify-center flex-shrink-0">
+              <User className="w-6 h-6 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-foreground truncate">{customer.name}</p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <p className="text-sm text-muted-foreground">{customer.phone}</p>
+                {customer.email && (
+                  <>
+                    <span className="text-muted-foreground">•</span>
+                    <p className="text-sm text-muted-foreground truncate">{customer.email}</p>
+                  </>
+                )}
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsCustomerModalOpen(true)}
+              className="rounded-xl"
+            >
+              Change
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-4">
+            <div className="flex-1 flex items-center gap-2">
+              <User className="w-4 h-4 text-muted-foreground" />
+              <Input
+                value={customerPhone}
+                onChange={(e) => {
+                  setCustomerPhone(e.target.value);
+                  lookupCustomer(e.target.value);
+                }}
+                placeholder="Customer phone (optional)"
+                className="rounded-xl h-10"
+              />
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => setIsCustomerModalOpen(true)}
+              className="rounded-xl"
+            >
+              Add Customer
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="grid lg:grid-cols-[1fr,400px] gap-6">
@@ -539,17 +742,81 @@ const POS = () => {
               <span className="text-muted-foreground">Subtotal</span>
               <span className="text-foreground">₹{subtotal.toLocaleString()}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Discount (%)</span>
-              <Input
-                type="number"
-                value={discount}
-                onChange={(e) => setDiscount(Number(e.target.value))}
-                className="w-20 h-8 text-sm rounded-lg"
-                min="0"
-                max="100"
-              />
-              <span className="text-sm text-foreground ml-auto">-₹{discountAmount.toLocaleString()}</span>
+            {/* Coupon Section */}
+            {!appliedCoupon ? (
+              <div className="flex items-center gap-2">
+                <Input
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                  placeholder="Enter coupon code"
+                  className="flex-1 h-8 text-sm rounded-lg"
+                  onKeyPress={(e) => e.key === "Enter" && applyCoupon()}
+                />
+                <Button
+                  size="sm"
+                  onClick={applyCoupon}
+                  className="h-8 rounded-lg"
+                  disabled={!couponCode.trim()}
+                >
+                  Apply
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between p-2 bg-primary/10 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-primary">{appliedCoupon.code}</span>
+                  <span className="text-xs text-muted-foreground">
+                    ({appliedCoupon.discount_type === "percentage" ? `${appliedCoupon.discount_value}%` : `₹${appliedCoupon.discount_value}`})
+                  </span>
+                </div>
+                <button
+                  onClick={removeCoupon}
+                  className="text-xs text-destructive hover:underline"
+                >
+                  Remove
+                </button>
+              </div>
+            )}
+            
+            {/* Manual Discount */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Discount</span>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => setDiscountType("percentage")}
+                    className={`px-2 py-1 text-xs rounded ${
+                      discountType === "percentage"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    %
+                  </button>
+                  <button
+                    onClick={() => setDiscountType("rupees")}
+                    className={`px-2 py-1 text-xs rounded ${
+                      discountType === "rupees"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    ₹
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  value={discountValue}
+                  onChange={(e) => setDiscountValue(Number(e.target.value))}
+                  className="w-20 h-8 text-sm rounded-lg"
+                  min="0"
+                  max={discountType === "percentage" ? "100" : undefined}
+                  disabled={!!appliedCoupon}
+                />
+                <span className="text-sm text-foreground ml-auto">-₹{discountAmount.toLocaleString()}</span>
+              </div>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Tax (18%)</span>
@@ -566,33 +833,52 @@ const POS = () => {
             <p className="text-sm font-medium text-foreground">Payment Method</p>
             <div className="grid grid-cols-4 gap-2">
               <button
-                onClick={() => completeSale("cash")}
-                disabled={cart.length === 0 || isProcessing}
-                className="flex flex-col items-center gap-1 p-3 rounded-lg bg-accent hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-50"
+                onClick={() => setSelectedPaymentMethod("cash")}
+                disabled={cart.length === 0}
+                className={`flex flex-col items-center gap-1 p-3 rounded-lg transition-colors disabled:opacity-50 ${
+                  selectedPaymentMethod === "cash"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-accent hover:bg-primary hover:text-primary-foreground"
+                }`}
               >
                 <Banknote className="w-5 h-5" />
                 <span className="text-xs">Cash</span>
               </button>
               <button
-                onClick={() => completeSale("upi")}
-                disabled={cart.length === 0 || isProcessing}
-                className="flex flex-col items-center gap-1 p-3 rounded-lg bg-accent hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-50"
+                onClick={() => setSelectedPaymentMethod("upi")}
+                disabled={cart.length === 0}
+                className={`flex flex-col items-center gap-1 p-3 rounded-lg transition-colors disabled:opacity-50 ${
+                  selectedPaymentMethod === "upi"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-accent hover:bg-primary hover:text-primary-foreground"
+                }`}
               >
                 <Smartphone className="w-5 h-5" />
                 <span className="text-xs">UPI</span>
               </button>
               <button
-                onClick={() => completeSale("card")}
-                disabled={cart.length === 0 || isProcessing}
-                className="flex flex-col items-center gap-1 p-3 rounded-lg bg-accent hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-50"
+                onClick={() => setSelectedPaymentMethod("card")}
+                disabled={cart.length === 0}
+                className={`flex flex-col items-center gap-1 p-3 rounded-lg transition-colors disabled:opacity-50 ${
+                  selectedPaymentMethod === "card"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-accent hover:bg-primary hover:text-primary-foreground"
+                }`}
               >
                 <CreditCard className="w-5 h-5" />
                 <span className="text-xs">Card</span>
               </button>
               <button
-                onClick={() => completeSale("split")}
-                disabled={cart.length === 0 || isProcessing}
-                className="flex flex-col items-center gap-1 p-3 rounded-lg bg-accent hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-50"
+                onClick={() => {
+                  setSelectedPaymentMethod("split");
+                  setIsSplitModalOpen(true);
+                }}
+                disabled={cart.length === 0}
+                className={`flex flex-col items-center gap-1 p-3 rounded-lg transition-colors disabled:opacity-50 ${
+                  selectedPaymentMethod === "split"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-accent hover:bg-primary hover:text-primary-foreground"
+                }`}
               >
                 <Shuffle className="w-5 h-5" />
                 <span className="text-xs">Split</span>
@@ -600,8 +886,22 @@ const POS = () => {
             </div>
 
             <Button
-              onClick={() => completeSale("cash")}
-              disabled={cart.length === 0 || isProcessing}
+              onClick={() => {
+                if (!selectedPaymentMethod) {
+                  toast({
+                    title: "Select Payment Method",
+                    description: "Please select a payment method",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                if (selectedPaymentMethod === "split") {
+                  setIsSplitModalOpen(true);
+                } else {
+                  completeSale(selectedPaymentMethod);
+                }
+              }}
+              disabled={cart.length === 0 || isProcessing || !selectedPaymentMethod}
               className="w-full rounded-full"
               size="lg"
             >
@@ -646,6 +946,16 @@ const POS = () => {
                 className="rounded-xl h-12"
               />
             </div>
+            <div>
+              <Label>Email ID (Optional)</Label>
+              <Input
+                type="email"
+                value={customerEmail}
+                onChange={(e) => setCustomerEmail(e.target.value)}
+                placeholder="customer@example.com"
+                className="rounded-xl h-12"
+              />
+            </div>
             <Button
               onClick={() => {
                 createOrGetCustomer();
@@ -655,6 +965,129 @@ const POS = () => {
             >
               {customer ? "Update" : "Add"} Customer
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Split Payment Modal */}
+      <Dialog open={isSplitModalOpen} onOpenChange={setIsSplitModalOpen}>
+        <DialogContent className="sm:max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Split Payment</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div>
+              <Label>Cash Amount (₹)</Label>
+              <Input
+                type="number"
+                value={splitCashAmount}
+                onChange={(e) => {
+                  const cash = e.target.value;
+                  setSplitCashAmount(cash);
+                  if (cash) {
+                    const cashNum = parseFloat(cash);
+                    const remaining = total - cashNum;
+                    setSplitOtherAmount(remaining > 0 ? remaining.toFixed(2) : "");
+                  }
+                }}
+                placeholder="0.00"
+                className="rounded-xl h-12"
+                min="0"
+                max={total}
+              />
+            </div>
+            <div>
+              <Label>Other Payment Method</Label>
+              <select
+                value={splitOtherMethod}
+                onChange={(e) => setSplitOtherMethod(e.target.value as "upi" | "card")}
+                className="w-full px-4 py-2 h-12 rounded-xl border border-primary-200/50 dark:border-primary-800/30 bg-background text-foreground focus:ring-2 focus:ring-primary mb-2"
+              >
+                <option value="upi">UPI</option>
+                <option value="card">Card</option>
+              </select>
+            </div>
+            <div>
+              <Label>Other Amount (₹)</Label>
+              <Input
+                type="number"
+                value={splitOtherAmount}
+                onChange={(e) => {
+                  const other = e.target.value;
+                  setSplitOtherAmount(other);
+                  if (other) {
+                    const otherNum = parseFloat(other);
+                    const remaining = total - otherNum;
+                    setSplitCashAmount(remaining > 0 ? remaining.toFixed(2) : "");
+                  }
+                }}
+                placeholder="0.00"
+                className="rounded-xl h-12"
+                min="0"
+                max={total}
+              />
+            </div>
+            <div className="p-3 bg-muted rounded-lg">
+              <div className="flex justify-between text-sm mb-1">
+                <span className="text-muted-foreground">Total:</span>
+                <span className="font-semibold">₹{total.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-sm mb-1">
+                <span className="text-muted-foreground">Cash:</span>
+                <span>₹{splitCashAmount ? parseFloat(splitCashAmount).toLocaleString() : "0.00"}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">{splitOtherMethod.toUpperCase()}:</span>
+                <span>₹{splitOtherAmount ? parseFloat(splitOtherAmount).toLocaleString() : "0.00"}</span>
+              </div>
+              {splitCashAmount && splitOtherAmount && (
+                <div className="mt-2 pt-2 border-t">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Sum:</span>
+                    <span className={`font-semibold ${
+                      (parseFloat(splitCashAmount) + parseFloat(splitOtherAmount)).toFixed(2) === total.toFixed(2)
+                        ? "text-primary"
+                        : "text-destructive"
+                    }`}>
+                      ₹{(parseFloat(splitCashAmount) + parseFloat(splitOtherAmount)).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsSplitModalOpen(false);
+                  setSplitCashAmount("");
+                  setSplitOtherAmount("");
+                }}
+                className="flex-1 rounded-xl"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  const cash = parseFloat(splitCashAmount) || 0;
+                  const other = parseFloat(splitOtherAmount) || 0;
+                  if (Math.abs((cash + other) - total) > 0.01) {
+                    toast({
+                      title: "Invalid Amount",
+                      description: `The sum must equal ₹${total.toLocaleString()}`,
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  setIsSplitModalOpen(false);
+                  completeSale("split");
+                }}
+                disabled={!splitCashAmount || !splitOtherAmount}
+                className="flex-1 rounded-xl"
+              >
+                Confirm & Complete Sale
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
