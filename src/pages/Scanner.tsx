@@ -637,7 +637,6 @@ const Scanner = () => {
               </div>
             </div>
           </div>
-        )}
 
         {/* Instructions */}
         <div className="bg-card/50 rounded-2xl p-4 border border-border/50">
