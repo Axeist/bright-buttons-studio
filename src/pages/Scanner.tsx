@@ -18,7 +18,9 @@ const Scanner = () => {
   const [posCustomer, setPosCustomer] = useState<{ id: string; name: string; phone: string } | null>(null);
   const [isCheckingCustomer, setIsCheckingCustomer] = useState(false);
   const [scannedBarcodes, setScannedBarcodes] = useState<string[]>([]);
+  const [cameraError, setCameraError] = useState<string | null>(null);
   const channelRef = useRef<any>(null);
+  const scannerElementRef = useRef<HTMLDivElement>(null);
 
   // Check for POS customer selection
   useEffect(() => {
@@ -67,6 +69,13 @@ const Scanner = () => {
     return () => {
       stopScanner();
     };
+  }, []);
+
+  // Check browser support
+  useEffect(() => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setCameraError("Your browser does not support camera access. Please use a modern browser like Chrome, Firefox, or Safari.");
+    }
   }, []);
 
   const checkCustomerMatch = async () => {
@@ -205,47 +214,128 @@ const Scanner = () => {
       return;
     }
 
+    // Check browser support
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      const errorMsg = "Your browser does not support camera access. Please use a modern browser.";
+      setCameraError(errorMsg);
+      toast({
+        title: "Browser Not Supported",
+        description: errorMsg,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if element exists and wait a bit if needed
+    let element = document.getElementById("barcode-scanner");
+    if (!element) {
+      // Wait a bit for DOM to be ready
+      await new Promise(resolve => setTimeout(resolve, 100));
+      element = document.getElementById("barcode-scanner");
+      if (!element) {
+        toast({
+          title: "Error",
+          description: "Scanner element not found. Please refresh the page.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // Stop any existing scanner first
+    if (scannerRef.current) {
+      try {
+        await scannerRef.current.stop();
+        await scannerRef.current.clear();
+      } catch (e) {
+        // Ignore stop errors
+        console.log("Error stopping previous scanner:", e);
+      }
+      scannerRef.current = null;
+    }
+
+    setCameraError(null);
+    setIsScanning(false);
+
     try {
       const scanner = new Html5Qrcode("barcode-scanner");
       scannerRef.current = scanner;
 
+      // Get available cameras first
+      const devices = await Html5Qrcode.getCameras();
+      
+      if (devices && devices.length === 0) {
+        throw new Error("No cameras found on this device");
+      }
+
+      // Find back camera (environment facing)
+      const backCamera = devices?.find(device => 
+        device.label.toLowerCase().includes('back') || 
+        device.label.toLowerCase().includes('rear') ||
+        device.label.toLowerCase().includes('environment')
+      ) || devices?.[devices.length - 1]; // Use last camera (usually back camera on mobile)
+
+      const cameraId = backCamera?.id || { facingMode: "environment" };
+
+      // Calculate qrbox size based on screen width (mobile-first)
+      const screenWidth = window.innerWidth;
+      const qrboxSize = Math.min(280, screenWidth - 80);
+
       await scanner.start(
-        { facingMode: "environment" },
+        cameraId,
         {
           fps: 10,
-          qrbox: { width: 280, height: 280 },
+          qrbox: { width: qrboxSize, height: qrboxSize },
+          aspectRatio: 1.0,
+          disableFlip: false,
         },
         (decodedText) => {
           handleBarcodeScan(decodedText);
         },
         (errorMessage) => {
-          // Ignore scanning errors
+          // Ignore scanning errors (these are normal during scanning)
+          console.log("Scanning error (ignored):", errorMessage);
         }
       );
 
       setIsScanning(true);
+      setCameraError(null);
     } catch (err: any) {
+      console.error("Camera error:", err);
+      setCameraError(err.message || "Failed to start camera");
+      setIsScanning(false);
+      
+      let errorMessage = err.message || "Failed to start camera";
+      
+      // Provide more helpful error messages
+      if (errorMessage.includes("Permission denied") || errorMessage.includes("NotAllowedError")) {
+        errorMessage = "Camera permission denied. Please allow camera access in your browser settings.";
+      } else if (errorMessage.includes("NotFoundError") || errorMessage.includes("no camera")) {
+        errorMessage = "No camera found on this device.";
+      } else if (errorMessage.includes("NotReadableError")) {
+        errorMessage = "Camera is already in use by another application.";
+      }
+
       toast({
         title: "Camera Error",
-        description: err.message || "Failed to start camera",
+        description: errorMessage,
         variant: "destructive",
       });
-      setIsScanning(false);
     }
   };
 
-  const stopScanner = () => {
+  const stopScanner = async () => {
     if (scannerRef.current) {
-      scannerRef.current
-        .stop()
-        .then(() => {
-          scannerRef.current = null;
-          setIsScanning(false);
-        })
-        .catch(() => {
-          scannerRef.current = null;
-          setIsScanning(false);
-        });
+      try {
+        await scannerRef.current.stop();
+        await scannerRef.current.clear();
+      } catch (err) {
+        console.log("Error stopping scanner:", err);
+      } finally {
+        scannerRef.current = null;
+        setIsScanning(false);
+        setCameraError(null);
+      }
     }
   };
 
@@ -420,13 +510,23 @@ const Scanner = () => {
             
             <div
               id="barcode-scanner"
+              ref={scannerElementRef}
               className="w-full aspect-square rounded-xl overflow-hidden bg-black mb-4 relative"
             >
-              {!isScanning && (
-                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/10">
+              {!isScanning && !cameraError && (
+                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/10 z-10">
                   <div className="text-center">
                     <Camera className="w-16 h-16 text-primary/50 mx-auto mb-4" />
                     <p className="text-muted-foreground">Camera not started</p>
+                  </div>
+                </div>
+              )}
+              {cameraError && (
+                <div className="absolute inset-0 flex items-center justify-center bg-destructive/10 z-10">
+                  <div className="text-center p-4">
+                    <XCircle className="w-16 h-16 text-destructive/50 mx-auto mb-4" />
+                    <p className="text-destructive font-medium mb-2">Camera Error</p>
+                    <p className="text-sm text-muted-foreground">{cameraError}</p>
                   </div>
                 </div>
               )}
@@ -438,9 +538,10 @@ const Scanner = () => {
                   onClick={startScanner}
                   className="w-full rounded-xl h-12"
                   size="lg"
+                  disabled={!!cameraError}
                 >
                   <Camera className="w-4 h-4 mr-2" />
-                  Start Scanner
+                  {cameraError ? "Retry Camera" : "Start Scanner"}
                 </Button>
               ) : (
                 <Button
@@ -452,6 +553,18 @@ const Scanner = () => {
                   <X className="w-4 h-4 mr-2" />
                   Stop Scanner
                 </Button>
+              )}
+
+              {cameraError && (
+                <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                  <p className="text-sm text-destructive font-medium mb-1">Troubleshooting:</p>
+                  <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
+                    <li>Check browser permissions for camera access</li>
+                    <li>Make sure no other app is using the camera</li>
+                    <li>Try refreshing the page</li>
+                    <li>Use a device with a working camera</li>
+                  </ul>
+                </div>
               )}
 
               <div className="text-center text-sm text-muted-foreground">
