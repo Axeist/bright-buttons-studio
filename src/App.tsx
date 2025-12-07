@@ -28,6 +28,7 @@ const Customers = lazy(() => import("./pages/Customers"));
 const Reports = lazy(() => import("./pages/Reports"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Staff = lazy(() => import("./pages/Staff"));
+const Scanner = lazy(() => import("./pages/Scanner"));
 
 // Optimized QueryClient configuration
 const queryClient = new QueryClient({
@@ -108,6 +109,11 @@ const App = () => (
                 <Route path="/staff" element={
                   <ProtectedRoute requireAdmin>
                     <Staff />
+                  </ProtectedRoute>
+                } />
+                <Route path="/scanner" element={
+                  <ProtectedRoute>
+                    <Scanner />
                   </ProtectedRoute>
                 } />
                 

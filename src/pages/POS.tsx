@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AdminLayout } from "@/layouts/AdminLayout";
-import { Search, Plus, Minus, CreditCard, Banknote, Smartphone, Shuffle, WifiOff, Leaf, Scan, Loader2, X, User } from "lucide-react";
+import { Search, Plus, Minus, CreditCard, Banknote, Smartphone, Shuffle, WifiOff, Leaf, Scan, Loader2, X, User, Wifi } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -67,10 +67,130 @@ const POS = () => {
   const [discountValue, setDiscountValue] = useState(0);
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<{ id: string; code: string; discount_type: "percentage" | "rupees"; discount_value: number } | null>(null);
+  const [isScannerConnected, setIsScannerConnected] = useState(false);
+  const [showScannerConnectedPopup, setShowScannerConnectedPopup] = useState(false);
+  const channelRef = useRef<any>(null);
 
   useEffect(() => {
     fetchProducts();
   }, []);
+
+  // Set up realtime communication with scanner
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('pos-scanner-sync')
+      .on(
+        'broadcast',
+        { event: 'request-customer' },
+        () => {
+          // Send current customer to scanner
+          if (customer) {
+            channel.send({
+              type: 'broadcast',
+              event: 'customer-selected',
+              payload: { customer }
+            });
+          }
+        }
+      )
+      .on(
+        'broadcast',
+        { event: 'scanner-connected' },
+        (payload) => {
+          setIsScannerConnected(true);
+          setShowScannerConnectedPopup(true);
+          toast({
+            title: "Scanner Connected!",
+            description: "Barcode scanner is now connected. Scanned items will be added to cart.",
+          });
+          // Auto-hide popup after 5 seconds
+          setTimeout(() => {
+            setShowScannerConnectedPopup(false);
+          }, 5000);
+        }
+      )
+      .on(
+        'broadcast',
+        { event: 'scanner-disconnected' },
+        () => {
+          setIsScannerConnected(false);
+          toast({
+            title: "Scanner Disconnected",
+            description: "Barcode scanner has been disconnected.",
+          });
+        }
+      )
+      .on(
+        'broadcast',
+        { event: 'scanner-customer-selected' },
+        async (payload) => {
+          // Scanner selected a customer - update POS customer
+          const scannerCustomer = payload.payload.customer;
+          setCustomer({
+            id: scannerCustomer.id,
+            name: scannerCustomer.name,
+            phone: scannerCustomer.phone,
+          });
+          setCustomerPhone(scannerCustomer.phone);
+          setCustomerName(scannerCustomer.name);
+          
+          // Notify scanner that customer is set
+          channel.send({
+            type: 'broadcast',
+            event: 'customer-selected',
+            payload: { customer: scannerCustomer }
+          });
+        }
+      )
+      .on(
+        'broadcast',
+        { event: 'barcode-scanned' },
+        async (payload) => {
+          const barcode = payload.payload.barcode;
+          handleBarcodeScan(barcode, false); // Don't close scanner when called from realtime
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          // Broadcast current customer if exists
+          if (customer) {
+            channel.send({
+              type: 'broadcast',
+              event: 'customer-selected',
+              payload: { customer }
+            });
+          }
+        }
+      });
+
+    // Store channel reference
+    channelRef.current = channel;
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, customer]);
+
+  // Broadcast customer changes
+  useEffect(() => {
+    if (!channelRef.current) return;
+
+    if (customer) {
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'customer-selected',
+        payload: { customer }
+      });
+    } else {
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'customer-cleared',
+        payload: {}
+      });
+    }
+  }, [customer]);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -100,8 +220,10 @@ const POS = () => {
     }
   };
 
-  const handleBarcodeScan = async (barcode: string) => {
-    setIsScannerOpen(false);
+  const handleBarcodeScan = async (barcode: string, closeScanner = true) => {
+    if (closeScanner) {
+      setIsScannerOpen(false);
+    }
     const product = products.find((p) => p.barcode === barcode);
     if (product) {
       addToCart(product);
@@ -568,6 +690,37 @@ const POS = () => {
 
   return (
     <AdminLayout title="Point of Sale">
+      {/* Scanner Connection Popup */}
+      <Dialog open={showScannerConnectedPopup} onOpenChange={setShowScannerConnectedPopup}>
+        <DialogContent className="sm:max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wifi className="w-5 h-5 text-primary" />
+              Scanner Connection Established
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div className="flex items-center gap-3 p-4 bg-primary/10 rounded-xl">
+              <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
+                <Scan className="w-6 h-6 text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-foreground">Barcode Scanner Connected</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Scanned barcodes will be automatically added to the cart
+                </p>
+              </div>
+            </div>
+            <Button
+              onClick={() => setShowScannerConnectedPopup(false)}
+              className="w-full rounded-xl"
+            >
+              Got it
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Customer Info */}
       <div className="mb-4">
         {customer ? (
@@ -576,7 +729,15 @@ const POS = () => {
               <User className="w-6 h-6 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-foreground truncate">{customer.name}</p>
+              <div className="flex items-center gap-2">
+                <p className="font-semibold text-foreground truncate">{customer.name}</p>
+                {isScannerConnected && (
+                  <div className="flex items-center gap-1 px-2 py-0.5 bg-primary/20 rounded-full">
+                    <Wifi className="w-3 h-3 text-primary" />
+                    <span className="text-xs text-primary font-medium">Scanner</span>
+                  </div>
+                )}
+              </div>
               <div className="flex items-center gap-2 mt-0.5">
                 <p className="text-sm text-muted-foreground">{customer.phone}</p>
                 {customer.email && (
