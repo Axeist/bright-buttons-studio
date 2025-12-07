@@ -67,17 +67,15 @@ const Scanner = () => {
   // Cleanup scanner on unmount
   useEffect(() => {
     return () => {
-      // Use a timeout to ensure cleanup happens after component unmounts
-      const timeoutId = setTimeout(() => {
-        if (scannerRef.current) {
-          scannerRef.current.stop().catch(() => {
-            // Ignore errors during unmount
-          });
-          scannerRef.current = null;
-        }
-      }, 0);
-      
-      return () => clearTimeout(timeoutId);
+      // Stop scanner immediately on unmount
+      if (scannerRef.current) {
+        const scanner = scannerRef.current;
+        scannerRef.current = null;
+        // Use stop() without await since we're in cleanup
+        scanner.stop().catch(() => {
+          // Silently ignore all errors during unmount
+        });
+      }
     };
   }, []);
 
@@ -260,25 +258,49 @@ const Scanner = () => {
     // Stop any existing scanner first
     if (scannerRef.current) {
       try {
-        await scannerRef.current.stop();
-      } catch (e) {
-        // Ignore stop errors - scanner might already be stopped
-        console.log("Error stopping previous scanner (ignored):", e);
+        const currentScanner = scannerRef.current;
+        // Check if scanner is still active
+        try {
+          await currentScanner.stop();
+        } catch (stopError: any) {
+          // If stop fails, try to get state - if it's already stopped, that's fine
+          if (!stopError.message?.includes('already stopped')) {
+            throw stopError;
+          }
+        }
+      } catch (e: any) {
+        // Only log if it's not a DOM/node error (these are common during cleanup)
+        if (!e.message?.includes('removeChild') && 
+            !e.message?.includes('not a child') &&
+            !e.message?.includes('Node')) {
+          console.log("Error stopping previous scanner (ignored):", e);
+        }
+      } finally {
+        scannerRef.current = null;
+        // Wait longer for cleanup to complete and DOM to stabilize
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
-      scannerRef.current = null;
-      // Wait a bit for cleanup to complete
-      await new Promise(resolve => setTimeout(resolve, 300));
     }
 
     setCameraError(null);
     setIsScanning(false);
 
     try {
-      // Ensure element exists and is ready
-      const scannerElement = document.getElementById("barcode-scanner");
+      // Ensure element exists and is ready - wait a bit for React to finish rendering
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      let scannerElement = document.getElementById("barcode-scanner");
       if (!scannerElement) {
-        throw new Error("Scanner element not found");
+        // Try one more time after a short delay
+        await new Promise(resolve => setTimeout(resolve, 200));
+        scannerElement = document.getElementById("barcode-scanner");
+        if (!scannerElement) {
+          throw new Error("Scanner element not found. Please refresh the page.");
+        }
       }
+
+      // Don't clear the element - let html5-qrcode manage it
+      // Clearing can cause issues with video elements
 
       // Create new scanner instance
       const scanner = new Html5Qrcode("barcode-scanner");
@@ -353,21 +375,25 @@ const Scanner = () => {
 
   const stopScanner = async () => {
     if (scannerRef.current) {
+      const scanner = scannerRef.current;
+      scannerRef.current = null; // Clear ref first to prevent race conditions
+      
       try {
-        // Check if scanner is still active before stopping
-        const scanner = scannerRef.current;
+        // Stop the scanner
         await scanner.stop();
       } catch (err: any) {
-        // Ignore errors - scanner might already be stopped or element removed
-        // This is common when component unmounts or element is removed
-        if (!err.message?.includes('removeChild') && !err.message?.includes('not a child')) {
-          console.log("Error stopping scanner (ignored):", err);
-        }
+        // Ignore all errors during stop - these are common and expected
+        // The scanner might already be stopped, element might be removed, etc.
+        // We don't want to show errors to users for cleanup issues
       } finally {
-        scannerRef.current = null;
         setIsScanning(false);
         setCameraError(null);
+        // Don't clear innerHTML - let html5-qrcode handle cleanup
+        // Clearing can cause removeChild errors
       }
+    } else {
+      setIsScanning(false);
+      setCameraError(null);
     }
   };
 
@@ -535,34 +561,40 @@ const Scanner = () => {
           </div>
         )}
 
-        {/* Scanner */}
-        {isConnected && (
-          <div className="bg-card rounded-2xl p-6 shadow-lg mb-6">
-            <h2 className="text-lg font-semibold text-foreground mb-4">Barcode Scanner</h2>
-            
+        {/* Scanner - Always render container when connected to prevent DOM removal */}
+        <div className={`bg-card rounded-2xl p-6 shadow-lg mb-6 ${!isConnected ? 'hidden' : ''}`}>
+          <h2 className="text-lg font-semibold text-foreground mb-4">Barcode Scanner</h2>
+          
+          {/* Stable container that never gets removed */}
+          <div 
+            className="w-full aspect-square rounded-xl overflow-hidden bg-black mb-4 relative"
+            key="scanner-container"
+          >
             <div
               id="barcode-scanner"
               ref={scannerElementRef}
-              className="w-full aspect-square rounded-xl overflow-hidden bg-black mb-4 relative"
-            >
-              {!isScanning && !cameraError && (
-                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/10 z-10">
-                  <div className="text-center">
-                    <Camera className="w-16 h-16 text-primary/50 mx-auto mb-4" />
-                    <p className="text-muted-foreground">Camera not started</p>
-                  </div>
+              key="scanner-element"
+              className="w-full h-full"
+              style={{ minHeight: '300px' }}
+            />
+            {!isScanning && !cameraError && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/10 z-10 pointer-events-none">
+                <div className="text-center">
+                  <Camera className="w-16 h-16 text-primary/50 mx-auto mb-4" />
+                  <p className="text-muted-foreground">Camera not started</p>
                 </div>
-              )}
-              {cameraError && (
-                <div className="absolute inset-0 flex items-center justify-center bg-destructive/10 z-10">
-                  <div className="text-center p-4">
-                    <XCircle className="w-16 h-16 text-destructive/50 mx-auto mb-4" />
-                    <p className="text-destructive font-medium mb-2">Camera Error</p>
-                    <p className="text-sm text-muted-foreground">{cameraError}</p>
-                  </div>
+              </div>
+            )}
+            {cameraError && (
+              <div className="absolute inset-0 flex items-center justify-center bg-destructive/10 z-10 pointer-events-none">
+                <div className="text-center p-4">
+                  <XCircle className="w-16 h-16 text-destructive/50 mx-auto mb-4" />
+                  <p className="text-destructive font-medium mb-2">Camera Error</p>
+                  <p className="text-sm text-muted-foreground">{cameraError}</p>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+          </div>
 
             <div className="space-y-3">
               {!isScanning ? (
