@@ -97,6 +97,32 @@ const POS = () => {
       )
       .on(
         'broadcast',
+        { event: 'scanner-ready' },
+        () => {
+          // Scanner page just opened - send customer if available and show connection
+          if (customer) {
+            // Send customer to scanner immediately
+            channel.send({
+              type: 'broadcast',
+              event: 'customer-selected',
+              payload: { customer }
+            });
+            // Show connection in POS
+            setIsScannerConnected(true);
+            setShowScannerConnectedPopup(true);
+            toast({
+              title: "Scanner Connected!",
+              description: "Barcode scanner is ready. Scanned items will be added to cart.",
+            });
+            // Auto-hide popup after 5 seconds
+            setTimeout(() => {
+              setShowScannerConnectedPopup(false);
+            }, 5000);
+          }
+        }
+      )
+      .on(
+        'broadcast',
         { event: 'scanner-connected' },
         (payload) => {
           setIsScannerConnected(true);

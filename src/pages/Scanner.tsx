@@ -14,11 +14,8 @@ const Scanner = () => {
   const { user } = useAuth();
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const [isScanning, setIsScanning] = useState(false);
-  const [customerPhone, setCustomerPhone] = useState("");
-  const [customerName, setCustomerName] = useState("");
   const [isConnected, setIsConnected] = useState(false);
   const [posCustomer, setPosCustomer] = useState<{ id: string; name: string; phone: string } | null>(null);
-  const [isCheckingCustomer, setIsCheckingCustomer] = useState(false);
   const [scannedBarcodes, setScannedBarcodes] = useState<string[]>([]);
   const [scannedProducts, setScannedProducts] = useState<Array<{
     id: string;
@@ -37,7 +34,7 @@ const Scanner = () => {
   const channelRef = useRef<any>(null);
   const scannerElementRef = useRef<HTMLDivElement>(null);
 
-  // Check for POS customer selection
+  // Check for POS customer selection and auto-connect
   useEffect(() => {
     if (!user) return;
 
@@ -48,7 +45,21 @@ const Scanner = () => {
         'broadcast',
         { event: 'customer-selected' },
         (payload) => {
-          setPosCustomer(payload.payload.customer);
+          const customer = payload.payload.customer;
+          setPosCustomer(customer);
+          // Auto-connect when customer is selected
+          if (customer && !isConnected) {
+            setIsConnected(true);
+            // Notify POS that scanner is connected
+            channel.send({
+              type: 'broadcast',
+              event: 'scanner-connected',
+              payload: {
+                customer,
+                scannerId: user?.id,
+              }
+            });
+          }
         }
       )
       .on(
@@ -57,10 +68,29 @@ const Scanner = () => {
         () => {
           setPosCustomer(null);
           setIsConnected(false);
+          // Notify POS that scanner is disconnected
+          if (channelRef.current) {
+            channel.send({
+              type: 'broadcast',
+              event: 'scanner-disconnected',
+              payload: {
+                scannerId: user?.id,
+              }
+            });
+          }
         }
       )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
+          // Immediately notify POS that scanner is ready/connected
+          channel.send({
+            type: 'broadcast',
+            event: 'scanner-ready',
+            payload: {
+              scannerId: user?.id,
+            }
+          });
+          
           // Request current customer from POS
           channel.send({
             type: 'broadcast',
@@ -77,7 +107,7 @@ const Scanner = () => {
         supabase.removeChannel(channelRef.current);
       }
     };
-  }, [user]);
+  }, [user, isConnected]);
 
   // Cleanup scanner on unmount
   useEffect(() => {
@@ -101,131 +131,6 @@ const Scanner = () => {
     }
   }, []);
 
-  const checkCustomerMatch = async () => {
-    if (!customerPhone.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter customer phone number",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsCheckingCustomer(true);
-
-    try {
-      // Check if customer exists
-      const { data: customerData, error } = await supabase
-        .from("customers")
-        .select("id, name, phone")
-        .eq("phone", customerPhone.trim())
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        throw error;
-      }
-
-      // If POS has a customer selected, verify it matches
-      if (posCustomer) {
-        if (posCustomer.phone !== customerPhone.trim()) {
-          toast({
-            title: "Customer Mismatch",
-            description: `POS has customer: ${posCustomer.name} (${posCustomer.phone}). Please enter the same customer.`,
-            variant: "destructive",
-          });
-          setIsCheckingCustomer(false);
-          return;
-        }
-
-        // Customer matches - establish connection
-        if (channelRef.current) {
-          channelRef.current.send({
-            type: 'broadcast',
-            event: 'scanner-connected',
-            payload: {
-              customer: posCustomer,
-              scannerId: user?.id,
-            }
-          });
-        }
-
-        setIsConnected(true);
-        toast({
-          title: "Scanner Connected!",
-          description: "You can now scan barcodes to add items to POS",
-        });
-      } else {
-        // No customer in POS - create or get customer and notify POS
-        let customerId: string;
-        let customerNameToUse: string;
-
-        if (customerData) {
-          customerId = customerData.id;
-          customerNameToUse = customerData.name;
-        } else {
-          // Create new customer
-          const { data: newCustomer, error: createError } = await supabase
-            .from("customers")
-            .insert({
-              name: customerName.trim() || "Walk-in Customer",
-              phone: customerPhone.trim(),
-            })
-            .select()
-            .single();
-
-          if (createError) throw createError;
-          customerId = newCustomer.id;
-          customerNameToUse = newCustomer.name;
-        }
-
-        const customer = {
-          id: customerId,
-          name: customerNameToUse,
-          phone: customerPhone.trim(),
-        };
-
-        // Notify POS to select this customer
-        if (channelRef.current) {
-          channelRef.current.send({
-            type: 'broadcast',
-            event: 'scanner-customer-selected',
-            payload: {
-              customer,
-              scannerId: user?.id,
-            }
-          });
-          
-          // Wait a bit for POS to process, then send connection event
-          setTimeout(() => {
-            if (channelRef.current) {
-              channelRef.current.send({
-                type: 'broadcast',
-                event: 'scanner-connected',
-                payload: {
-                  customer,
-                  scannerId: user?.id,
-                }
-              });
-            }
-          }, 100);
-        }
-
-        setIsConnected(true);
-        toast({
-          title: "Scanner Connected!",
-          description: "You can now scan barcodes to add items to POS",
-        });
-      }
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to verify customer",
-        variant: "destructive",
-      });
-    } finally {
-      setIsCheckingCustomer(false);
-    }
-  };
 
   const startScanner = async () => {
     if (!isConnected) {
@@ -505,9 +410,6 @@ const Scanner = () => {
     }
     setIsConnected(false);
     stopScanner();
-    setCustomerPhone("");
-    setCustomerName("");
-    setPosCustomer(null);
     toast({
       title: "Disconnected",
       description: "Scanner disconnected from POS",
@@ -543,111 +445,43 @@ const Scanner = () => {
             )}
           </div>
 
-          {/* Connection Status */}
-          {posCustomer && !isConnected && (
+          {/* Customer Info - Show when connected */}
+          {isConnected && posCustomer && (
             <div className="p-4 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-xl mb-4 shadow-sm">
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center flex-shrink-0">
                   <User className="w-5 h-5 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-foreground">POS Customer Selected</p>
-                  <p className="text-sm text-foreground mt-1 font-medium">
+                  <p className="text-xs font-medium text-muted-foreground mb-1">Scanning for</p>
+                  <p className="text-sm font-semibold text-foreground">
                     {posCustomer.name}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {posCustomer.phone}
                   </p>
-                  <p className="text-xs text-primary mt-2 font-medium">
-                    Enter the same customer phone to connect
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Waiting for Customer */}
+          {!isConnected && !posCustomer && (
+            <div className="bg-card rounded-2xl p-6 shadow-lg mb-6 border border-border/50">
+              <div className="flex flex-col items-center gap-4 text-center">
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                  <User className="w-8 h-8 text-primary/50" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-foreground mb-1">Waiting for Customer</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Please select a customer in POS to start scanning
                   </p>
                 </div>
               </div>
             </div>
           )}
         </div>
-
-        {/* Customer Verification */}
-        {!isConnected ? (
-          <div className="bg-card rounded-2xl p-6 shadow-lg mb-6 border border-border/50">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                <User className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-foreground">Connect to POS</h2>
-                <p className="text-xs text-muted-foreground">Verify customer to start scanning</p>
-              </div>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="phone">Customer Phone *</Label>
-                <Input
-                  id="phone"
-                  value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value)}
-                  placeholder="+91 98765 43210"
-                  className="rounded-xl h-12 mt-1"
-                  disabled={isCheckingCustomer}
-                />
-              </div>
-              <div>
-                <Label htmlFor="name">Customer Name (Optional)</Label>
-                <Input
-                  id="name"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder="Customer name"
-                  className="rounded-xl h-12 mt-1"
-                  disabled={isCheckingCustomer}
-                />
-              </div>
-              <Button
-                onClick={checkCustomerMatch}
-                disabled={!customerPhone.trim() || isCheckingCustomer}
-                className="w-full rounded-xl h-12"
-                size="lg"
-              >
-                {isCheckingCustomer ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Verifying...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="w-4 h-4 mr-2" />
-                    Connect to POS
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-2xl p-6 shadow-lg mb-6 border border-primary/20">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
-                  <CheckCircle2 className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-foreground">Connected</h2>
-                  <p className="text-sm text-muted-foreground">
-                    Ready to scan barcodes
-                  </p>
-                </div>
-              </div>
-              <Button
-                onClick={disconnect}
-                variant="outline"
-                size="sm"
-                className="rounded-xl border-primary/20 hover:bg-primary/10"
-              >
-                <X className="w-4 h-4 mr-2" />
-                Disconnect
-              </Button>
-            </div>
-          </div>
-        )}
 
         {/* Scanner - Always render container when connected to prevent DOM removal */}
         <div className={`bg-card rounded-2xl p-6 shadow-lg mb-6 ${!isConnected ? 'hidden' : ''}`}>
@@ -823,22 +657,18 @@ const Scanner = () => {
           <ol className="text-xs text-muted-foreground space-y-2">
             <li className="flex items-start gap-2">
               <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-medium">1</span>
-              <span>Make sure a customer is selected in POS</span>
+              <span>Select a customer in POS</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-medium">2</span>
-              <span>Enter the same customer phone number</span>
+              <span>Scanner will automatically connect</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-medium">3</span>
-              <span>Click "Connect to POS"</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-medium">4</span>
               <span>Start the scanner and scan barcodes</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-medium">5</span>
+              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-medium">4</span>
               <span>Items will be added to POS cart automatically</span>
             </li>
           </ol>
