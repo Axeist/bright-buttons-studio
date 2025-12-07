@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { Logo } from "@/components/Logo";
+import { CuephoriaBranding } from "@/components/CuephoriaBranding";
 
 const Scanner = () => {
   const { user } = useAuth();
@@ -515,8 +517,13 @@ const Scanner = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 via-background to-earth-50 dark:from-background dark:via-background dark:to-background safe-top safe-bottom">
       <div className="container mx-auto px-4 py-6 max-w-md">
-        {/* Header */}
+        {/* Logo and Header */}
         <div className="mb-6">
+          {/* Bright Buttons Logo */}
+          <div className="flex justify-center mb-4">
+            <Logo size="xl" linkTo="/" className="!h-20" />
+          </div>
+          
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-primary-700 flex items-center justify-center shadow-lg">
@@ -808,7 +815,7 @@ const Scanner = () => {
         )}
 
         {/* Instructions */}
-        <div className="bg-card/80 backdrop-blur-sm rounded-2xl p-5 border border-border/50 shadow-sm">
+        <div className="bg-card/80 backdrop-blur-sm rounded-2xl p-5 border border-border/50 shadow-sm mb-6">
           <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-primary" />
             How to use
@@ -835,6 +842,11 @@ const Scanner = () => {
               <span>Items will be added to POS cart automatically</span>
             </li>
           </ol>
+        </div>
+
+        {/* Cuephoria Tech Branding */}
+        <div className="flex justify-center pt-4 border-t border-border/50">
+          <CuephoriaBranding variant="subtle" />
         </div>
       </div>
     </div>
