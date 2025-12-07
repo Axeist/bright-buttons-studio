@@ -136,7 +136,7 @@ const Scanner = () => {
     if (!isConnected) {
       toast({
         title: "Not Connected",
-        description: "Please connect to POS first by verifying customer",
+        description: "Please select a customer in POS first to start scanning",
         variant: "destructive",
       });
       return;
@@ -255,13 +255,19 @@ const Scanner = () => {
           disableFlip: false,
         },
         (decodedText) => {
-          handleBarcodeScan(decodedText);
+          console.log("Barcode scanned:", decodedText);
+          // Only process if we have a valid barcode
+          if (decodedText && decodedText.trim().length > 0) {
+            handleBarcodeScan(decodedText.trim());
+          }
         },
         (errorMessage) => {
           // Ignore scanning errors (these are normal during scanning)
           // Only log if it's not a common scanning error
           if (!errorMessage.includes('NotFoundException') && 
-              !errorMessage.includes('No MultiFormat Readers')) {
+              !errorMessage.includes('No MultiFormat Readers') &&
+              !errorMessage.includes('QR code parse error') &&
+              !errorMessage.includes('No QR code found')) {
             // Silent - these are expected during scanning
           }
         }
@@ -318,8 +324,16 @@ const Scanner = () => {
   };
 
   const handleBarcodeScan = async (barcode: string) => {
+    console.log("handleBarcodeScan called with:", barcode);
+    
+    if (!barcode || !barcode.trim()) {
+      console.log("Empty barcode, ignoring");
+      return;
+    }
+    
     // Prevent duplicate scans within short time
     if (scannedBarcodes.includes(barcode)) {
+      console.log("Duplicate scan detected, ignoring");
       return;
     }
 
