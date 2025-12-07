@@ -67,7 +67,17 @@ const Scanner = () => {
   // Cleanup scanner on unmount
   useEffect(() => {
     return () => {
-      stopScanner();
+      // Use a timeout to ensure cleanup happens after component unmounts
+      const timeoutId = setTimeout(() => {
+        if (scannerRef.current) {
+          scannerRef.current.stop().catch(() => {
+            // Ignore errors during unmount
+          });
+          scannerRef.current = null;
+        }
+      }, 0);
+      
+      return () => clearTimeout(timeoutId);
     };
   }, []);
 
@@ -214,6 +224,11 @@ const Scanner = () => {
       return;
     }
 
+    // Prevent starting if already scanning
+    if (isScanning || scannerRef.current) {
+      return;
+    }
+
     // Check browser support
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       const errorMsg = "Your browser does not support camera access. Please use a modern browser.";
@@ -246,18 +261,26 @@ const Scanner = () => {
     if (scannerRef.current) {
       try {
         await scannerRef.current.stop();
-        await scannerRef.current.clear();
       } catch (e) {
-        // Ignore stop errors
-        console.log("Error stopping previous scanner:", e);
+        // Ignore stop errors - scanner might already be stopped
+        console.log("Error stopping previous scanner (ignored):", e);
       }
       scannerRef.current = null;
+      // Wait a bit for cleanup to complete
+      await new Promise(resolve => setTimeout(resolve, 300));
     }
 
     setCameraError(null);
     setIsScanning(false);
 
     try {
+      // Ensure element exists and is ready
+      const scannerElement = document.getElementById("barcode-scanner");
+      if (!scannerElement) {
+        throw new Error("Scanner element not found");
+      }
+
+      // Create new scanner instance
       const scanner = new Html5Qrcode("barcode-scanner");
       scannerRef.current = scanner;
 
@@ -294,7 +317,11 @@ const Scanner = () => {
         },
         (errorMessage) => {
           // Ignore scanning errors (these are normal during scanning)
-          console.log("Scanning error (ignored):", errorMessage);
+          // Only log if it's not a common scanning error
+          if (!errorMessage.includes('NotFoundException') && 
+              !errorMessage.includes('No MultiFormat Readers')) {
+            // Silent - these are expected during scanning
+          }
         }
       );
 
@@ -327,10 +354,15 @@ const Scanner = () => {
   const stopScanner = async () => {
     if (scannerRef.current) {
       try {
-        await scannerRef.current.stop();
-        await scannerRef.current.clear();
-      } catch (err) {
-        console.log("Error stopping scanner:", err);
+        // Check if scanner is still active before stopping
+        const scanner = scannerRef.current;
+        await scanner.stop();
+      } catch (err: any) {
+        // Ignore errors - scanner might already be stopped or element removed
+        // This is common when component unmounts or element is removed
+        if (!err.message?.includes('removeChild') && !err.message?.includes('not a child')) {
+          console.log("Error stopping scanner (ignored):", err);
+        }
       } finally {
         scannerRef.current = null;
         setIsScanning(false);
