@@ -939,15 +939,6 @@ const Products = () => {
                       </td>
                       <td className="p-4">
                         <div className="flex items-center gap-2">
-                          <motion.button
-                            whileHover={{ scale: 1.1, rotate: 5 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => openEditModal(product)}
-                            className="p-2 text-muted-foreground hover:text-primary rounded-lg hover:bg-primary/10 transition-colors"
-                            title="Edit product"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </motion.button>
                           {product.barcode && (
                             <motion.button
                               whileHover={{ scale: 1.1, rotate: 5 }}
@@ -962,6 +953,15 @@ const Products = () => {
                               <Eye className="w-4 h-4" />
                             </motion.button>
                           )}
+                          <motion.button
+                            whileHover={{ scale: 1.1, rotate: 5 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => openEditModal(product)}
+                            className="p-2 text-muted-foreground hover:text-primary rounded-lg hover:bg-primary/10 transition-colors"
+                            title="Edit product"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </motion.button>
                           <motion.button
                             whileHover={{ scale: 1.1, rotate: -5 }}
                             whileTap={{ scale: 0.9 }}
