@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AdminLayout } from "@/layouts/AdminLayout";
-import { Search, Plus, Edit, Trash2, Leaf, Sparkles, Package, Scan, Loader2, AlertCircle, Upload, Download, FileText, X, Image as ImageIcon } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Leaf, Sparkles, Package, Scan, Loader2, AlertCircle, Upload, Download, FileText, X, Image as ImageIcon, Printer, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { useAuth } from "@/hooks/useAuth";
-import { generateBarcode } from "@/lib/barcode";
+import { generateBarcode, generateBarcodeImage } from "@/lib/barcode";
 import { parseCSV, validateCSVData, generateSampleCSV, CSVProductRow, CSVValidationError } from "@/lib/csvImport";
 
 const categories = [
@@ -70,6 +70,9 @@ const Products = () => {
   const [isImporting, setIsImporting] = useState(false);
   const [importErrors, setImportErrors] = useState<CSVValidationError[]>([]);
   const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [isBarcodeModalOpen, setIsBarcodeModalOpen] = useState(false);
+  const [barcodeImageUrl, setBarcodeImageUrl] = useState<string | null>(null);
+  const [currentBarcodeValue, setCurrentBarcodeValue] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -123,6 +126,92 @@ const Products = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleViewBarcode = (barcodeValue: string) => {
+    if (!barcodeValue) {
+      toast({
+        title: "No Barcode",
+        description: "Please enter or generate a barcode first",
+        variant: "destructive",
+      });
+      return;
+    }
+    const imageUrl = generateBarcodeImage(barcodeValue);
+    setBarcodeImageUrl(imageUrl);
+    setCurrentBarcodeValue(barcodeValue);
+    setIsBarcodeModalOpen(true);
+  };
+
+  const handlePrintBarcode = () => {
+    if (!barcodeImageUrl) return;
+    
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Barcode - ${currentBarcodeValue}</title>
+          <style>
+            @media print {
+              @page {
+                margin: 20mm;
+                size: A4;
+              }
+              body {
+                margin: 0;
+                padding: 0;
+              }
+            }
+            body {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              min-height: 100vh;
+              font-family: Arial, sans-serif;
+              padding: 20px;
+            }
+            .barcode-container {
+              text-align: center;
+              padding: 20px;
+              border: 1px solid #ddd;
+              border-radius: 8px;
+              background: white;
+            }
+            .barcode-image {
+              max-width: 100%;
+              height: auto;
+            }
+            .barcode-value {
+              margin-top: 10px;
+              font-size: 18px;
+              font-weight: bold;
+            }
+            .product-name {
+              margin-top: 5px;
+              font-size: 14px;
+              color: #666;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="barcode-container">
+            <img src="${barcodeImageUrl}" alt="Barcode ${currentBarcodeValue}" class="barcode-image" />
+            <div class="barcode-value">${currentBarcodeValue}</div>
+            ${editingProduct ? `<div class="product-name">${editingProduct.name}</div>` : ''}
+          </div>
+          <script>
+            window.onload = function() {
+              window.print();
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   const handleBarcodeScan = async (barcode: string) => {
@@ -1023,9 +1112,21 @@ const Products = () => {
                     variant="outline"
                     onClick={() => setIsScannerOpen(true)}
                     className="rounded-xl h-12"
+                    title="Scan barcode"
                   >
                     <Scan className="w-4 h-4" />
                   </Button>
+                  {formData.barcode && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => handleViewBarcode(formData.barcode)}
+                      className="rounded-xl h-12"
+                      title="View/Print barcode"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                  )}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   Leave empty to auto-generate a scannable barcode
@@ -1271,9 +1372,21 @@ const Products = () => {
                     variant="outline"
                     onClick={() => setIsScannerOpen(true)}
                     className="rounded-xl h-12"
+                    title="Scan barcode"
                   >
                     <Scan className="w-4 h-4" />
                   </Button>
+                  {formData.barcode && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => handleViewBarcode(formData.barcode)}
+                      className="rounded-xl h-12"
+                      title="View/Print barcode"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                  )}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   Leave empty to auto-generate a scannable barcode
@@ -1391,6 +1504,56 @@ const Products = () => {
         onScan={handleBarcodeScan}
         onClose={() => setIsScannerOpen(false)}
       />
+
+      {/* Barcode Preview/Print Modal */}
+      <Dialog open={isBarcodeModalOpen} onOpenChange={setIsBarcodeModalOpen}>
+        <DialogContent className="sm:max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-script text-gradient flex items-center gap-2">
+              <Package className="w-6 h-6 text-primary" />
+              Barcode
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground pt-2">
+              {editingProduct ? `Barcode for ${editingProduct.name}` : "Product barcode"}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {barcodeImageUrl && (
+              <div className="flex flex-col items-center justify-center p-6 bg-white dark:bg-gray-900 rounded-xl border border-primary-200 dark:border-primary-800">
+                <img
+                  src={barcodeImageUrl}
+                  alt={`Barcode ${currentBarcodeValue}`}
+                  className="max-w-full h-auto"
+                />
+                <div className="mt-4 text-center">
+                  <p className="text-lg font-semibold">{currentBarcodeValue}</p>
+                  {editingProduct && (
+                    <p className="text-sm text-muted-foreground mt-1">{editingProduct.name}</p>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1 rounded-xl"
+                onClick={() => setIsBarcodeModalOpen(false)}
+              >
+                Close
+              </Button>
+              <Button
+                className="flex-1 rounded-xl bg-gradient-to-r from-primary to-primary-700 dark:from-primary-600 dark:to-primary-800"
+                onClick={handlePrintBarcode}
+              >
+                <Printer className="w-4 h-4 mr-2" />
+                Print
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Import Products Modal */}
       <Dialog open={isImportModalOpen} onOpenChange={setIsImportModalOpen}>
