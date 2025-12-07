@@ -944,14 +944,30 @@ const Products = () => {
                             whileTap={{ scale: 0.9 }}
                             onClick={() => openEditModal(product)}
                             className="p-2 text-muted-foreground hover:text-primary rounded-lg hover:bg-primary/10 transition-colors"
+                            title="Edit product"
                           >
                             <Edit className="w-4 h-4" />
                           </motion.button>
+                          {product.barcode && (
+                            <motion.button
+                              whileHover={{ scale: 1.1, rotate: 5 }}
+                              whileTap={{ scale: 0.9 }}
+                              onClick={() => {
+                                setEditingProduct(product);
+                                handleViewBarcode(product.barcode!);
+                              }}
+                              className="p-2 text-muted-foreground hover:text-primary rounded-lg hover:bg-primary/10 transition-colors"
+                              title="View/Print barcode"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </motion.button>
+                          )}
                           <motion.button
                             whileHover={{ scale: 1.1, rotate: -5 }}
                             whileTap={{ scale: 0.9 }}
                             onClick={() => handleDeleteProduct(product.id)}
                             className="p-2 text-muted-foreground hover:text-destructive rounded-lg hover:bg-destructive/10 transition-colors"
+                            title="Delete product"
                           >
                             <Trash2 className="w-4 h-4" />
                           </motion.button>
