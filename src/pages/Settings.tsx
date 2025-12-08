@@ -81,7 +81,17 @@ const Settings = () => {
 
       const settingsMap: Record<string, any> = {};
       data?.forEach((item) => {
-        settingsMap[item.key] = typeof item.value === "string" ? JSON.parse(item.value) : item.value;
+        if (typeof item.value === "string") {
+          // Try to parse as JSON, but if it fails, use the string as-is
+          try {
+            settingsMap[item.key] = JSON.parse(item.value);
+          } catch {
+            // If parsing fails, it's a plain string, use it directly
+            settingsMap[item.key] = item.value;
+          }
+        } else {
+          settingsMap[item.key] = item.value;
+        }
       });
 
       setSettings({
