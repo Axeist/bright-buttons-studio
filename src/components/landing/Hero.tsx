@@ -2,7 +2,7 @@ import { memo } from "react";
 import { motion } from "framer-motion";
 import { Leaf, Sparkles, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { Link } from "react-router-dom";
 
 const techniques = ["Eco printing", "Tie & Dye", "Shibori", "Batik", "Kalamkari"];
 
@@ -224,9 +224,15 @@ export const Hero = memo(() => {
                 whileTap={{ scale: 0.95 }}
                 className="flex-1 sm:flex-initial"
               >
-                <WhatsAppButton variant="inline" className="w-full sm:w-auto">
-                  Chat on WhatsApp
-                </WhatsAppButton>
+                <Link to="/shop">
+                  <Button 
+                    variant="outline" 
+                    size="lg" 
+                    className="w-full sm:w-auto h-12 sm:h-11 px-6 sm:px-8 rounded-full border-2"
+                  >
+                    Browse Collection
+                  </Button>
+                </Link>
               </motion.div>
             </motion.div>
           </motion.div>

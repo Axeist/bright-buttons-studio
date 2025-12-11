@@ -36,7 +36,7 @@ export const ContactSection = () => {
     if (!formData.name || !formData.phone) {
       toast({
         title: "Please fill required fields",
-        description: "Name and WhatsApp number are required.",
+        description: "Name and phone number are required.",
         variant: "destructive"
       });
       return;
@@ -45,7 +45,7 @@ export const ContactSection = () => {
     setIsSubmitted(true);
     toast({
       title: "Thank you!",
-      description: "We'll get back to you on WhatsApp soon.",
+      description: "We'll get back to you soon.",
     });
   };
 
@@ -78,7 +78,7 @@ export const ContactSection = () => {
             <div>
               <h3 className="text-xl font-semibold text-foreground mb-4">Get in Touch</h3>
               <p className="text-muted-foreground mb-6">
-                The fastest way to reach us is through WhatsApp. We typically respond within a few hours and love discussing custom ideas!
+                Have questions about our products or want to discuss custom orders? We'd love to hear from you!
               </p>
             </div>
 
@@ -141,7 +141,7 @@ export const ContactSection = () => {
                 </div>
                 <h3 className="text-xl font-semibold text-foreground mb-2">Thank You!</h3>
                 <p className="text-muted-foreground mb-6">
-                  We've received your enquiry and will get back to you on WhatsApp soon.
+                  We've received your enquiry and will get back to you soon.
                 </p>
                 <Button onClick={() => setIsSubmitted(false)} variant="outline" className="rounded-full">
                   Send Another Enquiry
@@ -165,7 +165,7 @@ export const ContactSection = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-1.5">
-                      WhatsApp Number <span className="text-destructive">*</span>
+                      Phone Number <span className="text-destructive">*</span>
                     </label>
                     <Input
                       value={formData.phone}

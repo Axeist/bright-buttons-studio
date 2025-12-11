@@ -1,7 +1,10 @@
-import { Leaf, Eye, MessageCircle } from "lucide-react";
+import { Leaf, Eye, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { type Product } from "@/types/product";
-import { getWhatsAppLink } from "@/components/WhatsAppButton";
+import { useNavigate } from "react-router-dom";
+import { useCart } from "@/hooks/useCart";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "@/hooks/use-toast";
 
 interface ProductCardProps {
   product: Product;
@@ -9,8 +12,23 @@ interface ProductCardProps {
 }
 
 export const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
-  const handleWhatsAppEnquiry = () => {
-    window.open(getWhatsAppLink(product.name, product.category, product.fabric), "_blank");
+  const navigate = useNavigate();
+  const { addToCart } = useCart();
+  const { user } = useAuth();
+  
+  const handleAddToCart = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) {
+      toast({
+        title: "Please login",
+        description: "You need to login to add items to cart",
+        variant: "destructive",
+      });
+      navigate("/customer/login");
+      return;
+    }
+    const productId = typeof product.id === 'string' ? product.id : product.id.toString();
+    await addToCart(productId, 1);
   };
 
   return (
@@ -96,11 +114,11 @@ export const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
           </Button>
           <Button 
             size="sm" 
-            className="flex-1 rounded-full bg-[#25D366] hover:bg-[#20BD5A] text-white w-full sm:w-auto min-h-[44px]"
-            onClick={handleWhatsAppEnquiry}
+            className="flex-1 rounded-full bg-primary hover:bg-primary-700 text-white w-full sm:w-auto min-h-[44px]"
+            onClick={handleAddToCart}
           >
-            <MessageCircle className="w-4 h-4 mr-1" />
-            Enquire
+            <ShoppingCart className="w-4 h-4 mr-1" />
+            Add to Cart
           </Button>
         </div>
       </div>

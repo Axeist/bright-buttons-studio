@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, useInView } from "framer-motion";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ProductCard } from "./ProductCard";
 import { ProductQuickView } from "./ProductQuickView";
+import { Button } from "@/components/ui/button";
 
 interface Product {
   id: string;
@@ -63,10 +65,15 @@ export const CollectionsSection = () => {
           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-script text-gradient mb-3 sm:mb-4">
             Handcrafted Collections
           </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-muted-foreground max-w-2xl mx-auto mb-6">
             Each piece tells a story through natural dyes, textures, and prints. 
             Discover your unique statement piece.
           </p>
+          <Link to="/shop">
+            <Button size="lg" className="rounded-full">
+              View All Products
+            </Button>
+          </Link>
         </motion.div>
 
         {/* Category Filters */}
@@ -112,7 +119,7 @@ export const CollectionsSection = () => {
               >
                 <ProductCard
                   product={{
-                    id: parseInt(product.id.split("-")[0]) || 0,
+                    id: product.id as any,
                     name: product.name,
                     category: product.category as any,
                     fabric: product.fabric as any,
@@ -136,7 +143,7 @@ export const CollectionsSection = () => {
         {selectedProduct && (
           <ProductQuickView
             product={{
-              id: parseInt(selectedProduct.id.split("-")[0]) || 0,
+              id: selectedProduct.id as any,
               name: selectedProduct.name,
               category: selectedProduct.category as any,
               fabric: selectedProduct.fabric as any,

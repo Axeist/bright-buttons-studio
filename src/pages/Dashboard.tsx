@@ -5,7 +5,6 @@ import {
   TrendingUp, 
   ShoppingBag, 
   DollarSign, 
-  MessageCircle,
   Package,
   AlertTriangle,
   ArrowUpRight,
@@ -66,7 +65,6 @@ const Dashboard = () => {
       const todayRevenue = todayOrders?.reduce((sum, o) => sum + o.total_amount, 0) || 0;
       const todayOrdersCount = todayOrders?.length || 0;
       const avgOrderValue = todayOrdersCount > 0 ? todayRevenue / todayOrdersCount : 0;
-      const whatsappOrders = todayOrders?.filter(o => o.source === "whatsapp").length || 0;
 
       // Low stock items
       const { data: lowStockData } = await supabase
@@ -113,7 +111,7 @@ const Dashboard = () => {
         todayRevenue,
         todayOrders: todayOrdersCount,
         avgOrderValue,
-        whatsappOrders,
+        whatsappOrders: 0, // Deprecated, kept for compatibility
         lowStockItems,
         topProducts,
         recentOrders: recentOrdersData || [],
@@ -158,13 +156,13 @@ const Dashboard = () => {
       iconColor: "text-primary"
     },
     { 
-      title: "WhatsApp Orders", 
-      value: stats.whatsappOrders.toString(), 
-      change: "Pending",
-      icon: MessageCircle,
-      color: "from-[#25D366] to-[#20BD5A]",
-      iconBg: "bg-[#25D366]/20",
-      iconColor: "text-[#25D366]"
+      title: "Online Orders", 
+      value: (todayOrders?.filter(o => o.source === "online").length || 0).toString(), 
+      change: "Today",
+      icon: Package,
+      color: "from-blue-500 to-blue-700",
+      iconBg: "bg-blue-100 dark:bg-blue-900/40",
+      iconColor: "text-blue-600 dark:text-blue-400"
     },
   ];
 

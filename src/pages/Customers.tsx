@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { AdminLayout } from "@/layouts/AdminLayout";
-import { Search, User, Loader2, Plus } from "lucide-react";
+import { Search, User, Loader2, Plus, Gift, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
@@ -17,6 +18,9 @@ interface Customer {
   total_orders: number;
   total_spent: number;
   last_purchase_at: string | null;
+  loyalty_points?: number;
+  loyalty_tier?: string;
+  user_id?: string;
 }
 
 const Customers = () => {
@@ -168,6 +172,7 @@ const Customers = () => {
                 <th className="text-left text-sm font-medium text-muted-foreground p-4 hidden lg:table-cell">Email</th>
                 <th className="text-left text-sm font-medium text-muted-foreground p-4">Orders</th>
                 <th className="text-left text-sm font-medium text-muted-foreground p-4">Total Spent</th>
+                <th className="text-left text-sm font-medium text-muted-foreground p-4 hidden lg:table-cell">Loyalty</th>
                 <th className="text-left text-sm font-medium text-muted-foreground p-4 hidden sm:table-cell">Last Purchase</th>
               </tr>
             </thead>
@@ -197,6 +202,17 @@ const Customers = () => {
                   </td>
                   <td className="p-4 text-sm text-foreground">{customer.total_orders}</td>
                   <td className="p-4 text-sm font-semibold text-foreground">₹{customer.total_spent.toLocaleString()}</td>
+                  <td className="p-4 hidden lg:table-cell">
+                    <div className="flex items-center gap-2">
+                      <Gift className="w-4 h-4 text-primary" />
+                      <span className="text-sm font-medium">{customer.loyalty_points || 0}</span>
+                      {customer.loyalty_tier && (
+                        <Badge variant="outline" className="text-xs capitalize">
+                          {customer.loyalty_tier}
+                        </Badge>
+                      )}
+                    </div>
+                  </td>
                   <td className="p-4 text-sm text-muted-foreground hidden sm:table-cell">
                     {formatDate(customer.last_purchase_at)}
                   </td>
