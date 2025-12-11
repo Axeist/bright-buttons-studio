@@ -31,6 +31,13 @@ ALTER TABLE public.customer_auth ENABLE ROW LEVEL SECURITY;
 -- Note: Customer auth is separate from Supabase auth.users
 -- We'll use session-based authentication stored in localStorage on the client side
 -- For now, allow public access to customer_auth (we'll handle auth in application layer)
+
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Customers can view their own auth" ON public.customer_auth;
+DROP POLICY IF EXISTS "Public can insert customer auth for new customers" ON public.customer_auth;
+DROP POLICY IF EXISTS "Customers can update their own auth" ON public.customer_auth;
+DROP POLICY IF EXISTS "Admins can view all customer auth" ON public.customer_auth;
+
 -- Admins can view all customer auth
 CREATE POLICY "Admins can view all customer auth"
 ON public.customer_auth FOR SELECT
@@ -45,12 +52,6 @@ WITH CHECK (true);
 
 -- Allow public to verify password (for login)
 -- This is handled by the verify_customer_password function which is SECURITY DEFINER
-
--- Admins can view all customer auth
-CREATE POLICY "Admins can view all customer auth"
-ON public.customer_auth FOR SELECT
-TO authenticated
-USING (public.has_role(auth.uid(), 'admin'));
 
 -- Function to hash password (using pgcrypto extension)
 CREATE EXTENSION IF NOT EXISTS pgcrypto;

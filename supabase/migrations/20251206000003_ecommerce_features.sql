@@ -42,6 +42,15 @@ ALTER TABLE public.customer_addresses ENABLE ROW LEVEL SECURITY;
 -- RLS Policies for customer_addresses
 -- Note: Customer auth is separate from Supabase auth.users
 -- We allow public access and handle authorization in application layer
+
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Customers can view their own addresses" ON public.customer_addresses;
+DROP POLICY IF EXISTS "Customers can insert their own addresses" ON public.customer_addresses;
+DROP POLICY IF EXISTS "Customers can update their own addresses" ON public.customer_addresses;
+DROP POLICY IF EXISTS "Customers can delete their own addresses" ON public.customer_addresses;
+DROP POLICY IF EXISTS "Admins can view all addresses" ON public.customer_addresses;
+DROP POLICY IF EXISTS "Public can manage addresses" ON public.customer_addresses;
+
 -- Admins can view all addresses
 CREATE POLICY "Admins can view all addresses"
 ON public.customer_addresses FOR SELECT
@@ -54,11 +63,6 @@ ON public.customer_addresses FOR ALL
 TO public
 USING (true)
 WITH CHECK (true);
-
-CREATE POLICY "Admins can view all addresses"
-ON public.customer_addresses FOR SELECT
-TO authenticated
-USING (public.has_role(auth.uid(), 'admin'));
 
 -- 4. Create shopping_cart table
 CREATE TABLE IF NOT EXISTS public.shopping_cart (
