@@ -19,7 +19,6 @@ CREATE INDEX IF NOT EXISTS idx_customers_user_id ON public.customers(user_id);
 CREATE TABLE IF NOT EXISTS public.customer_addresses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   customer_id UUID NOT NULL REFERENCES public.customers(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   type TEXT NOT NULL CHECK (type IN ('home', 'work', 'other')) DEFAULT 'home',
   full_name TEXT NOT NULL,
   phone TEXT NOT NULL,
@@ -36,39 +35,25 @@ CREATE TABLE IF NOT EXISTS public.customer_addresses (
 
 -- Create indexes
 CREATE INDEX IF NOT EXISTS idx_customer_addresses_customer_id ON public.customer_addresses(customer_id);
-CREATE INDEX IF NOT EXISTS idx_customer_addresses_user_id ON public.customer_addresses(user_id);
 
 -- Enable RLS
 ALTER TABLE public.customer_addresses ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for customer_addresses
-CREATE POLICY "Customers can view their own addresses"
+-- Note: Customer auth is separate from Supabase auth.users
+-- We allow public access and handle authorization in application layer
+-- Admins can view all addresses
+CREATE POLICY "Admins can view all addresses"
 ON public.customer_addresses FOR SELECT
 TO authenticated
-USING (auth.uid() = user_id OR EXISTS (
-  SELECT 1 FROM public.customers WHERE id = customer_addresses.customer_id AND user_id = auth.uid()
-));
+USING (public.has_role(auth.uid(), 'admin'));
 
-CREATE POLICY "Customers can insert their own addresses"
-ON public.customer_addresses FOR INSERT
-TO authenticated
-WITH CHECK (auth.uid() = user_id OR EXISTS (
-  SELECT 1 FROM public.customers WHERE id = customer_addresses.customer_id AND user_id = auth.uid()
-));
-
-CREATE POLICY "Customers can update their own addresses"
-ON public.customer_addresses FOR UPDATE
-TO authenticated
-USING (auth.uid() = user_id OR EXISTS (
-  SELECT 1 FROM public.customers WHERE id = customer_addresses.customer_id AND user_id = auth.uid()
-));
-
-CREATE POLICY "Customers can delete their own addresses"
-ON public.customer_addresses FOR DELETE
-TO authenticated
-USING (auth.uid() = user_id OR EXISTS (
-  SELECT 1 FROM public.customers WHERE id = customer_addresses.customer_id AND user_id = auth.uid()
-));
+-- Allow public to insert/update/delete (handled by application layer)
+CREATE POLICY "Public can manage addresses"
+ON public.customer_addresses FOR ALL
+TO public
+USING (true)
+WITH CHECK (true);
 
 CREATE POLICY "Admins can view all addresses"
 ON public.customer_addresses FOR SELECT

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAuth } from "@/hooks/useAuth";
+import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +30,7 @@ interface Address {
 }
 
 const CustomerProfile = () => {
-  const { user, signOut } = useAuth();
+  const { customer, signOut, loading: customerLoading } = useCustomerAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -59,39 +59,33 @@ const CustomerProfile = () => {
   });
 
   useEffect(() => {
-    if (!user) {
+    if (!customerLoading && !customer) {
       navigate("/customer/login");
       return;
     }
-    fetchData();
-  }, [user]);
+    if (customer) {
+      fetchData();
+    }
+  }, [customer, customerLoading]);
 
   const fetchData = async () => {
-    if (!user) return;
+    if (!customer) return;
 
     setLoading(true);
     try {
-      const { data: customerData } = await supabase
-        .from("customers")
-        .select("*")
-        .eq("user_id", user.id)
-        .single();
-
-      if (customerData) {
-        setCustomer(customerData);
-        setProfileForm({
-          name: customerData.name || "",
-          email: customerData.email || user.email || "",
-          phone: customerData.phone || "",
-          date_of_birth: customerData.date_of_birth || "",
-          gender: customerData.gender || "",
-        });
-      }
+      setCustomer(customer);
+      setProfileForm({
+        name: customer.name || "",
+        email: customer.email || "",
+        phone: customer.phone || "",
+        date_of_birth: (customer as any).date_of_birth || "",
+        gender: (customer as any).gender || "",
+      });
 
       const { data: addressesData } = await supabase
         .from("customer_addresses")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("customer_id", customer.id)
         .order("is_default", { ascending: false });
 
       setAddresses(addressesData || []);
@@ -103,7 +97,7 @@ const CustomerProfile = () => {
   };
 
   const handleSaveProfile = async () => {
-    if (!user || !customer) return;
+    if (!customer) return;
 
     setSaving(true);
     try {
@@ -138,7 +132,7 @@ const CustomerProfile = () => {
   };
 
   const handleSaveAddress = async () => {
-    if (!user) return;
+    if (!customer) return;
 
     if (!addressForm.full_name || !addressForm.phone || !addressForm.address_line1 || !addressForm.city || !addressForm.state || !addressForm.pincode) {
       toast({
@@ -155,7 +149,7 @@ const CustomerProfile = () => {
           .from("customer_addresses")
           .update({
             ...addressForm,
-            user_id: user.id,
+            customer_id: customer.id,
           })
           .eq("id", editingAddress.id);
 
@@ -169,7 +163,7 @@ const CustomerProfile = () => {
           .from("customer_addresses")
           .insert({
             ...addressForm,
-            user_id: user.id,
+            customer_id: customer.id,
           });
 
         if (error) throw error;

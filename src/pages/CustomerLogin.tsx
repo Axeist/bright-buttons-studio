@@ -7,8 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { z } from "zod";
 
 const loginSchema = z.object({
@@ -29,7 +28,7 @@ const signupSchema = z.object({
 
 const CustomerLogin = () => {
   const navigate = useNavigate();
-  const { user, signIn, signUp } = useAuth();
+  const { customer, signIn, signUp, loading } = useCustomerAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -43,11 +42,11 @@ const CustomerLogin = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    // If user is logged in and has no admin role, redirect to customer portal
-    if (user) {
+    // If customer is logged in, redirect to customer dashboard
+    if (customer && !loading) {
       navigate("/customer/dashboard");
     }
-  }, [user, navigate]);
+  }, [customer, loading, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,6 +71,7 @@ const CustomerLogin = () => {
         description: error.message || "Invalid email or password",
         variant: "destructive",
       });
+      setIsSubmitting(false);
     } else {
       toast({
         title: "Welcome back!",
@@ -79,7 +79,6 @@ const CustomerLogin = () => {
       });
       navigate("/customer/dashboard");
     }
-    setIsSubmitting(false);
   };
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -97,7 +96,7 @@ const CustomerLogin = () => {
     }
 
     setIsSubmitting(true);
-    const { error } = await signUp(email, password, fullName);
+    const { error } = await signUp(email, password, fullName, phone);
 
     if (error) {
       toast({
@@ -109,35 +108,12 @@ const CustomerLogin = () => {
       return;
     }
 
-    // Create customer record
-    try {
-      const { data: { user: newUser } } = await supabase.auth.getUser();
-      if (newUser) {
-        const { error: customerError } = await supabase
-          .from("customers")
-          .insert({
-            id: newUser.id,
-            name: fullName,
-            email: email,
-            phone: phone,
-            user_id: newUser.id,
-            customer_type: "new",
-          });
-
-        if (customerError) {
-          console.error("Error creating customer:", customerError);
-        }
-      }
-    } catch (err) {
-      console.error("Error:", err);
-    }
-
     toast({
       title: "Account created!",
-      description: "Please check your email to verify your account.",
+      description: "Welcome! Your account has been created successfully.",
     });
     setIsSubmitting(false);
-    setIsLogin(true);
+    navigate("/customer/dashboard");
   };
 
   return (

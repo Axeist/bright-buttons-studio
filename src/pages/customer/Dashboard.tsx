@@ -5,7 +5,7 @@ import { Package, ShoppingBag, Star, Gift, User, MapPin, CreditCard, TrendingUp,
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PublicLayout } from "@/layouts/PublicLayout";
-import { useAuth } from "@/hooks/useAuth";
+import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +25,7 @@ interface CustomerStats {
 }
 
 const CustomerDashboard = () => {
-  const { user } = useAuth();
+  const { customer, loading: customerLoading } = useCustomerAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<CustomerStats>({
@@ -37,25 +37,20 @@ const CustomerDashboard = () => {
   });
 
   useEffect(() => {
-    if (!user) {
+    if (!customerLoading && !customer) {
       navigate("/customer/login");
       return;
     }
-    fetchData();
-  }, [user]);
+    if (customer) {
+      fetchData();
+    }
+  }, [customer, customerLoading]);
 
   const fetchData = async () => {
-    if (!user) return;
+    if (!customer) return;
 
     setLoading(true);
     try {
-      // Get customer record
-      const { data: customer } = await supabase
-        .from("customers")
-        .select("*")
-        .eq("user_id", user.id)
-        .single();
-
       if (customer) {
         // Fetch orders
         const { data: orders } = await supabase
@@ -148,7 +143,7 @@ const CustomerDashboard = () => {
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">₹{stats.totalSpent.toLocaleString()}</div>
+                <div className="text-2xl font-bold">?{stats.totalSpent.toLocaleString()}</div>
                 <p className="text-xs text-muted-foreground">Lifetime value</p>
               </CardContent>
             </Card>
@@ -213,7 +208,7 @@ const CustomerDashboard = () => {
                               </p>
                             </div>
                             <div className="text-right">
-                              <p className="font-semibold">₹{order.total_amount.toLocaleString()}</p>
+                              <p className="font-semibold">?{order.total_amount.toLocaleString()}</p>
                               <Badge className={getStatusColor(order.status)}>
                                 {order.status}
                               </Badge>

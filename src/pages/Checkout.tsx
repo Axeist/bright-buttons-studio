@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useCart } from "@/hooks/useCart";
-import { useAuth } from "@/hooks/useAuth";
+import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
@@ -32,7 +32,7 @@ interface Address {
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { customer, loading: customerLoading } = useCustomerAuth();
   const { items, loading: cartLoading, getTotalPrice, clearCart, refreshCart } = useCart();
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddress, setSelectedAddress] = useState<string>("");
@@ -54,25 +54,27 @@ const Checkout = () => {
   });
 
   useEffect(() => {
-    if (!user) {
+    if (!customerLoading && !customer) {
       navigate("/customer/login");
       return;
     }
-    if (items.length === 0 && !cartLoading) {
+    if (customer && items.length === 0 && !cartLoading) {
       navigate("/shop");
       return;
     }
-    fetchAddresses();
-  }, [user, items, cartLoading]);
+    if (customer) {
+      fetchAddresses();
+    }
+  }, [customer, customerLoading, items, cartLoading]);
 
   const fetchAddresses = async () => {
-    if (!user) return;
+    if (!customer) return;
 
     try {
       const { data, error } = await supabase
         .from("customer_addresses")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("customer_id", customer.id)
         .order("is_default", { ascending: false });
 
       if (error) throw error;
@@ -87,7 +89,7 @@ const Checkout = () => {
   };
 
   const handleSaveAddress = async () => {
-    if (!user) return;
+    if (!customer) return;
 
     if (!addressForm.full_name || !addressForm.phone || !addressForm.address_line1 || !addressForm.city || !addressForm.state || !addressForm.pincode) {
       toast({
@@ -104,7 +106,7 @@ const Checkout = () => {
           .from("customer_addresses")
           .update({
             ...addressForm,
-            user_id: user.id,
+            customer_id: customer.id,
           })
           .eq("id", editingAddress.id);
 
@@ -118,7 +120,7 @@ const Checkout = () => {
           .from("customer_addresses")
           .insert({
             ...addressForm,
-            user_id: user.id,
+            customer_id: customer.id,
           });
 
         if (error) throw error;
@@ -175,7 +177,7 @@ const Checkout = () => {
   };
 
   const handlePlaceOrder = async () => {
-    if (!user || !selectedAddress) {
+    if (!customer || !selectedAddress) {
       toast({
         title: "Error",
         description: "Please select a delivery address",
@@ -187,14 +189,7 @@ const Checkout = () => {
     setIsProcessing(true);
 
     try {
-      // Get customer record
-      const { data: customer } = await supabase
-        .from("customers")
-        .select("id")
-        .eq("user_id", user.id)
-        .single();
-
-      const customerId = customer?.id || null;
+      const customerId = customer.id;
 
       // Generate order number
       const { data: orderNumberData } = await supabase.rpc("generate_order_number");
@@ -217,7 +212,7 @@ const Checkout = () => {
           customer_id: customerId,
           customer_name: selectedAddr.full_name,
           customer_phone: selectedAddr.phone,
-          customer_email: user.email || null,
+          customer_email: customer.email || null,
           shipping_address: `${selectedAddr.address_line1}, ${selectedAddr.address_line2 ? selectedAddr.address_line2 + ", " : ""}${selectedAddr.city}, ${selectedAddr.state} - ${selectedAddr.pincode}`,
           shipping_address_id: selectedAddress,
           status: paymentMethod === "cod" ? "pending" : "confirmed",
@@ -270,7 +265,7 @@ const Checkout = () => {
         if (pointsEarned > 0) {
           await supabase.from("loyalty_points_transactions").insert({
             customer_id: customerId,
-            user_id: user.id,
+            user_id: null, // Customer auth is separate, no user_id needed
             points: pointsEarned,
             transaction_type: "earned",
             order_id: order.id,

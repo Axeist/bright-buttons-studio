@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/hooks/useAuth";
+import { CustomerAuthProvider } from "@/hooks/useCustomerAuth";
 import { CartProvider } from "@/hooks/useCart";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ConstructionPopup } from "@/components/ConstructionPopup";
@@ -67,10 +68,11 @@ const App = () => (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
       <TooltipProvider>
         <AuthProvider>
-          <CartProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
+          <CustomerAuthProvider>
+            <CartProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
               <Suspense fallback={<LoadingFallback />}>
                 <Routes>
                   {/* Public Routes */}
@@ -173,6 +175,7 @@ const App = () => (
             </BrowserRouter>
             <ConstructionPopup />
           </CartProvider>
+          </CustomerAuthProvider>
         </AuthProvider>
       </TooltipProvider>
     </ThemeProvider>

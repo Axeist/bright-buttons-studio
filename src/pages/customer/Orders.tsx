@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAuth } from "@/hooks/useAuth";
+import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -34,19 +34,21 @@ interface Order {
 const CustomerOrders = () => {
   const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { customer, loading: customerLoading } = useCustomerAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
 
   useEffect(() => {
-    if (!user) {
+    if (!customerLoading && !customer) {
       navigate("/customer/login");
       return;
     }
-    fetchOrders();
-  }, [user, activeTab]);
+    if (customer) {
+      fetchOrders();
+    }
+  }, [customer, customerLoading, activeTab]);
 
   useEffect(() => {
     if (id) {
@@ -55,16 +57,10 @@ const CustomerOrders = () => {
   }, [id]);
 
   const fetchOrders = async () => {
-    if (!user) return;
+    if (!customer) return;
 
     setLoading(true);
     try {
-      const { data: customer } = await supabase
-        .from("customers")
-        .select("id")
-        .eq("user_id", user.id)
-        .single();
-
       if (!customer) return;
 
       let query = supabase
