@@ -86,6 +86,13 @@ CREATE INDEX IF NOT EXISTS idx_shopping_cart_product_id ON public.shopping_cart(
 ALTER TABLE public.shopping_cart ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for shopping_cart
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Users can view their own cart" ON public.shopping_cart;
+DROP POLICY IF EXISTS "Users can insert into their own cart" ON public.shopping_cart;
+DROP POLICY IF EXISTS "Users can update their own cart" ON public.shopping_cart;
+DROP POLICY IF EXISTS "Users can delete from their own cart" ON public.shopping_cart;
+DROP POLICY IF EXISTS "Admins can view all carts" ON public.shopping_cart;
+
 CREATE POLICY "Users can view their own cart"
 ON public.shopping_cart FOR SELECT
 TO authenticated
@@ -129,6 +136,11 @@ CREATE INDEX IF NOT EXISTS idx_wishlist_product_id ON public.wishlist(product_id
 ALTER TABLE public.wishlist ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for wishlist
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Users can view their own wishlist" ON public.wishlist;
+DROP POLICY IF EXISTS "Users can add to their own wishlist" ON public.wishlist;
+DROP POLICY IF EXISTS "Users can remove from their own wishlist" ON public.wishlist;
+
 CREATE POLICY "Users can view their own wishlist"
 ON public.wishlist FOR SELECT
 TO authenticated
@@ -166,6 +178,11 @@ CREATE INDEX IF NOT EXISTS idx_loyalty_points_order_id ON public.loyalty_points_
 ALTER TABLE public.loyalty_points_transactions ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for loyalty_points_transactions
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Customers can view their own loyalty transactions" ON public.loyalty_points_transactions;
+DROP POLICY IF EXISTS "Admins can view all loyalty transactions" ON public.loyalty_points_transactions;
+DROP POLICY IF EXISTS "System can insert loyalty transactions" ON public.loyalty_points_transactions;
+
 CREATE POLICY "Customers can view their own loyalty transactions"
 ON public.loyalty_points_transactions FOR SELECT
 TO authenticated
@@ -203,6 +220,12 @@ CREATE INDEX IF NOT EXISTS idx_order_tracking_created_at ON public.order_trackin
 ALTER TABLE public.order_tracking ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for order_tracking
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Customers can view tracking for their orders" ON public.order_tracking;
+DROP POLICY IF EXISTS "Admins can view all order tracking" ON public.order_tracking;
+DROP POLICY IF EXISTS "Admins can insert order tracking" ON public.order_tracking;
+DROP POLICY IF EXISTS "Admins can update order tracking" ON public.order_tracking;
+
 CREATE POLICY "Customers can view tracking for their orders"
 ON public.order_tracking FOR SELECT
 TO authenticated
@@ -254,6 +277,14 @@ CREATE INDEX IF NOT EXISTS idx_product_reviews_approved ON public.product_review
 ALTER TABLE public.product_reviews ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for product_reviews
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Anyone can view approved reviews" ON public.product_reviews;
+DROP POLICY IF EXISTS "Users can view their own reviews" ON public.product_reviews;
+DROP POLICY IF EXISTS "Users can insert their own reviews" ON public.product_reviews;
+DROP POLICY IF EXISTS "Users can update their own reviews" ON public.product_reviews;
+DROP POLICY IF EXISTS "Admins can view all reviews" ON public.product_reviews;
+DROP POLICY IF EXISTS "Admins can update all reviews" ON public.product_reviews;
+
 CREATE POLICY "Anyone can view approved reviews"
 ON public.product_reviews FOR SELECT
 TO public
