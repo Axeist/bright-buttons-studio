@@ -288,6 +288,9 @@ END;
 $$;
 
 -- Trigger to update updated_at
+-- Drop existing trigger if it exists
+DROP TRIGGER IF EXISTS update_customer_auth_updated_at ON public.customer_auth;
+
 CREATE TRIGGER update_customer_auth_updated_at
 BEFORE UPDATE ON public.customer_auth
 FOR EACH ROW

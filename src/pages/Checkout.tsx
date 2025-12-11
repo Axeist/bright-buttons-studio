@@ -63,7 +63,7 @@ const Checkout = () => {
       return;
     }
     if (customer) {
-      fetchAddresses();
+    fetchAddresses();
     }
   }, [customer, customerLoading, items, cartLoading]);
 

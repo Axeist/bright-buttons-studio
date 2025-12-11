@@ -322,6 +322,11 @@ TO authenticated
 USING (public.has_role(auth.uid(), 'admin'));
 
 -- 9. Add triggers for updated_at
+-- Drop existing triggers if they exist
+DROP TRIGGER IF EXISTS update_customer_addresses_updated_at ON public.customer_addresses;
+DROP TRIGGER IF EXISTS update_shopping_cart_updated_at ON public.shopping_cart;
+DROP TRIGGER IF EXISTS update_product_reviews_updated_at ON public.product_reviews;
+
 CREATE TRIGGER update_customer_addresses_updated_at
 BEFORE UPDATE ON public.customer_addresses
 FOR EACH ROW
@@ -354,6 +359,9 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- Trigger to update loyalty tier
+-- Drop existing trigger if it exists
+DROP TRIGGER IF EXISTS update_loyalty_tier_trigger ON public.customers;
+
 CREATE TRIGGER update_loyalty_tier_trigger
 AFTER UPDATE OF loyalty_points ON public.customers
 FOR EACH ROW
@@ -376,6 +384,9 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- Trigger to ensure single default address
+-- Drop existing trigger if it exists
+DROP TRIGGER IF EXISTS ensure_single_default_address_trigger ON public.customer_addresses;
+
 CREATE TRIGGER ensure_single_default_address_trigger
 BEFORE INSERT OR UPDATE ON public.customer_addresses
 FOR EACH ROW
@@ -415,6 +426,9 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- Trigger to create tracking entry on order status change
+-- Drop existing trigger if it exists
+DROP TRIGGER IF EXISTS create_order_tracking_trigger ON public.orders;
+
 CREATE TRIGGER create_order_tracking_trigger
 AFTER INSERT OR UPDATE OF status ON public.orders
 FOR EACH ROW
