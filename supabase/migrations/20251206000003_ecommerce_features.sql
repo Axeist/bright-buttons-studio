@@ -371,13 +371,25 @@ CREATE INDEX IF NOT EXISTS idx_orders_shipping_address_id ON public.orders(shipp
 CREATE OR REPLACE FUNCTION public.create_order_tracking_entry()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.order_tracking (order_id, status, message, created_by)
-  VALUES (
-    NEW.id,
-    NEW.status::TEXT,
-    'Order status updated to ' || NEW.status::TEXT,
-    NEW.created_by
-  );
+  -- For INSERT operations, always create a tracking entry
+  -- For UPDATE operations, only create if status changed
+  IF TG_OP = 'INSERT' THEN
+    INSERT INTO public.order_tracking (order_id, status, message, created_by)
+    VALUES (
+      NEW.id,
+      NEW.status::TEXT,
+      'Order created with status ' || NEW.status::TEXT,
+      NEW.created_by
+    );
+  ELSIF TG_OP = 'UPDATE' AND (OLD.status IS DISTINCT FROM NEW.status) THEN
+    INSERT INTO public.order_tracking (order_id, status, message, created_by)
+    VALUES (
+      NEW.id,
+      NEW.status::TEXT,
+      'Order status updated to ' || NEW.status::TEXT,
+      NEW.created_by
+    );
+  END IF;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
@@ -386,5 +398,4 @@ $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 CREATE TRIGGER create_order_tracking_trigger
 AFTER INSERT OR UPDATE OF status ON public.orders
 FOR EACH ROW
-WHEN (OLD.status IS DISTINCT FROM NEW.status OR OLD.id IS NULL)
 EXECUTE FUNCTION public.create_order_tracking_entry();

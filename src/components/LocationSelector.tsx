@@ -80,6 +80,10 @@ export const LocationSelector = () => {
     const found = popularLocations.find((loc) => loc.pincode === pincode);
     if (found) {
       setSearchResults([found]);
+      // Auto-select the location if it's a valid match from popular locations
+      setTimeout(() => {
+        handleSelectLocation(found);
+      }, 100);
     } else {
       // For demo, assume delivery is available
       const newLocation: Location = {
