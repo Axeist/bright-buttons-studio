@@ -147,7 +147,7 @@ export const CustomerAuthProvider = ({ children }: { children: ReactNode }) => {
             full_name: fullName,
             phone: phone,
           },
-          emailRedirectTo: `${window.location.origin}/customer/dashboard`,
+          emailRedirectTo: `${window.location.origin}/customer/confirm`,
         },
       });
 
@@ -183,7 +183,7 @@ export const CustomerAuthProvider = ({ children }: { children: ReactNode }) => {
   const resetPassword = async (email: string) => {
     try {
       // Use Supabase Auth password reset
-      const redirectUrl = `${window.location.origin}/customer/login`;
+      const redirectUrl = `${window.location.origin}/customer/reset-password`;
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: redirectUrl,
       });
@@ -207,7 +207,7 @@ export const CustomerAuthProvider = ({ children }: { children: ReactNode }) => {
         type: 'signup',
         email: email,
         options: {
-          emailRedirectTo: `${window.location.origin}/customer/dashboard`,
+          emailRedirectTo: `${window.location.origin}/customer/confirm`,
         },
       });
 

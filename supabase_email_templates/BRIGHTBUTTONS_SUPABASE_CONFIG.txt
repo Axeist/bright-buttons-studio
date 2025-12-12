@@ -1,0 +1,83 @@
+═══════════════════════════════════════════════════════════════════════════════
+  BRIGHT BUTTONS - SUPABASE DASHBOARD CONFIGURATION
+  Domain: brightbuttons.in
+═══════════════════════════════════════════════════════════════════════════════
+
+📋 COPY-PASTE CONFIGURATION FOR SUPABASE DASHBOARD
+───────────────────────────────────────────────────────────────────────────────
+
+STEP 1: SITE URL
+───────────────────────────────────────────────────────────────────────────────
+Location: Settings → API → Site URL
+
+Production:
+https://brightbuttons.in
+
+Development (for local testing):
+http://localhost:5173
+
+
+STEP 2: REDIRECT URLs
+───────────────────────────────────────────────────────────────────────────────
+Location: Authentication → URL Configuration → Redirect URLs
+
+Copy and paste these URLs (one per line):
+
+PRODUCTION URLs:
+───────────────────────────────────────────────────────────────────────────────
+https://brightbuttons.in/customer/confirm
+https://brightbuttons.in/customer/reset-password
+https://brightbuttons.in/customer/dashboard
+https://brightbuttons.in/confirm
+https://brightbuttons.in/reset-password
+https://brightbuttons.in/dashboard
+https://brightbuttons.in/login
+https://brightbuttons.in/customer/login
+
+DEVELOPMENT URLs (for local testing):
+───────────────────────────────────────────────────────────────────────────────
+http://localhost:5173/customer/confirm
+http://localhost:5173/customer/reset-password
+http://localhost:5173/customer/dashboard
+http://localhost:5173/confirm
+http://localhost:5173/reset-password
+http://localhost:5173/dashboard
+http://localhost:5173/login
+http://localhost:5173/customer/login
+
+
+STEP 3: EMAIL TEMPLATE SUBJECT LINES
+───────────────────────────────────────────────────────────────────────────────
+Location: Authentication → Email Templates
+
+CONFIRM SIGNUP:
+Subject: 🌿 Welcome to Bright Buttons! Confirm Your Email ✨
+Body: Copy from confirm_signup.html
+
+RESET PASSWORD:
+Subject: 🔐 Reset Your Bright Buttons Password
+Body: Copy from reset_password.html
+
+
+STEP 4: EMAIL CONFIRMATIONS
+───────────────────────────────────────────────────────────────────────────────
+Location: Authentication → Settings → Enable email confirmations
+
+✅ ENABLED (for production)
+⚠️  Can disable temporarily for development/testing
+
+
+═══════════════════════════════════════════════════════════════════════════════
+  QUICK CHECKLIST
+═══════════════════════════════════════════════════════════════════════════════
+
+□ Site URL set to: https://brightbuttons.in
+□ All 8 production redirect URLs added
+□ Email templates updated with custom HTML
+□ Email confirmations enabled
+□ Tested customer signup flow
+□ Tested staff signup flow
+□ Tested password reset flows
+
+═══════════════════════════════════════════════════════════════════════════════
+

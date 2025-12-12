@@ -27,6 +27,8 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Customer Pages
 const CustomerLogin = lazy(() => import("./pages/CustomerLogin"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const EmailConfirmation = lazy(() => import("./pages/EmailConfirmation"));
 const Checkout = lazy(() => import("./pages/Checkout"));
 const OrderConfirmation = lazy(() => import("./pages/OrderConfirmation"));
 const CustomerDashboard = lazy(() => import("./pages/customer/Dashboard"));
@@ -90,6 +92,8 @@ const App = () => (
                   
                   {/* Customer Auth Routes */}
                   <Route path="/customer/login" element={<CustomerLogin />} />
+                  <Route path="/customer/reset-password" element={<ResetPassword />} />
+                  <Route path="/customer/confirm" element={<EmailConfirmation />} />
                   
                   {/* Customer Routes */}
                   <Route path="/checkout" element={<Checkout />} />
@@ -122,6 +126,8 @@ const App = () => (
                   
                   {/* Admin Auth Routes */}
                   <Route path="/login" element={<Login />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
+                  <Route path="/confirm" element={<EmailConfirmation />} />
                   
                   {/* Protected Staff Routes (Admin/Staff) */}
                   <Route path="/dashboard" element={
