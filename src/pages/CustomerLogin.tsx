@@ -6,6 +6,7 @@ import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { useAuth } from "@/hooks/useAuth";
@@ -30,7 +31,7 @@ const signupSchema = z.object({
 
 const CustomerLogin = () => {
   const navigate = useNavigate();
-  const { customer, signIn, signUp, resendConfirmationEmail, loading } = useCustomerAuth();
+  const { customer, signIn, signUp, resendConfirmationEmail, resetPassword, loading } = useCustomerAuth();
   const { user, role } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
@@ -43,6 +44,10 @@ const CustomerLogin = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [forgotPasswordError, setForgotPasswordError] = useState("");
 
   useEffect(() => {
     // If user is logged in with customer role, redirect to customer dashboard
@@ -163,6 +168,50 @@ const CustomerLogin = () => {
     }
     setIsSubmitting(false);
     // User will be redirected after email confirmation
+  };
+
+  const handleForgotPassword = async () => {
+    setForgotPasswordError("");
+    
+    if (!forgotPasswordEmail) {
+      setForgotPasswordError("Please enter your email address");
+      return;
+    }
+
+    const emailSchema = z.string().email("Please enter a valid email address");
+    const result = emailSchema.safeParse(forgotPasswordEmail);
+    
+    if (!result.success) {
+      setForgotPasswordError("Please enter a valid email address");
+      return;
+    }
+
+    setIsResettingPassword(true);
+
+    const { error } = await resetPassword(forgotPasswordEmail);
+
+    if (error) {
+      let errorMessage = "Failed to send reset email. Please try again.";
+      const errorMsg = error?.message || String(error);
+      
+      if (errorMsg.includes("rate limit") || errorMsg.includes("too many")) {
+        errorMessage = "Too many requests. Please wait a moment and try again.";
+      } else {
+        errorMessage = `Failed to send reset email: ${errorMsg}`;
+      }
+
+      setForgotPasswordError(errorMessage);
+      setIsResettingPassword(false);
+      return;
+    }
+
+    toast({
+      title: "Reset link sent!",
+      description: "Check your email for password reset instructions.",
+    });
+    setShowForgotPassword(false);
+    setForgotPasswordEmail("");
+    setIsResettingPassword(false);
   };
 
   return (
@@ -286,9 +335,13 @@ const CustomerLogin = () => {
                       Remember me
                     </label>
                   </div>
-                  <Link to="/forgot-password" className="text-sm text-primary hover:underline">
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPassword(true)}
+                    className="text-sm text-primary hover:underline"
+                  >
                     Forgot password?
-                  </Link>
+                  </button>
                 </div>
 
                 <Button 
@@ -456,6 +509,75 @@ const CustomerLogin = () => {
           </div>
         </div>
       </motion.div>
+
+      {/* Forgot Password Dialog */}
+      <Dialog open={showForgotPassword} onOpenChange={setShowForgotPassword}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Enter your email address and we'll send you a link to reset your password.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="forgot-email" className="text-sm font-medium">
+                Email Address
+              </label>
+              <Input
+                id="forgot-email"
+                type="email"
+                placeholder="you@example.com"
+                value={forgotPasswordEmail}
+                onChange={(e) => {
+                  setForgotPasswordEmail(e.target.value);
+                  setForgotPasswordError("");
+                }}
+                disabled={isResettingPassword}
+                className={forgotPasswordError ? "border-destructive" : ""}
+              />
+              {forgotPasswordError && (
+                <p className="text-sm text-destructive">
+                  <span>{forgotPasswordError}</span>
+                </p>
+              )}
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowForgotPassword(false);
+                  setForgotPasswordEmail("");
+                  setForgotPasswordError("");
+                }}
+                className="flex-1 rounded-xl"
+                disabled={isResettingPassword}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleForgotPassword}
+                className="flex-1 rounded-xl bg-gradient-to-r from-primary to-primary-700 dark:from-primary-600 dark:to-primary-800"
+                disabled={isResettingPassword}
+              >
+                {isResettingPassword ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Mail className="mr-2 h-4 w-4" />
+                    Send Reset Link
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
