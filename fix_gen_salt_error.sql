@@ -2,8 +2,36 @@
 -- Copy and paste this ENTIRE script into Supabase SQL Editor and run it
 -- This will fix the create_customer_auth function that's causing the signup error
 
--- First, ensure pgcrypto extension is enabled
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
+-- STEP 1: Check if pgcrypto extension is enabled
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pgcrypto') THEN
+    RAISE NOTICE 'pgcrypto extension not found. Attempting to create...';
+    BEGIN
+      CREATE EXTENSION IF NOT EXISTS pgcrypto;
+      RAISE NOTICE 'pgcrypto extension created successfully';
+    EXCEPTION WHEN OTHERS THEN
+      RAISE WARNING 'Could not create pgcrypto extension. Error: %', SQLERRM;
+      RAISE WARNING 'Please enable pgcrypto extension manually via Supabase Dashboard > Database > Extensions';
+    END;
+  ELSE
+    RAISE NOTICE 'pgcrypto extension is already enabled';
+  END IF;
+END $$;
+
+-- STEP 2: Verify gen_salt function exists
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_proc p
+    JOIN pg_namespace n ON p.pronamespace = n.oid
+    WHERE n.nspname = 'public' AND p.proname = 'gen_salt'
+  ) THEN
+    RAISE WARNING 'gen_salt function not found in public schema. pgcrypto extension may not be properly installed.';
+  ELSE
+    RAISE NOTICE 'gen_salt function found - proceeding with function fixes';
+  END IF;
+END $$;
 
 -- Fix the create_customer_auth function (this is the one causing the error during signup)
 CREATE OR REPLACE FUNCTION public.create_customer_auth(
