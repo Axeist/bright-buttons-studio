@@ -3,6 +3,14 @@
 -- The issue is that with SET search_path = public, pgcrypto functions need to be fully qualified
 -- Note: pgcrypto extension should already be enabled in Supabase. If not, enable it via Supabase Dashboard > Database > Extensions
 
+-- Ensure pgcrypto extension is enabled (may require superuser, but try anyway)
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pgcrypto') THEN
+    CREATE EXTENSION IF NOT EXISTS pgcrypto;
+  END IF;
+END $$;
+
 -- Fix verify_customer_password function
 CREATE OR REPLACE FUNCTION public.verify_customer_password(
   _email TEXT,
@@ -15,7 +23,7 @@ RETURNS TABLE (
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pgcrypto
+SET search_path = public
 AS $$
 DECLARE
   _password_hash TEXT;
@@ -31,8 +39,8 @@ BEGIN
     RETURN;
   END IF;
 
-  -- Verify password using pgcrypto.crypt
-  IF pgcrypto.crypt(_password, _auth_record.password_hash) = _auth_record.password_hash THEN
+  -- Verify password using crypt (pgcrypto extension functions are in public schema)
+  IF crypt(_password, _auth_record.password_hash) = _auth_record.password_hash THEN
     -- Update last login
     UPDATE public.customer_auth
     SET last_login_at = NOW()
@@ -60,15 +68,15 @@ CREATE OR REPLACE FUNCTION public.create_customer_auth(
 RETURNS UUID
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pgcrypto
+SET search_path = public
 AS $$
 DECLARE
   _auth_id UUID;
   _password_hash TEXT;
   _verification_token TEXT;
 BEGIN
-  -- Generate password hash using pgcrypto functions
-  _password_hash := pgcrypto.crypt(_password, pgcrypto.gen_salt('bf'));
+  -- Generate password hash using pgcrypto functions (in public schema when extension is enabled)
+  _password_hash := crypt(_password, gen_salt('bf'));
 
   -- Generate verification token
   _verification_token := encode(gen_random_bytes(32), 'hex');
@@ -101,7 +109,7 @@ CREATE OR REPLACE FUNCTION public.update_customer_password(
 RETURNS BOOLEAN
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pgcrypto
+SET search_path = public
 AS $$
 DECLARE
   _auth_record RECORD;
@@ -117,13 +125,13 @@ BEGIN
     RETURN false;
   END IF;
 
-  -- Verify old password using pgcrypto.crypt
-  IF pgcrypto.crypt(_old_password, _auth_record.password_hash) != _auth_record.password_hash THEN
+  -- Verify old password using crypt
+  IF crypt(_old_password, _auth_record.password_hash) != _auth_record.password_hash THEN
     RETURN false;
   END IF;
 
   -- Generate new password hash using pgcrypto functions
-  _new_password_hash := pgcrypto.crypt(_new_password, pgcrypto.gen_salt('bf'));
+  _new_password_hash := crypt(_new_password, gen_salt('bf'));
 
   -- Update password
   UPDATE public.customer_auth
@@ -144,7 +152,7 @@ CREATE OR REPLACE FUNCTION public.reset_customer_password(
 RETURNS BOOLEAN
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pgcrypto
+SET search_path = public
 AS $$
 DECLARE
   _auth_record RECORD;
@@ -168,7 +176,7 @@ BEGIN
   END IF;
 
   -- Generate new password hash using pgcrypto functions
-  _new_password_hash := pgcrypto.crypt(_new_password, pgcrypto.gen_salt('bf'));
+  _new_password_hash := crypt(_new_password, gen_salt('bf'));
 
   -- Update password and clear reset token
   UPDATE public.customer_auth
