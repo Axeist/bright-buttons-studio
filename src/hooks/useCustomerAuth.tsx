@@ -125,19 +125,18 @@ export const CustomerAuthProvider = ({ children }: { children: ReactNode }) => {
         return { error: { message: "An account with this email already exists" } };
       }
 
-      // Create customer record
-      const { data: newCustomer, error: customerError } = await supabase
-        .from("customers")
-        .insert({
-          name: fullName,
-          phone: phone,
-          email: email,
-          customer_type: "new",
-        })
-        .select("id")
-        .single();
+      // Create customer record using SECURITY DEFINER function to bypass RLS
+      const { data: customerId, error: customerError } = await supabase.rpc("create_customer", {
+        _name: fullName,
+        _email: email,
+        _phone: phone,
+        _customer_type: "new",
+      });
 
       if (customerError) throw customerError;
+      if (!customerId) throw new Error("Failed to create customer record");
+
+      const newCustomer = { id: customerId };
 
       // Create customer auth record
       const { error: authError } = await supabase.rpc("create_customer_auth", {
@@ -147,8 +146,10 @@ export const CustomerAuthProvider = ({ children }: { children: ReactNode }) => {
       });
 
       if (authError) {
-        // Rollback customer creation
-        await supabase.from("customers").delete().eq("id", newCustomer.id);
+        // Rollback customer creation using SECURITY DEFINER function to bypass RLS
+        await supabase.rpc("delete_customer", {
+          _customer_id: newCustomer.id,
+        });
         throw authError;
       }
 
