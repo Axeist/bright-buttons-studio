@@ -138,7 +138,8 @@ const Login = () => {
 
     toast({
       title: "Reset link sent!",
-      description: "Check your email for password reset instructions.",
+      description: "Check your email (including spam folder) for password reset instructions. The email should arrive within 30 seconds if custom SMTP is configured, or 2-5 minutes with default settings.",
+      duration: 8000,
     });
     setShowForgotPassword(false);
     setForgotPasswordEmail("");

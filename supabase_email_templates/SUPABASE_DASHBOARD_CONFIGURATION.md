@@ -269,8 +269,9 @@ Before deploying to production:
 
 1. **Use Environment Variables:** Store your site URL in environment variables for easy switching between dev/staging/prod
 2. **Monitor Auth Logs:** Regularly check Auth Logs in Supabase Dashboard to catch issues early
-3. **Custom SMTP:** For production, use a custom SMTP provider (SendGrid, Mailgun, AWS SES) for better email deliverability
+3. **Custom SMTP:** For production, use a custom SMTP provider (SendGrid, Mailgun, AWS SES) for better email deliverability and faster delivery (10-30 seconds vs 2-5 minutes)
 4. **Test Regularly:** Test email flows after any changes to authentication configuration
+5. **Fast Email Delivery:** See `FAST_EMAIL_DELIVERY_SETUP.md` for detailed instructions on configuring custom SMTP to speed up email delivery
 
 ---
 

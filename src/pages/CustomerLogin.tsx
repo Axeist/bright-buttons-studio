@@ -194,8 +194,15 @@ const CustomerLogin = () => {
       let errorMessage = "Failed to send reset email. Please try again.";
       const errorMsg = error?.message || String(error);
       
+      console.error("Password reset error:", error);
+      
       if (errorMsg.includes("rate limit") || errorMsg.includes("too many")) {
-        errorMessage = "Too many requests. Please wait a moment and try again.";
+        errorMessage = "Too many requests. Please wait 10-15 minutes and try again.";
+      } else if (errorMsg.includes("redirect") || errorMsg.includes("invalid")) {
+        errorMessage = "Configuration error. Please contact support.";
+        console.error("Redirect URL issue - check Supabase Dashboard → Authentication → URL Configuration");
+      } else if (errorMsg.includes("user not found") || errorMsg.includes("not found")) {
+        errorMessage = "No account found with this email address. Please sign up first.";
       } else {
         errorMessage = `Failed to send reset email: ${errorMsg}`;
       }
@@ -207,7 +214,8 @@ const CustomerLogin = () => {
 
     toast({
       title: "Reset link sent!",
-      description: "Check your email for password reset instructions.",
+      description: "Check your email (including spam folder) for password reset instructions. The email should arrive within 30 seconds if custom SMTP is configured, or 2-5 minutes with default settings.",
+      duration: 8000,
     });
     setShowForgotPassword(false);
     setForgotPasswordEmail("");
