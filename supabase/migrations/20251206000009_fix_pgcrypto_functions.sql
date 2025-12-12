@@ -1,9 +1,7 @@
 -- Fix pgcrypto Function References Migration
 -- This migration fixes all functions that use pgcrypto functions to use fully qualified names
 -- The issue is that with SET search_path = public, pgcrypto functions need to be fully qualified
-
--- Ensure pgcrypto extension is enabled
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
+-- Note: pgcrypto extension should already be enabled in Supabase. If not, enable it via Supabase Dashboard > Database > Extensions
 
 -- Fix verify_customer_password function
 CREATE OR REPLACE FUNCTION public.verify_customer_password(
