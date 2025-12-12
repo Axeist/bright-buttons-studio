@@ -120,7 +120,7 @@ const CustomerDashboard = () => {
               My Account
             </h1>
             <p className="text-muted-foreground">
-              Welcome back, {user?.email?.split("@")[0] || "Customer"}!
+              Welcome back, {customer?.email?.split("@")[0] || customer?.name || "Customer"}!
             </p>
           </div>
 
