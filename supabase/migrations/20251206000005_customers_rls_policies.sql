@@ -13,11 +13,12 @@ DROP POLICY IF EXISTS "Admins can delete customers" ON public.customers;
 DROP POLICY IF EXISTS "Customers can view their own data" ON public.customers;
 DROP POLICY IF EXISTS "Customers can update their own data" ON public.customers;
 
--- Allow public to insert new customers (for signup)
+-- Allow public and authenticated users to insert new customers (for signup)
 -- This is needed for the signup flow where unauthenticated users create accounts
+-- Also allows authenticated users (admins/staff) to create customers via POS
+-- Removing TO public allows both authenticated and unauthenticated users
 CREATE POLICY "Public can insert customers for signup"
 ON public.customers FOR INSERT
-TO public
 WITH CHECK (true);
 
 -- Admins can view all customers

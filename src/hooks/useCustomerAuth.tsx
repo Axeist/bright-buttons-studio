@@ -51,15 +51,14 @@ export const CustomerAuthProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchCustomer = async (customerId: string) => {
     try {
-      const { data, error } = await supabase
-        .from("customers")
-        .select("id, name, email, phone, loyalty_points, loyalty_tier")
-        .eq("id", customerId)
-        .single();
+      // Use SECURITY DEFINER function to bypass RLS
+      const { data, error } = await supabase.rpc("get_customer_by_id", {
+        _customer_id: customerId,
+      });
 
       if (error) throw error;
-      if (data) {
-        setCustomer(data as Customer);
+      if (data && data.length > 0) {
+        setCustomer(data[0] as Customer);
       }
     } catch (error) {
       console.error("Error fetching customer:", error);
@@ -102,14 +101,16 @@ export const CustomerAuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signUp = async (email: string, password: string, fullName: string, phone: string) => {
     try {
-      // Check if customer already exists with this email or phone
-      const { data: existingCustomer } = await supabase
-        .from("customers")
-        .select("id")
-        .or(`email.eq.${email},phone.eq.${phone}`)
-        .maybeSingle();
+      // Check if customer already exists with this email or phone using SECURITY DEFINER function
+      const { data: existingCustomer, error: checkError } = await supabase.rpc("check_customer_exists", {
+        _email: email,
+        _phone: phone,
+      });
 
-      if (existingCustomer) {
+      if (checkError) {
+        console.error("Error checking customer existence:", checkError);
+        // Continue with signup if check fails (might be a transient error)
+      } else if (existingCustomer && existingCustomer.length > 0) {
         return { error: { message: "A customer with this email or phone already exists" } };
       }
 
