@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { useAuth } from "@/hooks/useAuth";
+import { ToastAction } from "@/components/ui/toast";
 import { z } from "zod";
 
 const loginSchema = z.object({
@@ -29,7 +30,7 @@ const signupSchema = z.object({
 
 const CustomerLogin = () => {
   const navigate = useNavigate();
-  const { customer, signIn, signUp, loading } = useCustomerAuth();
+  const { customer, signIn, signUp, resendConfirmationEmail, loading } = useCustomerAuth();
   const { user, role } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
@@ -102,7 +103,7 @@ const CustomerLogin = () => {
     }
 
     setIsSubmitting(true);
-    const { error } = await signUp(email, password, fullName, phone);
+    const { error, data } = await signUp(email, password, fullName, phone);
 
     if (error) {
       toast({
@@ -114,10 +115,52 @@ const CustomerLogin = () => {
       return;
     }
 
-    toast({
-      title: "Account created!",
-      description: "Welcome! Please check your email to confirm your account.",
-    });
+    // Check if email confirmation is required
+    const needsConfirmation = data?.user && !data?.session;
+    
+    if (needsConfirmation) {
+      toast({
+        title: "Account created!",
+        description: "Please check your email (including spam folder) to confirm your account.",
+        duration: 8000,
+      });
+      
+      // Show additional message with resend option after a short delay
+      setTimeout(() => {
+        toast({
+          title: "Didn't receive the email?",
+          description: "Click the button below to resend the confirmation email.",
+          duration: 10000,
+          action: (
+            <ToastAction
+              altText="Resend confirmation email"
+              onClick={async () => {
+                const { error: resendError } = await resendConfirmationEmail(email);
+                if (resendError) {
+                  toast({
+                    title: "Error",
+                    description: "Failed to resend confirmation email. Please try again later.",
+                    variant: "destructive",
+                  });
+                } else {
+                  toast({
+                    title: "Email sent!",
+                    description: "Confirmation email has been resent. Please check your inbox.",
+                  });
+                }
+              }}
+            >
+              Resend Email
+            </ToastAction>
+          ),
+        });
+      }, 2000);
+    } else {
+      toast({
+        title: "Account created!",
+        description: "Welcome! Your account has been created successfully.",
+      });
+    }
     setIsSubmitting(false);
     // User will be redirected after email confirmation
   };

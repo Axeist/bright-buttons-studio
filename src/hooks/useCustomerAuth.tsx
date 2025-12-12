@@ -17,9 +17,10 @@ interface CustomerAuthContextType {
   customer: Customer | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any | null }>;
-  signUp: (email: string, password: string, fullName: string, phone: string) => Promise<{ error: any | null }>;
+  signUp: (email: string, password: string, fullName: string, phone: string) => Promise<{ error: any | null; data?: any }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any | null }>;
+  resendConfirmationEmail: (email: string) => Promise<{ error: any | null }>;
 }
 
 const CustomerAuthContext = createContext<CustomerAuthContextType | undefined>(undefined);
@@ -155,12 +156,19 @@ export const CustomerAuthProvider = ({ children }: { children: ReactNode }) => {
         return { error: authError };
       }
 
+      // Check if email confirmation is required
+      // If user is created but email is not confirmed, Supabase will send confirmation email
+      if (authData?.user && !authData?.session) {
+        // Email confirmation required - email should be sent automatically
+        console.log("User created, confirmation email should be sent to:", email);
+      }
+
       // The trigger will automatically:
       // 1. Create customer record
       // 2. Assign 'customer' role
       // 3. Create profile entry
 
-      return { error: null };
+      return { error: null, data: authData };
     } catch (err: any) {
       console.error("Sign up error:", err);
       return { error: err };
@@ -192,6 +200,29 @@ export const CustomerAuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const resendConfirmationEmail = async (email: string) => {
+    try {
+      // Resend confirmation email using Supabase Auth
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/customer/dashboard`,
+        },
+      });
+
+      if (error) {
+        console.error("Resend confirmation email error:", error);
+        return { error };
+      }
+
+      return { error: null };
+    } catch (err) {
+      console.error("Unexpected resend confirmation email error:", err);
+      return { error: err as Error };
+    }
+  };
+
   return (
     <CustomerAuthContext.Provider
       value={{
@@ -201,6 +232,7 @@ export const CustomerAuthProvider = ({ children }: { children: ReactNode }) => {
         signUp,
         signOut,
         resetPassword,
+        resendConfirmationEmail,
       }}
     >
       {children}
