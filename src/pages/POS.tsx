@@ -1494,3 +1494,4 @@ const POS = () => {
 };
 
 export default POS;
+

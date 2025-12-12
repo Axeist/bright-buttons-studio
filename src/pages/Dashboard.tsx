@@ -59,15 +59,16 @@ const Dashboard = () => {
       const todayStart = today.toISOString();
 
       // Today's orders
-      const { data: todayOrders } = await supabase
+      const { data: todayOrdersData, error: todayOrdersError } = await supabase
         .from("orders")
         .select("total_amount, status, source")
         .gte("created_at", todayStart);
 
-      const todayRevenue = todayOrders?.reduce((sum, o) => sum + o.total_amount, 0) || 0;
-      const todayOrdersCount = todayOrders?.length || 0;
+      const todayOrders = todayOrdersData || [];
+      const todayRevenue = todayOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
+      const todayOrdersCount = todayOrders.length;
       const avgOrderValue = todayOrdersCount > 0 ? todayRevenue / todayOrdersCount : 0;
-      const onlineOrdersCount = todayOrders?.filter(o => o.source === "online").length || 0;
+      const onlineOrdersCount = todayOrders.filter(o => o.source === "online").length;
 
       // Low stock items
       const { data: lowStockData } = await supabase
