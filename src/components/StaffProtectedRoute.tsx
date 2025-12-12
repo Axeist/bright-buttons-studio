@@ -1,16 +1,17 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
-interface ProtectedRouteProps {
+interface StaffProtectedRouteProps {
   children: React.ReactNode;
   requireAdmin?: boolean;
 }
 
 /**
- * Legacy ProtectedRoute - redirects to appropriate protected route based on role
- * For new code, use StaffProtectedRoute or CustomerProtectedRoute directly
+ * Protected route for staff-only pages (admin/staff)
+ * Ensures only users with 'admin' or 'staff' role can access
+ * Customers are redirected to customer dashboard
  */
-export const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRouteProps) => {
+export const StaffProtectedRoute = ({ children, requireAdmin = false }: StaffProtectedRouteProps) => {
   const { user, role, loading } = useAuth();
   const location = useLocation();
 
@@ -23,26 +24,21 @@ export const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRout
   }
 
   if (!user) {
-    // Determine which login page to redirect to based on the route
-    const isCustomerRoute = location.pathname.startsWith("/customer");
-    return <Navigate to={isCustomerRoute ? "/customer/login" : "/login"} state={{ from: location }} replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // If user is customer trying to access staff routes, redirect
-  if (role === "customer" && !location.pathname.startsWith("/customer")) {
+  // If user is customer, redirect to customer dashboard
+  if (role === "customer") {
     return <Navigate to="/customer/dashboard" replace />;
   }
 
-  // If user is staff trying to access customer routes, redirect
-  if ((role === "admin" || role === "staff") && location.pathname.startsWith("/customer")) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
+  // Require admin role if specified
   if (requireAdmin && role !== "admin") {
     return <Navigate to="/dashboard" replace />;
   }
 
-  if (!role) {
+  // If user is not staff (admin/staff), show access pending
+  if (role !== "admin" && role !== "staff") {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -55,3 +51,4 @@ export const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRout
 
   return <>{children}</>;
 };
+

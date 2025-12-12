@@ -39,10 +39,10 @@ export const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const menuRef = useRef<HTMLDivElement>(null);
-  const { user, role, signOut } = useAuth();
+  const { user, role, isCustomer: isCustomerRole, signOut } = useAuth();
   const { getTotalItems } = useCart();
   const cartItemCount = getTotalItems();
-  const isCustomer = user && !role; // Customer if logged in but no admin/staff role
+  const isCustomer = user && isCustomerRole; // Customer if logged in with customer role
 
   const handleScroll = useCallback(() => {
     setIsScrolled(window.scrollY > 20);

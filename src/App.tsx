@@ -9,6 +9,8 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { CustomerAuthProvider } from "@/hooks/useCustomerAuth";
 import { CartProvider } from "@/hooks/useCart";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { CustomerProtectedRoute } from "@/components/CustomerProtectedRoute";
+import { StaffProtectedRoute } from "@/components/StaffProtectedRoute";
 import { ConstructionPopup } from "@/components/ConstructionPopup";
 
 // Public Pages - Lazy loaded for better performance
@@ -93,74 +95,74 @@ const App = () => (
                   <Route path="/checkout" element={<Checkout />} />
                   <Route path="/order-confirmation/:id" element={<OrderConfirmation />} />
                   <Route path="/customer/dashboard" element={
-                    <ProtectedRoute>
+                    <CustomerProtectedRoute>
                       <CustomerDashboard />
-                    </ProtectedRoute>
+                    </CustomerProtectedRoute>
                   } />
                   <Route path="/customer/orders" element={
-                    <ProtectedRoute>
+                    <CustomerProtectedRoute>
                       <CustomerOrders />
-                    </ProtectedRoute>
+                    </CustomerProtectedRoute>
                   } />
                   <Route path="/customer/orders/:id" element={
-                    <ProtectedRoute>
+                    <CustomerProtectedRoute>
                       <CustomerOrders />
-                    </ProtectedRoute>
+                    </CustomerProtectedRoute>
                   } />
                   <Route path="/customer/profile" element={
-                    <ProtectedRoute>
+                    <CustomerProtectedRoute>
                       <CustomerProfile />
-                    </ProtectedRoute>
+                    </CustomerProtectedRoute>
                   } />
                   <Route path="/customer/rewards" element={
-                    <ProtectedRoute>
+                    <CustomerProtectedRoute>
                       <CustomerRewards />
-                    </ProtectedRoute>
+                    </CustomerProtectedRoute>
                   } />
                   
                   {/* Admin Auth Routes */}
                   <Route path="/login" element={<Login />} />
                   
-                  {/* Protected Admin Routes */}
+                  {/* Protected Staff Routes (Admin/Staff) */}
                   <Route path="/dashboard" element={
-                    <ProtectedRoute>
+                    <StaffProtectedRoute>
                       <Dashboard />
-                    </ProtectedRoute>
+                    </StaffProtectedRoute>
                   } />
                   <Route path="/pos" element={
-                    <ProtectedRoute>
+                    <StaffProtectedRoute>
                       <POS />
-                    </ProtectedRoute>
+                    </StaffProtectedRoute>
                   } />
                   <Route path="/products" element={
-                    <ProtectedRoute>
+                    <StaffProtectedRoute>
                       <Products />
-                    </ProtectedRoute>
+                    </StaffProtectedRoute>
                   } />
                   <Route path="/orders" element={
-                    <ProtectedRoute>
+                    <StaffProtectedRoute>
                       <Orders />
-                    </ProtectedRoute>
+                    </StaffProtectedRoute>
                   } />
                   <Route path="/customers" element={
-                    <ProtectedRoute>
+                    <StaffProtectedRoute>
                       <Customers />
-                    </ProtectedRoute>
+                    </StaffProtectedRoute>
                   } />
                   <Route path="/reports" element={
-                    <ProtectedRoute>
+                    <StaffProtectedRoute>
                       <Reports />
-                    </ProtectedRoute>
+                    </StaffProtectedRoute>
                   } />
                   <Route path="/settings" element={
-                    <ProtectedRoute>
+                    <StaffProtectedRoute>
                       <Settings />
-                    </ProtectedRoute>
+                    </StaffProtectedRoute>
                   } />
                   <Route path="/staff" element={
-                    <ProtectedRoute requireAdmin>
+                    <StaffProtectedRoute requireAdmin>
                       <Staff />
-                    </ProtectedRoute>
+                    </StaffProtectedRoute>
                   } />
                   <Route path="/scanner" element={
                     <ProtectedRoute>

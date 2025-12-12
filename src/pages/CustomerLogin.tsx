@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { z } from "zod";
 
 const loginSchema = z.object({
@@ -29,6 +30,7 @@ const signupSchema = z.object({
 const CustomerLogin = () => {
   const navigate = useNavigate();
   const { customer, signIn, signUp, loading } = useCustomerAuth();
+  const { user, role } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -42,11 +44,15 @@ const CustomerLogin = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    // If customer is logged in, redirect to customer dashboard
-    if (customer && !loading) {
+    // If user is logged in with customer role, redirect to customer dashboard
+    if (user && role === "customer" && !loading) {
       navigate("/customer/dashboard");
     }
-  }, [customer, loading, navigate]);
+    // If user is staff trying to access customer login, redirect to staff dashboard
+    if (user && (role === "admin" || role === "staff")) {
+      navigate("/dashboard");
+    }
+  }, [user, role, loading, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,7 +83,7 @@ const CustomerLogin = () => {
         title: "Welcome back!",
         description: "Login successful.",
       });
-      navigate("/customer/dashboard");
+      // Redirect will happen automatically via useEffect when role is set
     }
   };
 
@@ -110,10 +116,10 @@ const CustomerLogin = () => {
 
     toast({
       title: "Account created!",
-      description: "Welcome! Your account has been created successfully.",
+      description: "Welcome! Please check your email to confirm your account.",
     });
     setIsSubmitting(false);
-    navigate("/customer/dashboard");
+    // User will be redirected after email confirmation
   };
 
   return (

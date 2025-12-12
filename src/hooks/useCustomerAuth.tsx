@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./useAuth";
 
 interface Customer {
   id: string;
@@ -8,6 +9,8 @@ interface Customer {
   phone: string;
   loyalty_points?: number;
   loyalty_tier?: string;
+  total_orders?: number;
+  total_spent?: number;
 }
 
 interface CustomerAuthContextType {
@@ -21,58 +24,65 @@ interface CustomerAuthContextType {
 
 const CustomerAuthContext = createContext<CustomerAuthContextType | undefined>(undefined);
 
-const CUSTOMER_SESSION_KEY = "customer_session";
-
 export const CustomerAuthProvider = ({ children }: { children: ReactNode }) => {
+  const { user, role, signOut: authSignOut } = useAuth();
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Load customer session from localStorage on mount
+  // Fetch customer data when user is authenticated and has customer role
   useEffect(() => {
-    const loadSession = async () => {
+    const fetchCustomer = async () => {
+      if (!user || role !== "customer") {
+        setCustomer(null);
+        setLoading(false);
+        return;
+      }
+
       try {
-        const sessionData = localStorage.getItem(CUSTOMER_SESSION_KEY);
-        if (sessionData) {
-          const { customerId } = JSON.parse(sessionData);
-          if (customerId) {
-            await fetchCustomer(customerId);
-          }
+        // Fetch customer data using user_id
+        const { data, error } = await supabase
+          .from("customers")
+          .select("*")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error("Error fetching customer:", error);
+          setCustomer(null);
+          return;
+        }
+
+        if (data) {
+          setCustomer({
+            id: data.id,
+            name: data.name,
+            email: data.email,
+            phone: data.phone,
+            loyalty_points: data.loyalty_points,
+            loyalty_tier: data.loyalty_tier,
+            total_orders: data.total_orders,
+            total_spent: data.total_spent,
+          });
+        } else {
+          setCustomer(null);
         }
       } catch (error) {
-        console.error("Error loading customer session:", error);
-        localStorage.removeItem(CUSTOMER_SESSION_KEY);
+        console.error("Unexpected error fetching customer:", error);
+        setCustomer(null);
       } finally {
         setLoading(false);
       }
     };
 
-    loadSession();
-  }, []);
-
-  const fetchCustomer = async (customerId: string) => {
-    try {
-      // Use SECURITY DEFINER function to bypass RLS
-      const { data, error } = await supabase.rpc("get_customer_by_id", {
-        _customer_id: customerId,
-      });
-
-      if (error) throw error;
-      if (data && data.length > 0) {
-        setCustomer(data[0] as Customer);
-      }
-    } catch (error) {
-      console.error("Error fetching customer:", error);
-      setCustomer(null);
-      localStorage.removeItem(CUSTOMER_SESSION_KEY);
-    }
-  };
+    fetchCustomer();
+  }, [user, role]);
 
   const signIn = async (email: string, password: string) => {
     try {
-      // Use the database function to verify password
-      const { data, error } = await supabase.rpc("verify_customer_password", {
-        _email: email,
-        _password: password,
+      // Use Supabase Auth to sign in
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
 
       if (error) {
@@ -80,17 +90,21 @@ export const CustomerAuthProvider = ({ children }: { children: ReactNode }) => {
         return { error };
       }
 
-      if (!data || data.length === 0) {
-        return { error: { message: "Invalid email or password" } };
+      // Check if user has customer role
+      if (data?.user) {
+        const { data: roleData } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", data.user.id)
+          .eq("role", "customer")
+          .maybeSingle();
+
+        if (!roleData) {
+          // User doesn't have customer role, sign them out
+          await supabase.auth.signOut();
+          return { error: { message: "This account is not a customer account. Please use the staff login." } };
+        }
       }
-
-      const { customer_id } = data[0];
-
-      // Fetch customer details
-      await fetchCustomer(customer_id);
-
-      // Store session in localStorage
-      localStorage.setItem(CUSTOMER_SESSION_KEY, JSON.stringify({ customerId: customer_id }));
 
       return { error: null };
     } catch (err) {
@@ -101,23 +115,21 @@ export const CustomerAuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signUp = async (email: string, password: string, fullName: string, phone: string) => {
     try {
-      // Check if customer already exists with this email or phone using SECURITY DEFINER function
-      const { data: existingCustomer, error: checkError } = await supabase.rpc("check_customer_exists", {
-        _email: email,
-        _phone: phone,
-      });
+      // Check if customer already exists with this email or phone
+      const { data: existingCustomer } = await supabase
+        .from("customers")
+        .select("id, email, phone")
+        .or(`email.eq.${email},phone.eq.${phone}`)
+        .maybeSingle();
 
-      if (checkError) {
-        console.error("Error checking customer existence:", checkError);
-        // Continue with signup if check fails (might be a transient error)
-      } else if (existingCustomer && existingCustomer.length > 0) {
+      if (existingCustomer) {
         return { error: { message: "A customer with this email or phone already exists" } };
       }
 
-      // Check if email is already in customer_auth
+      // Check if email is already in auth.users
       const { data: existingAuth } = await supabase
-        .from("customer_auth")
-        .select("id")
+        .from("profiles")
+        .select("id, email")
         .eq("email", email)
         .maybeSingle();
 
@@ -125,37 +137,28 @@ export const CustomerAuthProvider = ({ children }: { children: ReactNode }) => {
         return { error: { message: "An account with this email already exists" } };
       }
 
-      // Create customer record using SECURITY DEFINER function to bypass RLS
-      const { data: customerId, error: customerError } = await supabase.rpc("create_customer", {
-        _name: fullName,
-        _email: email,
-        _phone: phone,
-        _customer_type: "new",
-      });
-
-      if (customerError) throw customerError;
-      if (!customerId) throw new Error("Failed to create customer record");
-
-      const newCustomer = { id: customerId };
-
-      // Create customer auth record
-      const { error: authError } = await supabase.rpc("create_customer_auth", {
-        _customer_id: newCustomer.id,
-        _email: email,
-        _password: password,
+      // Sign up using Supabase Auth with customer metadata
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            phone: phone,
+          },
+          emailRedirectTo: `${window.location.origin}/customer/dashboard`,
+        },
       });
 
       if (authError) {
-        // Rollback customer creation using SECURITY DEFINER function to bypass RLS
-        await supabase.rpc("delete_customer", {
-          _customer_id: newCustomer.id,
-        });
-        throw authError;
+        console.error("Sign up error:", authError);
+        return { error: authError };
       }
 
-      // Auto-login after signup
-      await fetchCustomer(newCustomer.id);
-      localStorage.setItem(CUSTOMER_SESSION_KEY, JSON.stringify({ customerId: newCustomer.id }));
+      // The trigger will automatically:
+      // 1. Create customer record
+      // 2. Assign 'customer' role
+      // 3. Create profile entry
 
       return { error: null };
     } catch (err: any) {
@@ -166,25 +169,21 @@ export const CustomerAuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     setCustomer(null);
-    localStorage.removeItem(CUSTOMER_SESSION_KEY);
+    await authSignOut();
   };
 
   const resetPassword = async (email: string) => {
     try {
-      // Generate reset token
-      const { data: resetToken, error } = await supabase.rpc("generate_password_reset_token", {
-        _email: email,
+      // Use Supabase Auth password reset
+      const redirectUrl = `${window.location.origin}/customer/login`;
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: redirectUrl,
       });
 
       if (error) {
         console.error("Password reset error:", error);
         return { error };
       }
-
-      // In a real app, you would send an email with the reset token
-      // For now, we'll just return success
-      // TODO: Implement email sending service
-      console.log("Password reset token generated:", resetToken);
 
       return { error: null };
     } catch (err) {
