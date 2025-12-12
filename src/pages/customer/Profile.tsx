@@ -34,7 +34,6 @@ const CustomerProfile = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [customer, setCustomer] = useState<any>(null);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
@@ -73,7 +72,6 @@ const CustomerProfile = () => {
 
     setLoading(true);
     try {
-      setCustomer(customer);
       setProfileForm({
         name: customer.name || "",
         email: customer.email || "",
