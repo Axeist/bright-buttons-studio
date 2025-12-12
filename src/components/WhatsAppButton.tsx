@@ -8,7 +8,7 @@ interface WhatsAppButtonProps {
 }
 
 const WHATSAPP_NUMBER = "919952655555";
-const DEFAULT_MESSAGE = "Hi! I'm interested in Bright Buttons eco-friendly clothing";
+const DEFAULT_MESSAGE = "Hi! I'd like to enquire about Bright Buttons eco-friendly clothing";
 
 export const WhatsAppButton = ({ 
   message = DEFAULT_MESSAGE, 
@@ -40,7 +40,7 @@ export const WhatsAppButton = ({
       className={`inline-flex items-center justify-center gap-2 h-12 sm:h-11 px-6 sm:px-8 bg-gradient-to-r from-[#25D366] to-[#20BD5A] text-white rounded-full font-semibold hover:from-[#20BD5A] hover:to-[#1DA851] transition-all duration-300 shadow-xl hover:shadow-2xl min-h-[48px] sm:min-h-[44px] ${className}`}
     >
       <MessageCircle className="w-5 h-5" />
-      <span>{children || "Chat on WhatsApp"}</span>
+      <span>{children || "Enquire on WhatsApp"}</span>
     </button>
   );
 };
@@ -48,7 +48,7 @@ export const WhatsAppButton = ({
 export const getWhatsAppLink = (productName?: string, category?: string, fabric?: string) => {
   let message = DEFAULT_MESSAGE;
   if (productName) {
-    message = `Hi! I'm interested in ${productName}${category ? ` (${category}` : ''}${fabric ? `, ${fabric})` : category ? ')' : ''} from Bright Buttons. Can you share details and pricing?`;
+    message = `Hi! I'm interested in ${productName}${category ? ` (${category}` : ''}${fabric ? `, ${fabric})` : category ? ')' : ''} from Bright Buttons. Can you share more details?`;
   }
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 };

@@ -58,11 +58,10 @@ const Settings = () => {
     shop_address: "",
     business_hours: "",
     whatsapp_number: "",
-    whatsapp_order_confirmation: "",
-    whatsapp_order_ready: "",
-    whatsapp_order_delivered: "",
-    payment_methods: { cash: true, upi: true, card: true, split: false },
+    payment_methods: { cash: true, upi: true, card: true, split: false, online: true },
     tax_rate: "18",
+    free_shipping_threshold: "2000",
+    shipping_charge: "150",
   });
 
   useEffect(() => {
@@ -101,11 +100,10 @@ const Settings = () => {
         shop_address: settingsMap.shop_address || "",
         business_hours: settingsMap.business_hours || "",
         whatsapp_number: settingsMap.whatsapp_number || "",
-        whatsapp_order_confirmation: settingsMap.whatsapp_order_confirmation || "",
-        whatsapp_order_ready: settingsMap.whatsapp_order_ready || "",
-        whatsapp_order_delivered: settingsMap.whatsapp_order_delivered || "",
-        payment_methods: settingsMap.payment_methods || { cash: true, upi: true, card: true, split: false },
+        payment_methods: settingsMap.payment_methods || { cash: true, upi: true, card: true, split: false, online: true },
         tax_rate: settingsMap.tax_rate?.toString() || "18",
+        free_shipping_threshold: settingsMap.free_shipping_threshold?.toString() || "2000",
+        shipping_charge: settingsMap.shipping_charge?.toString() || "150",
       });
     } catch (error: any) {
       toast({
@@ -128,11 +126,10 @@ const Settings = () => {
         { key: "shop_address", value: JSON.stringify(settings.shop_address) },
         { key: "business_hours", value: JSON.stringify(settings.business_hours) },
         { key: "whatsapp_number", value: JSON.stringify(settings.whatsapp_number) },
-        { key: "whatsapp_order_confirmation", value: JSON.stringify(settings.whatsapp_order_confirmation) },
-        { key: "whatsapp_order_ready", value: JSON.stringify(settings.whatsapp_order_ready) },
-        { key: "whatsapp_order_delivered", value: JSON.stringify(settings.whatsapp_order_delivered) },
         { key: "payment_methods", value: JSON.stringify(settings.payment_methods) },
         { key: "tax_rate", value: JSON.stringify(settings.tax_rate) },
+        { key: "free_shipping_threshold", value: JSON.stringify(settings.free_shipping_threshold) },
+        { key: "shipping_charge", value: JSON.stringify(settings.shipping_charge) },
       ];
 
       for (const setting of settingsToSave) {
@@ -381,44 +378,54 @@ const Settings = () => {
         {/* WhatsApp Settings */}
         <section className="bg-card rounded-xl p-6 shadow-soft">
           <h2 className="text-lg font-semibold text-foreground mb-4">WhatsApp Settings</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Configure WhatsApp number for customer enquiries and support
+          </p>
           <div className="grid gap-4">
             <div>
-              <Label>Business Number</Label>
+              <Label>Business WhatsApp Number</Label>
               <Input
                 value={settings.whatsapp_number}
                 onChange={(e) => setSettings({ ...settings, whatsapp_number: e.target.value })}
                 className="rounded-xl mt-1.5"
+                placeholder="+91 99999 99999"
               />
+              <p className="text-xs text-muted-foreground mt-1.5">
+                This number will be used for WhatsApp enquiry links on the website
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Shipping Settings */}
+        <section className="bg-card rounded-xl p-6 shadow-soft">
+          <h2 className="text-lg font-semibold text-foreground mb-4">Shipping Settings</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label>Free Shipping Threshold (₹)</Label>
+              <Input
+                type="number"
+                value={settings.free_shipping_threshold}
+                onChange={(e) => setSettings({ ...settings, free_shipping_threshold: e.target.value })}
+                className="rounded-xl mt-1.5"
+                placeholder="2000"
+              />
+              <p className="text-xs text-muted-foreground mt-1.5">
+                Orders above this amount get free shipping
+              </p>
             </div>
             <div>
-              <Label>Order Confirmation Message</Label>
-              <Textarea
-                value={settings.whatsapp_order_confirmation}
-                onChange={(e) => setSettings({ ...settings, whatsapp_order_confirmation: e.target.value })}
-                className="rounded-xl resize-none mt-1.5"
-                rows={3}
-                placeholder="Use {order_id} as placeholder"
+              <Label>Standard Shipping Charge (₹)</Label>
+              <Input
+                type="number"
+                value={settings.shipping_charge}
+                onChange={(e) => setSettings({ ...settings, shipping_charge: e.target.value })}
+                className="rounded-xl mt-1.5"
+                placeholder="150"
               />
-            </div>
-            <div>
-              <Label>Order Ready Message</Label>
-              <Textarea
-                value={settings.whatsapp_order_ready}
-                onChange={(e) => setSettings({ ...settings, whatsapp_order_ready: e.target.value })}
-                className="rounded-xl resize-none mt-1.5"
-                rows={3}
-                placeholder="Use {order_id} as placeholder"
-              />
-            </div>
-            <div>
-              <Label>Order Delivered Message</Label>
-              <Textarea
-                value={settings.whatsapp_order_delivered}
-                onChange={(e) => setSettings({ ...settings, whatsapp_order_delivered: e.target.value })}
-                className="rounded-xl resize-none mt-1.5"
-                rows={3}
-                placeholder="Use {order_id} as placeholder"
-              />
+              <p className="text-xs text-muted-foreground mt-1.5">
+                Shipping charge for orders below threshold
+              </p>
             </div>
           </div>
         </section>

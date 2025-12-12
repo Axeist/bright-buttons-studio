@@ -1,11 +1,24 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ChevronDown, LogIn } from "lucide-react";
+import { Menu, X, ChevronDown, LogIn, ShoppingCart, User, Package, Gift, LogOut } from "lucide-react";
 import { Logo } from "./Logo";
 import { WhatsAppButton } from "./WhatsAppButton";
 import { ThemeToggle } from "./ThemeToggle";
+import { LocationSelector } from "./LocationSelector";
+import { CartDrawer } from "./CartDrawer";
+import { SearchBar } from "./SearchBar";
 import { Button } from "./ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import { useCart } from "@/hooks/useCart";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
+import { Badge } from "./ui/badge";
 
 const navLinks = [
   { name: "Home", href: "/#hero" },
@@ -21,9 +34,15 @@ const navLinks = [
 export const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isCustomerMenuOpen, setIsCustomerMenuOpen] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const menuRef = useRef<HTMLDivElement>(null);
+  const { user, role, signOut } = useAuth();
+  const { getTotalItems } = useCart();
+  const cartItemCount = getTotalItems();
+  const isCustomer = user && !role; // Customer if logged in but no admin/staff role
 
   const handleScroll = useCallback(() => {
     setIsScrolled(window.scrollY > 20);
@@ -128,31 +147,95 @@ export const Navbar = () => {
         }`}
       >
         <nav className="container-custom">
-          <div className="flex items-center justify-between h-14 sm:h-16 md:h-20">
+          <div className="flex items-center justify-between h-14 sm:h-16 md:h-20 gap-4">
             {/* Logo */}
             <Link to="/" className="flex-shrink-0">
               <Logo size="2xl" linkTo={undefined} />
             </Link>
 
+            {/* Search Bar - Desktop */}
+            <div className="hidden lg:flex flex-1 max-w-md mx-4">
+              <SearchBar />
+            </div>
+
             {/* Desktop Actions - Right Side */}
-            <div className="hidden lg:flex items-center gap-4">
+            <div className="hidden lg:flex items-center gap-3">
+              <LocationSelector />
               <ThemeToggle />
               <WhatsAppButton variant="ghost" />
-              <Button 
-                size="sm" 
-                className="rounded-full"
-                onClick={() => handleNavClick("/#collections")}
-              >
-                Shop Now
-              </Button>
-              <Link
-                to="/login"
-                className="p-2 text-muted-foreground hover:text-primary transition-colors"
-                title="Staff Login"
-                aria-label="Staff Login"
-              >
-                <LogIn className="w-4 h-4" />
+              <Link to="/shop">
+                <Button size="sm" className="rounded-full">
+                  Shop
+                </Button>
               </Link>
+              
+              {/* Cart Icon */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full relative"
+                onClick={() => setIsCartOpen(true)}
+              >
+                <ShoppingCart className="w-5 h-5" />
+                {cartItemCount > 0 && (
+                  <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                    {cartItemCount > 9 ? "9+" : cartItemCount}
+                  </Badge>
+                )}
+              </Button>
+
+              {/* Customer Menu */}
+              {isCustomer ? (
+                <DropdownMenu open={isCustomerMenuOpen} onOpenChange={setIsCustomerMenuOpen}>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="rounded-full">
+                      <User className="w-5 h-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem onClick={() => { navigate("/customer/dashboard"); setIsCustomerMenuOpen(false); }}>
+                      <User className="w-4 h-4 mr-2" />
+                      My Account
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => { navigate("/customer/orders"); setIsCustomerMenuOpen(false); }}>
+                      <Package className="w-4 h-4 mr-2" />
+                      My Orders
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => { navigate("/customer/rewards"); setIsCustomerMenuOpen(false); }}>
+                      <Gift className="w-4 h-4 mr-2" />
+                      Rewards & Points
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={async () => {
+                      await signOut();
+                      navigate("/");
+                      setIsCustomerMenuOpen(false);
+                    }}>
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <>
+                  <Link
+                    to="/customer/login"
+                    className="p-2 text-muted-foreground hover:text-primary transition-colors"
+                    title="Customer Login"
+                    aria-label="Customer Login"
+                  >
+                    <User className="w-4 h-4" />
+                  </Link>
+                  <Link
+                    to="/login"
+                    className="p-2 text-muted-foreground hover:text-primary transition-colors"
+                    title="Staff Login"
+                    aria-label="Staff Login"
+                  >
+                    <LogIn className="w-4 h-4" />
+                  </Link>
+                </>
+              )}
               
               {/* Desktop Menu Toggle */}
               <div className="relative" ref={menuRef}>
@@ -213,16 +296,47 @@ export const Navbar = () => {
 
             {/* Mobile Menu Button */}
             <div className="flex items-center gap-2 sm:gap-3 lg:hidden">
+              <LocationSelector />
               <ThemeToggle />
               <WhatsAppButton variant="ghost" />
-              <Link
-                to="/login"
-                className="p-2 text-muted-foreground hover:text-primary transition-colors touch-target"
-                title="Staff Login"
-                aria-label="Staff Login"
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative"
+                onClick={() => setIsCartOpen(true)}
               >
-                <LogIn className="w-5 h-5" />
-              </Link>
+                <ShoppingCart className="w-5 h-5" />
+                {cartItemCount > 0 && (
+                  <Badge className="absolute -top-1 -right-1 h-4 w-4 flex items-center justify-center p-0 text-xs">
+                    {cartItemCount > 9 ? "9+" : cartItemCount}
+                  </Badge>
+                )}
+              </Button>
+              {isCustomer ? (
+                <Link
+                  to="/customer/dashboard"
+                  className="p-2 text-muted-foreground hover:text-primary transition-colors touch-target"
+                >
+                  <User className="w-5 h-5" />
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    to="/customer/login"
+                    className="p-2 text-muted-foreground hover:text-primary transition-colors touch-target"
+                  >
+                    <User className="w-5 h-5" />
+                  </Link>
+                  <Link
+                    to="/login"
+                    className="p-2 text-muted-foreground hover:text-primary transition-colors touch-target"
+                    title="Staff Login"
+                    aria-label="Staff Login"
+                  >
+                    <LogIn className="w-5 h-5" />
+                  </Link>
+                </>
+              )}
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 className="p-2.5 sm:p-2 text-foreground hover:text-primary transition-colors touch-target"
@@ -235,6 +349,11 @@ export const Navbar = () => {
                 )}
               </button>
             </div>
+          </div>
+
+          {/* Mobile Search Bar - Below main nav */}
+          <div className="lg:hidden px-4 pb-2">
+            <SearchBar />
           </div>
         </nav>
 
@@ -273,19 +392,40 @@ export const Navbar = () => {
                     <span className="relative z-10">{link.name}</span>
                   </motion.a>
                 ))}
-                <div className="pt-4 mt-4 border-t border-border/50">
-                  <Button 
-                    className="w-full rounded-full"
-                    onClick={() => handleNavClick("/#collections")}
-                  >
-                    Shop Now
-                  </Button>
+                <div className="pt-4 mt-4 border-t border-border/50 space-y-2">
+                  <Link to="/shop" className="block">
+                    <Button className="w-full rounded-full">
+                      Shop Now
+                    </Button>
+                  </Link>
+                  {isCustomer && (
+                    <>
+                      <Link to="/customer/dashboard" className="block">
+                        <Button variant="outline" className="w-full rounded-full">
+                          <User className="w-4 h-4 mr-2" />
+                          My Account
+                        </Button>
+                      </Link>
+                      <Link to="/checkout" className="block relative">
+                        <Button variant="outline" className="w-full rounded-full">
+                          <ShoppingCart className="w-4 h-4 mr-2" />
+                          Cart
+                          {cartItemCount > 0 && (
+                            <Badge className="ml-2">{cartItemCount}</Badge>
+                          )}
+                        </Button>
+                      </Link>
+                    </>
+                  )}
                 </div>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </motion.header>
+
+      {/* Cart Drawer */}
+      <CartDrawer open={isCartOpen} onOpenChange={setIsCartOpen} />
     </>
   );
 };

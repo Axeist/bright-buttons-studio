@@ -16,6 +16,7 @@ const orderStatuses = ['all', 'pending', 'confirmed', 'processing', 'ready', 'de
 
 type OrderStatus = 'pending' | 'confirmed' | 'processing' | 'ready' | 'delivered' | 'cancelled';
 type PaymentStatus = 'pending' | 'paid' | 'partial' | 'refunded';
+type OrderSource = 'pos' | 'online' | 'phone';
 
 interface Order {
   id: string;

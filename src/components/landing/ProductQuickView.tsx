@@ -1,9 +1,13 @@
 import { Dialog, Transition } from "@headlessui/react";
 import { Fragment, useState, useEffect } from "react";
-import { X, Leaf, MessageCircle, Palette, Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, Leaf, ShoppingCart, Palette, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { type Product } from "@/types/product";
-import { getWhatsAppLink } from "@/components/WhatsAppButton";
+import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { useCart } from "@/hooks/useCart";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+import { toast } from "@/hooks/use-toast";
 
 interface ProductQuickViewProps {
   product: Product | null;
@@ -12,6 +16,9 @@ interface ProductQuickViewProps {
 }
 
 export const ProductQuickView = ({ product, isOpen, onClose }: ProductQuickViewProps) => {
+  const navigate = useNavigate();
+  const { addToCart } = useCart();
+  const { user } = useAuth();
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
@@ -34,16 +41,25 @@ export const ProductQuickView = ({ product, isOpen, onClose }: ProductQuickViewP
 
   const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
 
-  const handleWhatsAppEnquiry = () => {
-    const sizeText = selectedSize ? ` (Size: ${selectedSize})` : "";
-    window.open(getWhatsAppLink(product.name, product.category, product.fabric) + encodeURIComponent(sizeText), "_blank");
+  const handleAddToCart = async () => {
+    if (!user) {
+      toast({
+        title: "Please login",
+        description: "You need to login to add items to cart",
+        variant: "destructive",
+      });
+      navigate("/customer/login");
+      return;
+    }
+    const productId = typeof product.id === 'string' ? product.id : product.id.toString();
+    await addToCart(productId, 1, selectedSize || undefined);
+    onClose();
   };
 
-  const handleCustomRequest = () => {
-    window.open(
-      getWhatsAppLink() + encodeURIComponent(` I'd like to request a custom design similar to ${product.name}.`),
-      "_blank"
-    );
+  const handleViewDetails = () => {
+    const productId = typeof product.id === 'string' ? product.id : product.id.toString();
+    navigate(`/product/${productId}`);
+    onClose();
   };
 
   const nextImage = () => {
@@ -245,19 +261,19 @@ export const ProductQuickView = ({ product, isOpen, onClose }: ProductQuickViewP
                       {/* CTAs */}
                       <div className="flex flex-col gap-3 pt-4">
                         <Button 
-                          className="w-full rounded-full bg-[#25D366] hover:bg-[#20BD5A] text-white min-h-[48px]"
-                          onClick={handleWhatsAppEnquiry}
-                        >
-                          <MessageCircle className="w-4 h-4 mr-2" />
-                          Enquire on WhatsApp
-                        </Button>
-                        <Button 
-                          variant="outline" 
                           className="w-full rounded-full min-h-[48px]"
-                          onClick={handleCustomRequest}
+                          onClick={handleAddToCart}
                         >
-                          Request Custom Design
+                          <ShoppingCart className="w-4 h-4 mr-2" />
+                          Add to Cart
                         </Button>
+                        <WhatsAppButton
+                          variant="inline"
+                          className="w-full"
+                          message={`Hi! I'm interested in ${product.name}${selectedSize ? ` (Size: ${selectedSize})` : ""} from Bright Buttons. Can you share more details?`}
+                        >
+                          Enquire on WhatsApp
+                        </WhatsAppButton>
                       </div>
                     </div>
                   </div>

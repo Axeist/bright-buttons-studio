@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { AdminLayout } from "@/layouts/AdminLayout";
-import { Search, Plus, Minus, CreditCard, Banknote, Smartphone, Shuffle, WifiOff, Leaf, Scan, Loader2, X, User, Wifi } from "lucide-react";
+import { Search, Plus, Minus, CreditCard, Banknote, Smartphone, Shuffle, WifiOff, Leaf, Scan, Loader2, X, User, Wifi, Phone, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -53,6 +53,10 @@ const POS = () => {
   const [discount, setDiscount] = useState(0);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const [isCustomerSelectModalOpen, setIsCustomerSelectModalOpen] = useState(false);
+  const [allCustomers, setAllCustomers] = useState<{ id: string; name: string; phone: string; email?: string | null; address?: string | null; city?: string | null; total_orders?: number; total_spent?: number; last_purchase_at?: string | null }[]>([]);
+  const [loadingCustomers, setLoadingCustomers] = useState(false);
+  const [customerSearchQuery, setCustomerSearchQuery] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
@@ -390,6 +394,27 @@ const POS = () => {
     setCouponCode("");
   };
 
+  const fetchAllCustomers = async () => {
+    setLoadingCustomers(true);
+    try {
+      const { data, error } = await supabase
+        .from("customers")
+        .select("id, name, phone, email, address, city, total_orders, total_spent, last_purchase_at")
+        .order("name", { ascending: true });
+
+      if (error) throw error;
+      setAllCustomers(data || []);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to load customers",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingCustomers(false);
+    }
+  };
+
   const lookupCustomer = async (phone: string) => {
     if (!phone) {
       setCustomer(null);
@@ -410,6 +435,30 @@ const POS = () => {
       setCustomer(null);
     }
   };
+
+  const handleSelectCustomer = (selectedCustomer: { id: string; name: string; phone: string; email?: string | null }) => {
+    setCustomer(selectedCustomer);
+    setCustomerPhone(selectedCustomer.phone);
+    setCustomerName(selectedCustomer.name);
+    setCustomerEmail(selectedCustomer.email || "");
+    setIsCustomerSelectModalOpen(false);
+    setCustomerSearchQuery("");
+    toast({
+      title: "Customer Selected",
+      description: `${selectedCustomer.name} has been selected for this sale`,
+    });
+  };
+
+  const filteredCustomers = allCustomers.filter((cust) => {
+    const query = customerSearchQuery.toLowerCase();
+    return (
+      cust.name.toLowerCase().includes(query) ||
+      cust.phone.includes(query) ||
+      cust.email?.toLowerCase().includes(query) ||
+      cust.address?.toLowerCase().includes(query) ||
+      cust.city?.toLowerCase().includes(query)
+    );
+  });
 
   const createOrGetCustomer = async () => {
     if (!customerPhone) {
@@ -747,64 +796,56 @@ const POS = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Customer Info */}
-      <div className="mb-4">
+      {/* Customer Selection */}
+      <div className="mb-6">
         {customer ? (
-          <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-primary/10 to-primary/5 dark:from-primary-900/30 dark:to-primary-900/20 rounded-xl border border-primary/20 dark:border-primary-800/40">
-            <div className="w-12 h-12 rounded-full bg-primary/20 dark:bg-primary-900/40 flex items-center justify-center flex-shrink-0">
-              <User className="w-6 h-6 text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <p className="font-semibold text-foreground truncate">{customer.name}</p>
-                {isScannerConnected && (
-                  <div className="flex items-center gap-1 px-2 py-0.5 bg-primary/20 rounded-full">
-                    <Wifi className="w-3 h-3 text-primary" />
-                    <span className="text-xs text-primary font-medium">Scanner</span>
-                  </div>
-                )}
+          <div className="p-4 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 dark:from-primary-900/30 dark:via-primary-900/20 dark:to-primary-900/30 rounded-xl border border-primary/20 dark:border-primary-800/40 shadow-sm">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 dark:from-primary-900/40 dark:to-primary-900/20 flex items-center justify-center flex-shrink-0">
+                <User className="w-5 h-5 text-primary" />
               </div>
-              <div className="flex items-center gap-2 mt-0.5">
-                <p className="text-sm text-muted-foreground">{customer.phone}</p>
-                {customer.email && (
-                  <>
-                    <span className="text-muted-foreground">•</span>
-                    <p className="text-sm text-muted-foreground truncate">{customer.email}</p>
-                  </>
-                )}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground truncate">{customer.name}</p>
+                <p className="text-xs text-muted-foreground">{customer.phone}</p>
               </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setCustomer(null);
+                  setCustomerPhone("");
+                  setCustomerName("");
+                  setCustomerEmail("");
+                }}
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+              >
+                <X className="w-4 h-4" />
+              </Button>
             </div>
             <Button
+              onClick={async () => {
+                setIsCustomerSelectModalOpen(true);
+                await fetchAllCustomers();
+              }}
               variant="outline"
               size="sm"
-              onClick={() => setIsCustomerModalOpen(true)}
-              className="rounded-xl"
+              className="w-full rounded-lg border-primary/30 hover:border-primary hover:bg-primary/5"
             >
-              Change
+              Change Customer
             </Button>
           </div>
         ) : (
-          <div className="flex items-center gap-4">
-            <div className="flex-1 flex items-center gap-2">
-              <User className="w-4 h-4 text-muted-foreground" />
-              <Input
-                value={customerPhone}
-                onChange={(e) => {
-                  setCustomerPhone(e.target.value);
-                  lookupCustomer(e.target.value);
-                }}
-                placeholder="Customer phone (optional)"
-                className="rounded-xl h-10"
-              />
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => setIsCustomerModalOpen(true)}
-              className="rounded-xl"
-            >
-              Add Customer
-            </Button>
-          </div>
+          <Button
+            onClick={async () => {
+              setIsCustomerSelectModalOpen(true);
+              await fetchAllCustomers();
+            }}
+            variant="outline"
+            className="w-full h-12 rounded-xl border-2 border-dashed border-primary/30 hover:border-primary hover:bg-primary/5 transition-all duration-200 font-medium"
+          >
+            <User className="w-4 h-4 mr-2" />
+            Select Customer
+          </Button>
         )}
       </div>
 
@@ -1104,6 +1145,169 @@ const POS = () => {
           </div>
         </div>
       </div>
+
+      {/* Customer Selection Modal - Beautiful Design with Search */}
+      <Dialog open={isCustomerSelectModalOpen} onOpenChange={(open) => {
+        setIsCustomerSelectModalOpen(open);
+        if (!open) setCustomerSearchQuery("");
+      }}>
+        <DialogContent className="sm:max-w-3xl rounded-2xl bg-card/95 backdrop-blur-xl border border-white/20 dark:border-border/50 shadow-2xl max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-foreground flex items-center gap-2">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 dark:from-primary-900/40 dark:to-primary-900/20 flex items-center justify-center">
+                <User className="w-5 h-5 text-primary" />
+              </div>
+              Select Customer
+            </DialogTitle>
+          </DialogHeader>
+          
+          {/* Search Bar */}
+          <div className="mt-4 mb-4">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Input
+                value={customerSearchQuery}
+                onChange={(e) => setCustomerSearchQuery(e.target.value)}
+                placeholder="Search by name, phone, email, address, or city..."
+                className="pl-12 pr-4 h-12 rounded-xl bg-background/80 dark:bg-background/60 border border-border/50 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200"
+              />
+            </div>
+          </div>
+
+          {/* Customers List */}
+          <div className="flex-1 overflow-y-auto space-y-3 min-h-0">
+            {loadingCustomers ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            ) : filteredCustomers.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <User className="w-16 h-16 text-muted-foreground/30 mb-4" />
+                <p className="text-base font-medium text-muted-foreground mb-1">
+                  {customerSearchQuery ? "No customers found" : "No customers available"}
+                </p>
+                <p className="text-sm text-muted-foreground/70">
+                  {customerSearchQuery ? "Try a different search term" : "Add a customer to get started"}
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-3">
+                {filteredCustomers.map((cust) => (
+                  <button
+                    key={cust.id}
+                    onClick={() => handleSelectCustomer(cust)}
+                    className={`w-full p-5 rounded-xl border-2 transition-all duration-200 text-left group ${
+                      customer?.id === cust.id
+                        ? "bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 dark:from-primary-900/40 dark:via-primary-900/20 dark:to-primary-900/40 border-primary shadow-md shadow-primary/10"
+                        : "bg-gradient-to-r from-accent/50 to-accent/30 dark:from-accent/30 dark:to-accent/20 border-border/30 hover:border-primary/50 hover:shadow-lg hover:scale-[1.01]"
+                    }`}
+                  >
+                    <div className="flex items-start gap-4">
+                      {/* Avatar */}
+                      <div className={`w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 shadow-inner ${
+                        customer?.id === cust.id
+                          ? "bg-gradient-to-br from-primary/30 to-primary/20 dark:from-primary-800/50 dark:to-primary-900/30"
+                          : "bg-gradient-to-br from-primary/20 to-primary/10 dark:from-primary-900/40 dark:to-primary-900/20"
+                      }`}>
+                        <User className={`w-7 h-7 ${customer?.id === cust.id ? "text-primary" : "text-primary/70"}`} />
+                      </div>
+                      
+                      {/* Customer Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-2">
+                          <p className="text-base font-bold text-foreground truncate">{cust.name}</p>
+                          {customer?.id === cust.id && (
+                            <span className="px-2.5 py-0.5 text-xs font-semibold bg-primary text-primary-foreground rounded-full">
+                              Selected
+                            </span>
+                          )}
+                        </div>
+                        
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Phone className="w-3.5 h-3.5 flex-shrink-0" />
+                            <span className="truncate">{cust.phone}</span>
+                          </div>
+                          
+                          {cust.email && (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <span className="w-3.5 h-3.5 flex-shrink-0 flex items-center justify-center">@</span>
+                              <span className="truncate">{cust.email}</span>
+                            </div>
+                          )}
+                          
+                          {(cust.address || cust.city) && (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <span className="w-3.5 h-3.5 flex-shrink-0 flex items-center justify-center">📍</span>
+                              <span className="truncate">
+                                {[cust.address, cust.city].filter(Boolean).join(", ") || "No address"}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Stats */}
+                        {(cust.total_orders !== undefined || cust.total_spent !== undefined) && (
+                          <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border/30">
+                            {cust.total_orders !== undefined && (
+                              <div className="flex items-center gap-1.5">
+                                <ShoppingCart className="w-3.5 h-3.5 text-muted-foreground" />
+                                <span className="text-xs text-muted-foreground">
+                                  {cust.total_orders} {cust.total_orders === 1 ? "order" : "orders"}
+                                </span>
+                              </div>
+                            )}
+                            {cust.total_spent !== undefined && cust.total_spent > 0 && (
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs font-semibold text-primary">
+                                  ₹{cust.total_spent.toLocaleString()} spent
+                                </span>
+                              </div>
+                            )}
+                            {cust.last_purchase_at && (
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs text-muted-foreground">
+                                  Last: {new Date(cust.last_purchase_at).toLocaleDateString("en-IN")}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Selection Indicator */}
+                      {customer?.id === cust.id && (
+                        <div className="flex-shrink-0">
+                          <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                            <svg className="w-4 h-4 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Footer with Add Customer Button */}
+          <div className="mt-4 pt-4 border-t border-border/50">
+            <Button
+              onClick={() => {
+                setIsCustomerSelectModalOpen(false);
+                setCustomerSearchQuery("");
+                setIsCustomerModalOpen(true);
+              }}
+              className="w-full h-12 rounded-xl bg-gradient-to-r from-primary to-primary-700 dark:from-primary-600 dark:to-primary-800 text-white font-semibold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add New Customer
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Customer Modal */}
       <Dialog open={isCustomerModalOpen} onOpenChange={setIsCustomerModalOpen}>

@@ -1,7 +1,11 @@
 import { useState, useEffect } from "react";
 import { AdminLayout } from "@/layouts/AdminLayout";
-import { Search, User, Loader2 } from "lucide-react";
+import { Search, User, Loader2, Plus, Gift, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -14,6 +18,9 @@ interface Customer {
   total_orders: number;
   total_spent: number;
   last_purchase_at: string | null;
+  loyalty_points?: number;
+  loyalty_tier?: string;
+  user_id?: string;
 }
 
 const Customers = () => {
@@ -21,6 +28,12 @@ const Customers = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<"all" | "new" | "returning">("all");
+  const [isAddCustomerModalOpen, setIsAddCustomerModalOpen] = useState(false);
+  const [customerForm, setCustomerForm] = useState({
+    name: "",
+    phone: "",
+    email: "",
+  });
 
   useEffect(() => {
     fetchCustomers();
@@ -61,6 +74,44 @@ const Customers = () => {
     return new Date(dateString).toLocaleDateString("en-IN");
   };
 
+  const handleAddCustomer = async () => {
+    if (!customerForm.name.trim() || !customerForm.phone.trim()) {
+      toast({
+        title: "Error",
+        description: "Name and phone number are required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("customers")
+        .insert({
+          name: customerForm.name.trim(),
+          phone: customerForm.phone.trim(),
+          email: customerForm.email.trim() || null,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Customer added successfully",
+      });
+
+      setIsAddCustomerModalOpen(false);
+      setCustomerForm({ name: "", phone: "", email: "" });
+      fetchCustomers();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add customer",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <AdminLayout title="Customers">
@@ -73,32 +124,41 @@ const Customers = () => {
 
   return (
     <AdminLayout title="Customers">
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by name, phone, or email..."
-            className="pl-10 rounded-xl"
-          />
+      {/* Header with Add Customer Button */}
+      <div className="flex flex-col sm:flex-row gap-4 mb-6 items-start sm:items-center justify-between">
+        <div className="flex flex-col sm:flex-row gap-4 flex-1">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by name, phone, or email..."
+              className="pl-10 rounded-xl"
+            />
+          </div>
+          <div className="flex gap-2">
+            {(["all", "new", "returning"] as const).map((type) => (
+              <button
+                key={type}
+                onClick={() => setTypeFilter(type)}
+                className={`px-4 py-2 rounded-full text-sm font-medium capitalize transition-colors ${
+                  typeFilter === type
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-secondary-foreground hover:bg-accent"
+                }`}
+              >
+                {type}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="flex gap-2">
-          {(["all", "new", "returning"] as const).map((type) => (
-            <button
-              key={type}
-              onClick={() => setTypeFilter(type)}
-              className={`px-4 py-2 rounded-full text-sm font-medium capitalize transition-colors ${
-                typeFilter === type
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary text-secondary-foreground hover:bg-accent"
-              }`}
-            >
-              {type}
-            </button>
-          ))}
-        </div>
+        <Button
+          onClick={() => setIsAddCustomerModalOpen(true)}
+          className="rounded-xl bg-gradient-to-r from-primary to-primary-700 dark:from-primary-600 dark:to-primary-800 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Add Customer
+        </Button>
       </div>
 
       {/* Customers Table */}
@@ -112,6 +172,7 @@ const Customers = () => {
                 <th className="text-left text-sm font-medium text-muted-foreground p-4 hidden lg:table-cell">Email</th>
                 <th className="text-left text-sm font-medium text-muted-foreground p-4">Orders</th>
                 <th className="text-left text-sm font-medium text-muted-foreground p-4">Total Spent</th>
+                <th className="text-left text-sm font-medium text-muted-foreground p-4 hidden lg:table-cell">Loyalty</th>
                 <th className="text-left text-sm font-medium text-muted-foreground p-4 hidden sm:table-cell">Last Purchase</th>
               </tr>
             </thead>
@@ -141,6 +202,17 @@ const Customers = () => {
                   </td>
                   <td className="p-4 text-sm text-foreground">{customer.total_orders}</td>
                   <td className="p-4 text-sm font-semibold text-foreground">₹{customer.total_spent.toLocaleString()}</td>
+                  <td className="p-4 hidden lg:table-cell">
+                    <div className="flex items-center gap-2">
+                      <Gift className="w-4 h-4 text-primary" />
+                      <span className="text-sm font-medium">{customer.loyalty_points || 0}</span>
+                      {customer.loyalty_tier && (
+                        <Badge variant="outline" className="text-xs capitalize">
+                          {customer.loyalty_tier}
+                        </Badge>
+                      )}
+                    </div>
+                  </td>
                   <td className="p-4 text-sm text-muted-foreground hidden sm:table-cell">
                     {formatDate(customer.last_purchase_at)}
                   </td>
@@ -157,6 +229,63 @@ const Customers = () => {
           </div>
         )}
       </div>
+
+      {/* Add Customer Modal */}
+      <Dialog open={isAddCustomerModalOpen} onOpenChange={setIsAddCustomerModalOpen}>
+        <DialogContent className="sm:max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Add New Customer</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div>
+              <Label>Name *</Label>
+              <Input
+                value={customerForm.name}
+                onChange={(e) => setCustomerForm({ ...customerForm, name: e.target.value })}
+                placeholder="Customer name"
+                className="rounded-xl h-12 mt-1.5"
+              />
+            </div>
+            <div>
+              <Label>Phone Number *</Label>
+              <Input
+                value={customerForm.phone}
+                onChange={(e) => setCustomerForm({ ...customerForm, phone: e.target.value })}
+                placeholder="+91 98765 43210"
+                className="rounded-xl h-12 mt-1.5"
+              />
+            </div>
+            <div>
+              <Label>Email (Optional)</Label>
+              <Input
+                type="email"
+                value={customerForm.email}
+                onChange={(e) => setCustomerForm({ ...customerForm, email: e.target.value })}
+                placeholder="customer@example.com"
+                className="rounded-xl h-12 mt-1.5"
+              />
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsAddCustomerModalOpen(false);
+                  setCustomerForm({ name: "", phone: "", email: "" });
+                }}
+                className="flex-1 rounded-xl"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleAddCustomer}
+                className="flex-1 rounded-xl bg-gradient-to-r from-primary to-primary-700 dark:from-primary-600 dark:to-primary-800 text-white"
+              >
+                Add Customer
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 };
