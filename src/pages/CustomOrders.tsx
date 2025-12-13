@@ -353,12 +353,11 @@ const CustomOrders = () => {
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ delay: index * 0.05 }}
                 >
-                  <Card className="hover:shadow-lg transition-all duration-300 cursor-pointer group">
+                  <Card className="hover:shadow-lg transition-all duration-300 group">
                     <CardContent className="p-6">
-                      <Link to={`/custom-orders/${order.id}`}>
-                        <div className="flex flex-col md:flex-row gap-6">
+                      <div className="flex flex-col md:flex-row gap-6">
                           {/* Image */}
-                          <div className="flex-shrink-0">
+                          <Link to={`/custom-orders/${order.id}`} className="flex-shrink-0">
                             {order.images && order.images.length > 0 ? (
                               <div className="relative w-full md:w-32 h-32 rounded-lg overflow-hidden bg-gradient-to-br from-primary-50 to-earth-50">
                                 <img
@@ -378,26 +377,28 @@ const CustomOrders = () => {
                                 <Sparkles className="w-12 h-12 text-muted-foreground/30" />
                               </div>
                             )}
-                          </div>
+                          </Link>
 
                           {/* Content */}
                           <div className="flex-1 space-y-3">
                             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                               <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                  <h3 className="font-semibold text-lg group-hover:text-primary transition-colors font-mono">
-                                    {order.order_number}
-                                  </h3>
-                                  <Badge className={getStatusColor(order.status)}>
-                                    {getStatusLabel(order.status)}
-                                  </Badge>
-                                  {order.unread_messages && order.unread_messages > 0 && (
-                                    <Badge variant="destructive" className="flex items-center gap-1">
-                                      <MessageSquare className="w-3 h-3" />
-                                      {order.unread_messages}
+                                <Link to={`/custom-orders/${order.id}`}>
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <h3 className="font-semibold text-lg group-hover:text-primary transition-colors font-mono">
+                                      {order.order_number}
+                                    </h3>
+                                    <Badge className={getStatusColor(order.status)}>
+                                      {getStatusLabel(order.status)}
                                     </Badge>
-                                  )}
-                                </div>
+                                    {order.unread_messages && order.unread_messages > 0 && (
+                                      <Badge variant="destructive" className="flex items-center gap-1">
+                                        <MessageSquare className="w-3 h-3" />
+                                        {order.unread_messages}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </Link>
                                 <p className="text-muted-foreground">{order.product_type}</p>
                                 {order.customer && (
                                   <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
@@ -450,6 +451,7 @@ const CustomOrders = () => {
                                 className="rounded-full"
                                 onClick={(e) => {
                                   e.preventDefault();
+                                  e.stopPropagation();
                                   navigate(`/custom-orders/${order.id}`);
                                 }}
                               >
@@ -459,7 +461,6 @@ const CustomOrders = () => {
                             </div>
                           </div>
                         </div>
-                      </Link>
                     </CardContent>
                   </Card>
                 </motion.div>

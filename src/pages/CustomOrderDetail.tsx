@@ -177,7 +177,10 @@ const CustomOrderDetail = () => {
   const [order, setOrder] = useState<CustomOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [staffMembers, setStaffMembers] = useState<Array<{ id: string; email: string; full_name: string | null }>>([]);
+
+  console.log("CustomOrderDetail component rendering, ID:", id, "Loading:", loading, "Order:", order);
 
   // Form state
   const [status, setStatus] = useState("");
@@ -189,9 +192,14 @@ const CustomOrderDetail = () => {
   const [isInternalMessage, setIsInternalMessage] = useState(false);
 
   useEffect(() => {
+    console.log("CustomOrderDetail mounted with ID:", id);
     if (id) {
       fetchOrder();
       fetchStaffMembers();
+    } else {
+      console.error("No ID in URL params");
+      setError("No order ID provided");
+      setLoading(false);
     }
   }, [id]);
 
@@ -210,9 +218,15 @@ const CustomOrderDetail = () => {
   }, [order]);
 
   const fetchOrder = async () => {
-    if (!id) return;
+    if (!id) {
+      console.error("No order ID provided");
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
+    console.log("Fetching custom order with ID:", id);
+    
     try {
       const { data: orderData, error } = await supabase
         .from("custom_orders")
@@ -220,7 +234,19 @@ const CustomOrderDetail = () => {
         .eq("id", id)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching order:", error);
+        throw error;
+      }
+
+      if (!orderData) {
+        console.error("No order data returned");
+        setOrder(null);
+        setLoading(false);
+        return;
+      }
+
+      console.log("Order data fetched:", orderData);
 
       // Fetch related data separately
       let customerData: any = { data: null };
@@ -336,28 +362,32 @@ const CustomOrderDetail = () => {
         }
       }
 
-      // Combine all data
+      // Combine all data with safe defaults
       const order: CustomOrder = {
         ...orderData,
-        customer: customerData.data,
-        assigned_staff: assignedStaff,
-        images: images,
-        status_history: statusHistory,
-        messages: (messages || []).map((m: any) => ({
+        preferred_fabrics: orderData.preferred_fabrics || [],
+        customer: customerData.data || null,
+        assigned_staff: assignedStaff || null,
+        images: Array.isArray(images) ? images : [],
+        status_history: Array.isArray(statusHistory) ? statusHistory : [],
+        messages: Array.isArray(messages) ? messages.map((m: any) => ({
           ...m,
           user: messageUsersMap[m.user_id] || null,
-        })),
+        })) : [],
       };
 
+      console.log("Combined order data:", order);
       setOrder(order);
+      setError(null);
     } catch (error: any) {
       console.error("Error fetching custom order:", error);
+      const errorMessage = error.message || "Failed to load custom order details";
+      setError(errorMessage);
       toast({
         title: "Error",
-        description: error.message || "Failed to load custom order details",
+        description: errorMessage,
         variant: "destructive",
       });
-      // Don't navigate immediately - let user see the error
       setOrder(null);
     } finally {
       setLoading(false);
@@ -467,21 +497,49 @@ const CustomOrderDetail = () => {
     }
   };
 
+  // Show loading state
   if (loading) {
     return (
       <AdminLayout title="Custom Order Details">
         <div className="flex items-center justify-center min-h-[400px]">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading order details...</p>
+          </div>
         </div>
       </AdminLayout>
     );
   }
 
-  if (!order) {
+  // Show error state
+  if (error || !order) {
     return (
       <AdminLayout title="Custom Order Details">
         <div className="text-center py-12">
-          <p className="text-muted-foreground mb-4">Order not found</p>
+          <p className="text-muted-foreground mb-2">
+            {error || "Order not found"}
+          </p>
+          {error && (
+            <p className="text-sm text-muted-foreground mb-4">
+              Please check the browser console for more details.
+            </p>
+          )}
+          <Button onClick={() => navigate("/custom-orders")} className="rounded-full">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Orders
+          </Button>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  // Safety check - ensure order has required fields
+  if (!order.id || !order.order_number) {
+    console.error("Invalid order data:", order);
+    return (
+      <AdminLayout title="Custom Order Details">
+        <div className="text-center py-12">
+          <p className="text-muted-foreground mb-4">Invalid order data</p>
           <Button onClick={() => navigate("/custom-orders")} className="rounded-full">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Orders
@@ -501,10 +559,14 @@ const CustomOrderDetail = () => {
   ];
 
   const currentStatusIndex = statusSteps.findIndex((step) => step.key === order.status);
+  const safeStatusIndex = currentStatusIndex >= 0 ? currentStatusIndex : 0;
+  
   const isCompleted = (stepKey: string) => {
     const stepIndex = statusSteps.findIndex((step) => step.key === stepKey);
-    return stepIndex <= currentStatusIndex;
+    return stepIndex >= 0 && stepIndex <= safeStatusIndex;
   };
+
+  console.log("Rendering CustomOrderDetail for order:", order.order_number);
 
   return (
     <AdminLayout title="Custom Order Details">
@@ -519,8 +581,8 @@ const CustomOrderDetail = () => {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Orders
           </Button>
-          <Badge className={getStatusColor(order.status)}>
-            {getStatusLabel(order.status)}
+          <Badge className={getStatusColor(order?.status || "submitted")}>
+            {getStatusLabel(order?.status || "submitted")}
           </Badge>
         </div>
 
@@ -575,7 +637,7 @@ const CustomOrderDetail = () => {
                   <div
                     className="h-full bg-primary transition-all duration-500"
                     style={{
-                      width: `${(currentStatusIndex / (statusSteps.length - 1)) * 100}%`,
+                      width: `${Math.max(0, Math.min(100, (safeStatusIndex / (statusSteps.length - 1)) * 100))}%`,
                     }}
                   />
                 </div>
@@ -583,7 +645,7 @@ const CustomOrderDetail = () => {
                 {statusSteps.map((step, index) => {
                   const StepIcon = step.icon;
                   const completed = isCompleted(step.key);
-                  const isCurrent = step.key === order.status;
+                  const isCurrent = step.key === order.status && safeStatusIndex >= 0;
 
                   return (
                     <div key={step.key} className="flex-1 flex flex-col items-center relative z-10">
@@ -743,7 +805,7 @@ const CustomOrderDetail = () => {
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">Preferred Fabrics</p>
                     <div className="flex flex-wrap gap-2">
-                      {order.preferred_fabrics.map((fabric) => (
+                      {(order.preferred_fabrics || []).map((fabric) => (
                         <Badge key={fabric} variant="outline">
                           {fabric}
                         </Badge>
@@ -848,7 +910,7 @@ const CustomOrderDetail = () => {
 
           {/* Images Tab */}
           <TabsContent value="images" className="mt-6">
-            {order.images && order.images.length > 0 ? (
+            {order.images && Array.isArray(order.images) && order.images.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {order.images.map((image, index) => (
                   <motion.div
@@ -922,7 +984,7 @@ const CustomOrderDetail = () => {
             </Card>
 
             {/* Messages List */}
-            {order.messages && order.messages.length > 0 ? (
+            {order.messages && Array.isArray(order.messages) && order.messages.length > 0 ? (
               <div className="space-y-4">
                 {order.messages
                   .sort(
@@ -965,7 +1027,7 @@ const CustomOrderDetail = () => {
 
           {/* Progress Tab */}
           <TabsContent value="progress" className="mt-6 space-y-4">
-            {order.status_history && order.status_history.length > 0 ? (
+            {order.status_history && Array.isArray(order.status_history) && order.status_history.length > 0 ? (
               <div className="space-y-4">
                 {order.status_history
                   .sort(
