@@ -7,6 +7,7 @@ import {
   Package, 
   Gift,
   Heart,
+  Sparkles as SparklesIcon,
   ShoppingBag,
   Menu,
   X,
@@ -29,6 +30,7 @@ const sidebarItems = [
   { name: "My Profile", icon: User, href: "/customer/profile" },
   { name: "My Orders", icon: Package, href: "/customer/orders" },
   { name: "My Wishlist", icon: Heart, href: "/customer/wishlist" },
+  { name: "Custom Orders", icon: SparklesIcon, href: "/customer/custom-orders" },
   { name: "Rewards & Points", icon: Gift, href: "/customer/rewards" },
 ];
 
