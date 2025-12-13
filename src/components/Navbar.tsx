@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ChevronDown, LogIn, ShoppingCart, User, Package, Gift, LogOut } from "lucide-react";
+import { Menu, X, ChevronDown, ShoppingCart, User, Package, Gift, LogOut } from "lucide-react";
 import { Logo } from "./Logo";
 import { WhatsAppButton } from "./WhatsAppButton";
 import { ThemeToggle } from "./ThemeToggle";
@@ -217,24 +217,14 @@ export const Navbar = () => {
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                <>
-                  <Link
-                    to="/customer/login"
-                    className="p-2 text-muted-foreground hover:text-primary transition-colors"
-                    title="Customer Login"
-                    aria-label="Customer Login"
-                  >
-                    <User className="w-4 h-4" />
-                  </Link>
-                  <Link
-                    to="/login"
-                    className="p-2 text-muted-foreground hover:text-primary transition-colors"
-                    title="Staff Login"
-                    aria-label="Staff Login"
-                  >
-                    <LogIn className="w-4 h-4" />
-                  </Link>
-                </>
+                <Link
+                  to="/customer/login"
+                  className="p-2 text-muted-foreground hover:text-primary transition-colors"
+                  title="Customer Login"
+                  aria-label="Customer Login"
+                >
+                  <User className="w-4 h-4" />
+                </Link>
               )}
               
               {/* Desktop Menu Toggle */}
@@ -320,22 +310,12 @@ export const Navbar = () => {
                   <User className="w-5 h-5" />
                 </Link>
               ) : (
-                <>
-                  <Link
-                    to="/customer/login"
-                    className="p-2 text-muted-foreground hover:text-primary transition-colors touch-target"
-                  >
-                    <User className="w-5 h-5" />
-                  </Link>
-                  <Link
-                    to="/login"
-                    className="p-2 text-muted-foreground hover:text-primary transition-colors touch-target"
-                    title="Staff Login"
-                    aria-label="Staff Login"
-                  >
-                    <LogIn className="w-5 h-5" />
-                  </Link>
-                </>
+                <Link
+                  to="/customer/login"
+                  className="p-2 text-muted-foreground hover:text-primary transition-colors touch-target"
+                >
+                  <User className="w-5 h-5" />
+                </Link>
               )}
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
