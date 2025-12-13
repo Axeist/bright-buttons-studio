@@ -6,7 +6,7 @@ interface WhatsAppButtonProps {
 }
 
 const WHATSAPP_NUMBER = "919952655555";
-const DEFAULT_MESSAGE = "Hi! I'm interested in learning more about Bright Buttons eco-friendly clothing. Could you please share more details?";
+const DEFAULT_MESSAGE = "Hi! I am interested in learning more about Bright Buttons eco-friendly clothing. Could you please share more details?";
 
 // WhatsApp Icon Component
 const WhatsAppIcon = ({ className }: { className?: string }) => (
@@ -29,8 +29,10 @@ export const WhatsAppButton = ({
   const handleClick = () => {
     // Ensure we always have a message
     const messageToSend = message || DEFAULT_MESSAGE;
+    // Properly encode the message for WhatsApp URL
     const encodedMessage = encodeURIComponent(messageToSend);
-    const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`;
+    // Use api.whatsapp.com as it's more reliable for pre-filled messages
+    const whatsappUrl = `https://api.whatsapp.com/send?phone=${WHATSAPP_NUMBER}&text=${encodedMessage}`;
     window.open(whatsappUrl, "_blank");
   };
 
@@ -74,7 +76,7 @@ export const WhatsAppButton = ({
 export const getWhatsAppLink = (productName?: string, category?: string, fabric?: string) => {
   let message = DEFAULT_MESSAGE;
   if (productName) {
-    message = `Hi! I'm interested in ${productName}${category ? ` (${category}` : ''}${fabric ? `, ${fabric})` : category ? ')' : ''} from Bright Buttons. Can you share more details?`;
+    message = `Hi! I am interested in ${productName}${category ? ` (${category}` : ''}${fabric ? `, ${fabric})` : category ? ')' : ''} from Bright Buttons. Can you share more details?`;
   }
-  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+  return `https://api.whatsapp.com/send?phone=${WHATSAPP_NUMBER}&text=${encodeURIComponent(message)}`;
 };
