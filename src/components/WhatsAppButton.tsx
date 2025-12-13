@@ -3,7 +3,7 @@ import { MessageCircle } from "lucide-react";
 interface WhatsAppButtonProps {
   message?: string;
   className?: string;
-  variant?: "inline" | "ghost";
+  variant?: "inline" | "ghost" | "icon";
   children?: React.ReactNode;
 }
 
@@ -20,6 +20,19 @@ export const WhatsAppButton = ({
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`, "_blank");
   };
+
+  if (variant === "icon") {
+    return (
+      <button
+        onClick={handleClick}
+        className={`inline-flex items-center justify-center h-10 w-10 rounded-full text-foreground hover:text-[#25D366] transition-colors hover:bg-accent ${className}`}
+        aria-label="Contact on WhatsApp"
+        title="Contact on WhatsApp"
+      >
+        <MessageCircle className="w-5 h-5" />
+      </button>
+    );
+  }
 
   if (variant === "ghost") {
     return (

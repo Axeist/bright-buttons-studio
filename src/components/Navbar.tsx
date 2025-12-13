@@ -162,7 +162,7 @@ export const Navbar = () => {
             <div className="hidden lg:flex items-center gap-3">
               <LocationSelector />
               <ThemeToggle />
-              <WhatsAppButton variant="ghost" />
+              <WhatsAppButton variant="icon" />
               <Link to="/shop">
                 <Button size="sm" className="rounded-full">
                   Shop
@@ -288,7 +288,7 @@ export const Navbar = () => {
             <div className="flex items-center gap-2 sm:gap-3 lg:hidden">
               <LocationSelector />
               <ThemeToggle />
-              <WhatsAppButton variant="ghost" />
+              <WhatsAppButton variant="icon" />
               <Button
                 variant="ghost"
                 size="icon"
