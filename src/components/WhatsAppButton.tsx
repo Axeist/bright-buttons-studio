@@ -6,7 +6,7 @@ interface WhatsAppButtonProps {
 }
 
 const WHATSAPP_NUMBER = "919952655555";
-const DEFAULT_MESSAGE = "Hi! I'd like to enquire about Bright Buttons eco-friendly clothing";
+const DEFAULT_MESSAGE = "Hi! I'm interested in learning more about Bright Buttons eco-friendly clothing. Could you please share more details?";
 
 // WhatsApp Icon Component
 const WhatsAppIcon = ({ className }: { className?: string }) => (
@@ -27,8 +27,11 @@ export const WhatsAppButton = ({
   children 
 }: WhatsAppButtonProps) => {
   const handleClick = () => {
-    const encodedMessage = encodeURIComponent(message);
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`, "_blank");
+    // Ensure we always have a message
+    const messageToSend = message || DEFAULT_MESSAGE;
+    const encodedMessage = encodeURIComponent(messageToSend);
+    const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`;
+    window.open(whatsappUrl, "_blank");
   };
 
   if (variant === "icon") {
