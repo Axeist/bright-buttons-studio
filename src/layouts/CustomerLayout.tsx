@@ -6,6 +6,7 @@ import {
   User, 
   Package, 
   Gift,
+  Heart,
   ShoppingBag,
   Menu,
   X,
@@ -27,6 +28,7 @@ const sidebarItems = [
   { name: "Dashboard", icon: LayoutDashboard, href: "/customer/dashboard" },
   { name: "My Profile", icon: User, href: "/customer/profile" },
   { name: "My Orders", icon: Package, href: "/customer/orders" },
+  { name: "My Wishlist", icon: Heart, href: "/customer/wishlist" },
   { name: "Rewards & Points", icon: Gift, href: "/customer/rewards" },
 ];
 

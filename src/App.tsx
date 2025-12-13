@@ -35,6 +35,7 @@ const CustomerDashboard = lazy(() => import("./pages/customer/Dashboard"));
 const CustomerOrders = lazy(() => import("./pages/customer/Orders"));
 const CustomerProfile = lazy(() => import("./pages/customer/Profile"));
 const CustomerRewards = lazy(() => import("./pages/customer/Rewards"));
+const CustomerWishlist = lazy(() => import("./pages/customer/Wishlist"));
 
 // Admin Pages - Lazy loaded
 const Login = lazy(() => import("./pages/Login"));
@@ -121,6 +122,11 @@ const App = () => (
                   <Route path="/customer/rewards" element={
                     <CustomerProtectedRoute>
                       <CustomerRewards />
+                    </CustomerProtectedRoute>
+                  } />
+                  <Route path="/customer/wishlist" element={
+                    <CustomerProtectedRoute>
+                      <CustomerWishlist />
                     </CustomerProtectedRoute>
                   } />
                   
