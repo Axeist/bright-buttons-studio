@@ -11,6 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { CuephoriaBranding } from "@/components/CuephoriaBranding";
 import { z } from "zod";
+import { supabase } from "@/integrations/supabase/client";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -19,7 +20,7 @@ const loginSchema = z.object({
 
 const Login = () => {
   const navigate = useNavigate();
-  const { signIn, resetPassword, user, loading: authLoading, role } = useAuth();
+  const { signIn, resetPassword, signOut, user, loading: authLoading, role } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,14 +34,22 @@ const Login = () => {
 
   useEffect(() => {
     if (user && !authLoading && role) {
-      // Redirect based on role
+      // If customer is already logged in and visits staff portal, sign them out and show error
       if (role === "customer") {
-        navigate("/customer/dashboard");
+        const handleCustomerAccess = async () => {
+          await signOut();
+          toast({
+            title: "Access Denied",
+            description: "This is the Staff Portal. Customers should use the Customer Portal to log in.",
+            variant: "destructive",
+          });
+        };
+        handleCustomerAccess();
       } else if (role === "admin" || role === "staff") {
         navigate("/dashboard");
       }
     }
-  }, [user, authLoading, role, navigate]);
+  }, [user, authLoading, role, navigate, signOut]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,6 +93,30 @@ const Login = () => {
       });
       setIsSubmitting(false);
       return;
+    }
+
+    // Check if user is a customer - fetch role directly to ensure we have the latest
+    const { data: session } = await supabase.auth.getSession();
+    if (session?.user) {
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
+
+      const userRole = roleData?.role;
+
+      // If user is a customer, sign them out and show error
+      if (userRole === "customer") {
+        await signOut();
+        toast({
+          title: "Access Denied",
+          description: "This is the Staff Portal. Customers should use the Customer Portal to log in.",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
     }
 
     toast({
