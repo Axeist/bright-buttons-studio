@@ -224,49 +224,54 @@ const CustomOrderDetail = () => {
 
       // Fetch related data separately
       let customerData: any = { data: null };
-      if (orderData.customer_id) {
-        const result = await supabase
-          .from("customers")
-          .select("id, name, email, phone")
-          .eq("id", orderData.customer_id)
-          .single();
-        customerData = result;
-      } else if (orderData.user_id) {
-        // Try to find customer by user_id
-        const result = await supabase
-          .from("customers")
-          .select("id, name, email, phone")
-          .eq("user_id", orderData.user_id)
-          .maybeSingle();
-        customerData = result;
-      }
-      
-      // If still no customer, try profiles
-      if (!customerData.data && orderData.user_id) {
-        const profileResult = await supabase
-          .from("profiles")
-          .select("id, email, full_name")
-          .eq("id", orderData.user_id)
-          .single();
-        if (profileResult.data) {
-          customerData = {
-            data: {
-              id: profileResult.data.id,
-              name: profileResult.data.full_name,
-              email: profileResult.data.email,
-              phone: null,
-            },
-          };
+      try {
+        if (orderData.customer_id) {
+          const result = await supabase
+            .from("customers")
+            .select("id, name, email, phone")
+            .eq("id", orderData.customer_id)
+            .maybeSingle();
+          customerData = result;
+        } else if (orderData.user_id) {
+          // Try to find customer by user_id
+          const result = await supabase
+            .from("customers")
+            .select("id, name, email, phone")
+            .eq("user_id", orderData.user_id)
+            .maybeSingle();
+          customerData = result;
         }
+        
+        // If still no customer, try profiles
+        if (!customerData.data && orderData.user_id) {
+          const profileResult = await supabase
+            .from("profiles")
+            .select("id, email, full_name")
+            .eq("id", orderData.user_id)
+            .maybeSingle();
+          if (profileResult.data) {
+            customerData = {
+              data: {
+                id: profileResult.data.id,
+                name: profileResult.data.full_name,
+                email: profileResult.data.email,
+                phone: null,
+              },
+            };
+          }
+        }
+      } catch (customerError) {
+        console.error("Error fetching customer data:", customerError);
+        // Continue without customer data
       }
 
-      const [assignedStaffData, imagesData, statusHistoryData, messagesData] = await Promise.all([
+      const [assignedStaffData, imagesData, statusHistoryData, messagesData] = await Promise.allSettled([
         orderData.assigned_to
           ? supabase
               .from("profiles")
               .select("id, email, full_name")
               .eq("id", orderData.assigned_to)
-              .single()
+              .maybeSingle()
               .then((result) => ({
                 data: result.data
                   ? {
@@ -291,36 +296,54 @@ const CustomOrderDetail = () => {
           .select("id, message, created_at, user_id, is_internal")
           .eq("custom_order_id", id)
           .order("created_at", { ascending: false }),
-      ]);
+      ]).then((results) =>
+        results.map((result) => {
+          if (result.status === "fulfilled") {
+            return result.value;
+          } else {
+            console.error("Error fetching related data:", result.reason);
+            return { data: null, error: result.reason };
+          }
+        })
+      );
+
+      const assignedStaff = assignedStaffData.data || null;
+      const images = imagesData.data || [];
+      const statusHistory = statusHistoryData.data || [];
+      const messages = messagesData.data || [];
 
       // Fetch user profiles for messages
       const messageUserIds = [
-        ...new Set((messagesData.data || []).map((m: any) => m.user_id).filter(Boolean)),
+        ...new Set((messages || []).map((m: any) => m.user_id).filter(Boolean)),
       ];
       let messageUsersMap: Record<string, any> = {};
 
       if (messageUserIds.length > 0) {
-        const { data: messageProfiles } = await supabase
-          .from("profiles")
-          .select("id, email, full_name")
-          .in("id", messageUserIds);
+        try {
+          const { data: messageProfiles } = await supabase
+            .from("profiles")
+            .select("id, email, full_name")
+            .in("id", messageUserIds);
 
-        messageProfiles?.forEach((p: any) => {
-          messageUsersMap[p.id] = {
-            email: p.email,
-            profiles: { full_name: p.full_name },
-          };
-        });
+          messageProfiles?.forEach((p: any) => {
+            messageUsersMap[p.id] = {
+              email: p.email,
+              profiles: { full_name: p.full_name },
+            };
+          });
+        } catch (profileError) {
+          console.error("Error fetching message user profiles:", profileError);
+        }
       }
 
       // Combine all data
       const order: CustomOrder = {
         ...orderData,
         customer: customerData.data,
-        assigned_staff: assignedStaffData.data,
-        images: imagesData.data || [],
-        status_history: statusHistoryData.data || [],
-        messages: (messagesData.data || []).map((m: any) => ({
+        assigned_staff: assignedStaff,
+        images: images,
+        status_history: statusHistory,
+        messages: (messages || []).map((m: any) => ({
           ...m,
           user: messageUsersMap[m.user_id] || null,
         })),
@@ -331,10 +354,11 @@ const CustomOrderDetail = () => {
       console.error("Error fetching custom order:", error);
       toast({
         title: "Error",
-        description: "Failed to load custom order details",
+        description: error.message || "Failed to load custom order details",
         variant: "destructive",
       });
-      navigate("/custom-orders");
+      // Don't navigate immediately - let user see the error
+      setOrder(null);
     } finally {
       setLoading(false);
     }
@@ -344,23 +368,27 @@ const CustomOrderDetail = () => {
     try {
       const { data, error } = await supabase
         .from("user_roles")
-        .select(
-          `
-          user_id,
-          user:auth.users!user_roles_user_id_fkey(id, email, profiles(full_name))
-        `
-        )
+        .select("user_id")
         .in("role", ["admin", "staff"]);
 
       if (error) throw error;
 
-      const staff = (data || []).map((item: any) => ({
-        id: item.user_id,
-        email: item.user.email,
-        full_name: item.user.profiles?.full_name || null,
-      }));
+      const userIds = (data || []).map((item: any) => item.user_id);
+      
+      if (userIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("id, email, full_name")
+          .in("id", userIds);
 
-      setStaffMembers(staff);
+        const staff = (profilesData || []).map((profile: any) => ({
+          id: profile.id,
+          email: profile.email,
+          full_name: profile.full_name,
+        }));
+
+        setStaffMembers(staff);
+      }
     } catch (error) {
       console.error("Error fetching staff members:", error);
     }
