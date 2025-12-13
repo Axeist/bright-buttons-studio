@@ -46,8 +46,8 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const POS = lazy(() => import("./pages/POS"));
 const Products = lazy(() => import("./pages/Products"));
 const Orders = lazy(() => import("./pages/Orders"));
-const CustomOrders = lazy(() => import("./pages/CustomOrders"));
-const CustomOrderDetail = lazy(() => import("./pages/CustomOrderDetail"));
+const AdminCustomOrders = lazy(() => import("./pages/CustomOrders"));
+const AdminCustomOrderDetail = lazy(() => import("./pages/CustomOrderDetail"));
 const Customers = lazy(() => import("./pages/Customers"));
 const Reports = lazy(() => import("./pages/Reports"));
 const Settings = lazy(() => import("./pages/Settings"));
@@ -178,12 +178,12 @@ const App = () => (
                   } />
                   <Route path="/custom-orders" element={
                     <StaffProtectedRoute>
-                      <CustomOrders />
+                      <AdminCustomOrders />
                     </StaffProtectedRoute>
                   } />
                   <Route path="/custom-orders/:id" element={
                     <StaffProtectedRoute>
-                      <CustomOrderDetail />
+                      <AdminCustomOrderDetail />
                     </StaffProtectedRoute>
                   } />
                   <Route path="/customers" element={
