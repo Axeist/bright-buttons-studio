@@ -469,7 +469,7 @@ const CustomerLogin = () => {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Confirm your password"
-                      className={`h-12 rounded-xl pr-12 ${errors.confirmPassword ? "border-destructive" : ""}`}
+                      className={`h-12 rounded-xl pr-12 ${errors.confirmPassword ? "border-destructive" : confirmPassword && password && password !== confirmPassword ? "border-destructive" : confirmPassword && password && password === confirmPassword ? "border-green-500" : ""}`}
                       disabled={isSubmitting}
                     />
                     <button
@@ -480,6 +480,11 @@ const CustomerLogin = () => {
                       {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
                   </div>
+                  {confirmPassword && password && (
+                    <p className={`text-sm ${password === confirmPassword ? "text-green-600 dark:text-green-400" : "text-destructive"}`}>
+                      {password === confirmPassword ? "✓ Passwords match" : "✗ Passwords do not match"}
+                    </p>
+                  )}
                   {errors.confirmPassword && (
                     <p className="text-sm text-destructive">{errors.confirmPassword}</p>
                   )}
