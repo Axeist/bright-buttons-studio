@@ -46,6 +46,8 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const POS = lazy(() => import("./pages/POS"));
 const Products = lazy(() => import("./pages/Products"));
 const Orders = lazy(() => import("./pages/Orders"));
+const CustomOrders = lazy(() => import("./pages/CustomOrders"));
+const CustomOrderDetail = lazy(() => import("./pages/CustomOrderDetail"));
 const Customers = lazy(() => import("./pages/Customers"));
 const Reports = lazy(() => import("./pages/Reports"));
 const Settings = lazy(() => import("./pages/Settings"));
@@ -172,6 +174,16 @@ const App = () => (
                   <Route path="/orders" element={
                     <StaffProtectedRoute>
                       <Orders />
+                    </StaffProtectedRoute>
+                  } />
+                  <Route path="/custom-orders" element={
+                    <StaffProtectedRoute>
+                      <CustomOrders />
+                    </StaffProtectedRoute>
+                  } />
+                  <Route path="/custom-orders/:id" element={
+                    <StaffProtectedRoute>
+                      <CustomOrderDetail />
                     </StaffProtectedRoute>
                   } />
                   <Route path="/customers" element={
