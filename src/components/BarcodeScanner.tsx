@@ -119,3 +119,7 @@ export const BarcodeScanner = ({ onScan, onClose, isOpen }: BarcodeScannerProps)
   );
 };
 
+
+
+
+

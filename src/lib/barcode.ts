@@ -27,3 +27,7 @@ export function generateBarcodeImage(barcodeValue: string): string {
   return canvas.toDataURL('image/png');
 }
 
+
+
+
+

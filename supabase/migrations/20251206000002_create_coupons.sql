@@ -89,3 +89,7 @@ CREATE TRIGGER increment_coupon_usage_trigger
 AFTER INSERT ON public.coupon_redemptions
 FOR EACH ROW
 EXECUTE FUNCTION public.increment_coupon_usage();
+
+
+
+
