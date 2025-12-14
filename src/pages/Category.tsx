@@ -23,7 +23,10 @@ interface Product {
   inventory?: {
     quantity: number;
     reserved_quantity: number;
-  };
+  } | Array<{
+    quantity: number;
+    reserved_quantity: number;
+  }>;
 }
 
 const Category = () => {
@@ -182,8 +185,13 @@ const Category = () => {
   };
 
   const getAvailableStock = (product: Product) => {
-    const qty = product.inventory?.quantity || 0;
-    const reserved = product.inventory?.reserved_quantity || 0;
+    // Handle both array and object formats from Supabase
+    const inventory = Array.isArray(product.inventory) 
+      ? product.inventory[0] 
+      : product.inventory;
+    
+    const qty = inventory?.quantity || 0;
+    const reserved = inventory?.reserved_quantity || 0;
     return qty - reserved;
   };
 
@@ -275,12 +283,27 @@ const Category = () => {
                           src={product.image_url}
                           alt={product.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const fallback = target.nextElementSibling as HTMLElement;
+                            if (fallback) fallback.style.display = 'flex';
+                          }}
                         />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <p className="text-muted-foreground text-sm">{product.name}</p>
+                      ) : null}
+                      <div 
+                        className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-primary-50 to-earth-50 ${product.image_url ? 'hidden' : ''}`}
+                      >
+                        <div className="text-center p-4">
+                          <div className="w-16 h-16 mx-auto mb-2 rounded-full bg-primary/10 flex items-center justify-center">
+                            <ShoppingCart className="w-8 h-8 text-primary/50" />
+                          </div>
+                          <p className="text-muted-foreground text-sm font-medium">{product.name}</p>
+                          {product.category && (
+                            <p className="text-muted-foreground text-xs mt-1">{product.category}</p>
+                          )}
                         </div>
-                      )}
+                      </div>
                       {getAvailableStock(product) === 0 && (
                         <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
                           <Badge variant="destructive">Out of Stock</Badge>

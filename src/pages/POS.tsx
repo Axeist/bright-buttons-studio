@@ -31,7 +31,10 @@ interface Product {
   inventory?: {
     quantity: number;
     reserved_quantity: number;
-  };
+  } | Array<{
+    quantity: number;
+    reserved_quantity: number;
+  }>;
 }
 
 interface CartItem {
@@ -267,7 +270,11 @@ const POS = () => {
   };
 
   const addToCart = (product: Product) => {
-    const availableStock = (product.inventory?.quantity || 0) - (product.inventory?.reserved_quantity || 0);
+    // Handle both array and object formats from Supabase
+    const inventory = Array.isArray(product.inventory) 
+      ? product.inventory[0] 
+      : product.inventory;
+    const availableStock = (inventory?.quantity || 0) - (inventory?.reserved_quantity || 0);
     const existingItem = cart.find((item) => item.id === product.id);
     const currentCartQty = existingItem?.quantity || 0;
 
@@ -300,7 +307,11 @@ const POS = () => {
     setCart(cart.map((item) => {
       if (item.id === id) {
         const product = products.find((p) => p.id === id);
-        const availableStock = (product?.inventory?.quantity || 0) - (product?.inventory?.reserved_quantity || 0);
+        // Handle both array and object formats from Supabase
+        const inventory = product ? (Array.isArray(product.inventory) 
+          ? product.inventory[0] 
+          : product.inventory) : null;
+        const availableStock = (inventory?.quantity || 0) - (inventory?.reserved_quantity || 0);
         const newQuantity = item.quantity + delta;
         
         if (newQuantity > availableStock) {
@@ -893,7 +904,11 @@ const POS = () => {
           {/* Products Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[calc(100vh-400px)] overflow-y-auto">
             {filteredProducts.map((product) => {
-              const stock = (product.inventory?.quantity || 0) - (product.inventory?.reserved_quantity || 0);
+              // Handle both array and object formats from Supabase
+              const inventory = Array.isArray(product.inventory) 
+                ? product.inventory[0] 
+                : product.inventory;
+              const stock = (inventory?.quantity || 0) - (inventory?.reserved_quantity || 0);
               return (
                 <button
                   key={product.id}

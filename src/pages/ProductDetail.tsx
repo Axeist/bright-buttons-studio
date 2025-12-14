@@ -26,7 +26,10 @@ interface Product {
   inventory?: {
     quantity: number;
     reserved_quantity: number;
-  };
+  } | Array<{
+    quantity: number;
+    reserved_quantity: number;
+  }>;
 }
 
 const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
@@ -182,7 +185,12 @@ const ProductDetail = () => {
 
   const getAvailableStock = () => {
     if (!product?.inventory) return 0;
-    return product.inventory.quantity - (product.inventory.reserved_quantity || 0);
+    // Handle both array and object formats from Supabase
+    const inventory = Array.isArray(product.inventory) 
+      ? product.inventory[0] 
+      : product.inventory;
+    if (!inventory) return 0;
+    return inventory.quantity - (inventory.reserved_quantity || 0);
   };
 
   const handleShare = async () => {
@@ -257,12 +265,25 @@ const ProductDetail = () => {
                     src={productImages[currentImageIndex]}
                     alt={product.name}
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      const fallback = target.nextElementSibling as HTMLElement;
+                      if (fallback) fallback.style.display = 'flex';
+                    }}
                   />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Leaf className="w-20 h-20 text-primary-400" />
+                ) : null}
+                <div 
+                  className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-primary-50 to-earth-50 ${productImages[currentImageIndex] ? 'hidden' : ''}`}
+                >
+                  <div className="text-center p-8">
+                    <Leaf className="w-20 h-20 text-primary-400 mx-auto mb-4" />
+                    <p className="text-lg font-semibold text-foreground mb-2">{product.name}</p>
+                    {product.category && (
+                      <p className="text-muted-foreground">{product.category}</p>
+                    )}
                   </div>
-                )}
+                </div>
                 {getAvailableStock() === 0 && (
                   <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
                     <Badge variant="destructive" className="text-lg px-4 py-2">
@@ -284,11 +305,24 @@ const ProductDetail = () => {
                           : "border-transparent"
                       }`}
                     >
-                      <img
-                        src={img || ""}
-                        alt={`${product.name} ${index + 1}`}
-                        className="w-full h-full object-cover"
-                      />
+                      {img ? (
+                        <img
+                          src={img}
+                          alt={`${product.name} ${index + 1}`}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const fallback = target.nextElementSibling as HTMLElement;
+                            if (fallback) fallback.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <div 
+                        className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-primary-50 to-earth-50 ${img ? 'hidden' : ''}`}
+                      >
+                        <Leaf className="w-6 h-6 text-primary-400" />
+                      </div>
                     </button>
                   ))}
                 </div>
