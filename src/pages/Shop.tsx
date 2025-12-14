@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
 import { PublicLayout } from "@/layouts/PublicLayout";
 import { motion } from "framer-motion";
-import { Search, Filter, Grid, List, SlidersHorizontal, X } from "lucide-react";
+import { Search, Filter, Grid, List, SlidersHorizontal, X, Heart } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "@/hooks/useCart";
+import { useAuth } from "@/hooks/useAuth";
 import { ShoppingCart } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 interface Product {
   id: string;
@@ -39,11 +41,21 @@ const Shop = () => {
   const [sortBy, setSortBy] = useState("newest");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [showFilters, setShowFilters] = useState(false);
+  const [wishlistIds, setWishlistIds] = useState<Set<string>>(new Set());
+  const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set());
   const { addToCart } = useCart();
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchProducts();
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchWishlistIds();
+    }
+  }, [user]);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -93,6 +105,87 @@ const Shop = () => {
 
   const handleAddToCart = async (product: Product) => {
     await addToCart(product.id, 1);
+  };
+
+  const fetchWishlistIds = async () => {
+    if (!user) return;
+    try {
+      const { data } = await supabase
+        .from("wishlist")
+        .select("product_id")
+        .eq("user_id", user.id);
+      
+      if (data) {
+        setWishlistIds(new Set(data.map((item) => item.product_id)));
+      }
+    } catch (error) {
+      console.error("Error fetching wishlist:", error);
+    }
+  };
+
+  const toggleWishlist = async (product: Product, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!user) {
+      toast({
+        title: "Please login",
+        description: "You need to login to save designs to your wishlist",
+        variant: "destructive",
+      });
+      navigate("/customer/login");
+      return;
+    }
+
+    const isWishlisted = wishlistIds.has(product.id);
+    setTogglingIds((prev) => new Set(prev).add(product.id));
+
+    try {
+      if (isWishlisted) {
+        const { error } = await supabase
+          .from("wishlist")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("product_id", product.id);
+
+        if (error) throw error;
+        setWishlistIds((prev) => {
+          const next = new Set(prev);
+          next.delete(product.id);
+          return next;
+        });
+        toast({
+          title: "Removed from wishlist",
+          description: `${product.name} has been removed from your saved designs`,
+        });
+      } else {
+        const { error } = await supabase
+          .from("wishlist")
+          .insert({
+            user_id: user.id,
+            product_id: product.id,
+          });
+
+        if (error) throw error;
+        setWishlistIds((prev) => new Set(prev).add(product.id));
+        toast({
+          title: "Saved to wishlist",
+          description: `${product.name} has been saved to your wishlist`,
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update wishlist",
+        variant: "destructive",
+      });
+    } finally {
+      setTogglingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(product.id);
+        return next;
+      });
+    }
   };
 
   const getAvailableStock = (product: Product) => {
@@ -311,7 +404,7 @@ const Shop = () => {
                       className={
                         viewMode === "grid"
                           ? "relative aspect-[4/5] overflow-hidden bg-gradient-to-br from-primary-50 to-earth-50 rounded-xl mb-3"
-                          : "w-32 h-32 rounded-lg overflow-hidden bg-gradient-to-br from-primary-50 to-earth-50"
+                          : "w-32 h-32 rounded-lg overflow-hidden bg-gradient-to-br from-primary-50 to-earth-50 relative"
                       }
                     >
                       {product.image_url ? (
@@ -330,6 +423,32 @@ const Shop = () => {
                           <Badge variant="destructive">Out of Stock</Badge>
                         </div>
                       )}
+                      {/* Wishlist Button */}
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={(e) => toggleWishlist(product, e)}
+                        disabled={togglingIds.has(product.id)}
+                        className={`absolute top-2 right-2 z-20 p-2 rounded-full backdrop-blur-sm transition-all duration-300 ${
+                          wishlistIds.has(product.id)
+                            ? "bg-destructive/90 text-white shadow-lg"
+                            : "bg-background/80 text-foreground hover:bg-background"
+                        }`}
+                        aria-label={wishlistIds.has(product.id) ? "Remove from wishlist" : "Add to wishlist"}
+                      >
+                        {togglingIds.has(product.id) ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                        ) : (
+                          <motion.div
+                            animate={wishlistIds.has(product.id) ? { scale: [1, 1.2, 1] } : {}}
+                            transition={{ duration: 0.3 }}
+                          >
+                            <Heart
+                              className={`w-4 h-4 ${wishlistIds.has(product.id) ? "fill-current" : ""}`}
+                            />
+                          </motion.div>
+                        )}
+                      </motion.button>
                     </div>
                   </Link>
 

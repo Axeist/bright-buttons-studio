@@ -11,6 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { CuephoriaBranding } from "@/components/CuephoriaBranding";
 import { z } from "zod";
+import { supabase } from "@/integrations/supabase/client";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -19,7 +20,7 @@ const loginSchema = z.object({
 
 const Login = () => {
   const navigate = useNavigate();
-  const { signIn, resetPassword, user, loading: authLoading } = useAuth();
+  const { signIn, resetPassword, signOut, user, loading: authLoading, role } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -32,10 +33,23 @@ const Login = () => {
   const [forgotPasswordError, setForgotPasswordError] = useState("");
 
   useEffect(() => {
-    if (user && !authLoading) {
-      navigate("/dashboard");
+    if (user && !authLoading && role) {
+      // If customer is already logged in and visits staff portal, sign them out and show error
+      if (role === "customer") {
+        const handleCustomerAccess = async () => {
+          await signOut();
+          toast({
+            title: "Access Denied",
+            description: "This is the Staff Portal. Customers should use the Customer Portal to log in.",
+            variant: "destructive",
+          });
+        };
+        handleCustomerAccess();
+      } else if (role === "admin" || role === "staff") {
+        navigate("/dashboard");
+      }
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, role, navigate, signOut]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,11 +95,43 @@ const Login = () => {
       return;
     }
 
+    // Check if user is a customer - fetch role directly to ensure we have the latest
+    const { data: session } = await supabase.auth.getSession();
+    if (session?.user) {
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
+
+      const userRole = roleData?.role;
+
+      // If user is a customer, sign them out and show error
+      if (userRole === "customer") {
+        await signOut();
+        toast({
+          title: "Access Denied",
+          description: "This is the Staff Portal. Customers should use the Customer Portal to log in.",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
     toast({
       title: "Welcome back!",
       description: "Login successful.",
     });
-    navigate("/dashboard");
+    
+    // Wait a moment for role to be fetched, then redirect
+    setTimeout(() => {
+      if (role === "customer") {
+        navigate("/customer/dashboard");
+      } else {
+        navigate("/dashboard");
+      }
+    }, 100);
   };
 
   const handleForgotPassword = async () => {
@@ -125,7 +171,8 @@ const Login = () => {
 
     toast({
       title: "Reset link sent!",
-      description: "Check your email for password reset instructions.",
+      description: "Check your email (including spam folder) for password reset instructions. The email should arrive within 30 seconds if custom SMTP is configured, or 2-5 minutes with default settings.",
+      duration: 8000,
     });
     setShowForgotPassword(false);
     setForgotPasswordEmail("");

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { PublicLayout } from "@/layouts/PublicLayout";
+import { CustomerLayout } from "@/layouts/CustomerLayout";
 import { motion } from "framer-motion";
 import { Package, Truck, CheckCircle, Clock, XCircle, ArrowLeft, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -146,17 +146,16 @@ const CustomerOrders = () => {
 
   if (id && selectedOrder) {
     return (
-      <PublicLayout>
-        <div className="min-h-screen bg-background">
-          <div className="container-custom py-8">
-            <Button
-              variant="ghost"
-              onClick={() => navigate("/customer/orders")}
-              className="mb-6"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Orders
-            </Button>
+      <CustomerLayout title="Order Details">
+        <div className="space-y-6">
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/customer/orders")}
+            className="mb-6"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Orders
+          </Button>
 
             <Card>
               <CardHeader>
@@ -232,22 +231,14 @@ const CustomerOrders = () => {
                 </div>
               </CardContent>
             </Card>
-          </div>
         </div>
-      </PublicLayout>
+      </CustomerLayout>
     );
   }
 
   return (
-    <PublicLayout>
-      <div className="min-h-screen bg-background">
-        <div className="container-custom py-8">
-          <div className="mb-8">
-            <h1 className="text-3xl md:text-4xl font-script text-gradient mb-2">
-              My Orders
-            </h1>
-            <p className="text-muted-foreground">Track and manage your orders</p>
-          </div>
+    <CustomerLayout>
+      <div className="space-y-6">
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="mb-6">
@@ -312,9 +303,8 @@ const CustomerOrders = () => {
               </Card>
             )}
           </Tabs>
-        </div>
       </div>
-    </PublicLayout>
+    </CustomerLayout>
   );
 };
 

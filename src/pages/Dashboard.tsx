@@ -21,6 +21,7 @@ interface DashboardStats {
   todayOrders: number;
   avgOrderValue: number;
   whatsappOrders: number;
+  onlineOrders: number;
   lowStockItems: Array<{ name: string; stock: number }>;
   topProducts: Array<{ name: string; sales: number; revenue: number }>;
   recentOrders: Array<{
@@ -40,6 +41,7 @@ const Dashboard = () => {
     todayOrders: 0,
     avgOrderValue: 0,
     whatsappOrders: 0,
+    onlineOrders: 0,
     lowStockItems: [],
     topProducts: [],
     recentOrders: [],
@@ -57,14 +59,16 @@ const Dashboard = () => {
       const todayStart = today.toISOString();
 
       // Today's orders
-      const { data: todayOrders } = await supabase
+      const { data: todayOrdersData, error: todayOrdersError } = await supabase
         .from("orders")
         .select("total_amount, status, source")
         .gte("created_at", todayStart);
 
-      const todayRevenue = todayOrders?.reduce((sum, o) => sum + o.total_amount, 0) || 0;
-      const todayOrdersCount = todayOrders?.length || 0;
+      const todayOrders = todayOrdersData || [];
+      const todayRevenue = todayOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
+      const todayOrdersCount = todayOrders.length;
       const avgOrderValue = todayOrdersCount > 0 ? todayRevenue / todayOrdersCount : 0;
+      const onlineOrdersCount = todayOrders.filter(o => o.source === "online").length;
 
       // Low stock items
       const { data: lowStockData } = await supabase
@@ -112,6 +116,7 @@ const Dashboard = () => {
         todayOrders: todayOrdersCount,
         avgOrderValue,
         whatsappOrders: 0, // Deprecated, kept for compatibility
+        onlineOrders: onlineOrdersCount,
         lowStockItems,
         topProducts,
         recentOrders: recentOrdersData || [],
@@ -157,7 +162,7 @@ const Dashboard = () => {
     },
     { 
       title: "Online Orders", 
-      value: (todayOrders?.filter(o => o.source === "online").length || 0).toString(), 
+      value: stats.onlineOrders.toString(), 
       change: "Today",
       icon: Package,
       color: "from-blue-500 to-blue-700",

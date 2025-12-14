@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Package, ShoppingBag, Star, Gift, User, MapPin, CreditCard, TrendingUp, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PublicLayout } from "@/layouts/PublicLayout";
+import { CustomerLayout } from "@/layouts/CustomerLayout";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
@@ -103,26 +103,22 @@ const CustomerDashboard = () => {
 
   if (loading) {
     return (
-      <PublicLayout>
+      <CustomerLayout>
         <div className="min-h-screen flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
-      </PublicLayout>
+      </CustomerLayout>
     );
   }
 
   return (
-    <PublicLayout>
-      <div className="min-h-screen bg-background">
-        <div className="container-custom py-8">
-          <div className="mb-8">
-            <h1 className="text-3xl md:text-4xl font-script text-gradient mb-2">
-              My Account
-            </h1>
-            <p className="text-muted-foreground">
-              Welcome back, {user?.email?.split("@")[0] || "Customer"}!
-            </p>
-          </div>
+    <CustomerLayout>
+      <div className="space-y-6">
+        <div className="mb-6">
+          <p className="text-muted-foreground">
+            Welcome back, {customer?.email?.split("@")[0] || customer?.name || "Customer"}!
+          </p>
+        </div>
 
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -230,44 +226,9 @@ const CustomerDashboard = () => {
               </Card>
             </div>
 
-            {/* Quick Actions */}
-            <div>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Quick Actions</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <Link to="/customer/profile">
-                    <Button variant="outline" className="w-full justify-start">
-                      <User className="w-4 h-4 mr-2" />
-                      My Profile
-                    </Button>
-                  </Link>
-                  <Link to="/customer/orders">
-                    <Button variant="outline" className="w-full justify-start">
-                      <Package className="w-4 h-4 mr-2" />
-                      My Orders
-                    </Button>
-                  </Link>
-                  <Link to="/customer/rewards">
-                    <Button variant="outline" className="w-full justify-start">
-                      <Gift className="w-4 h-4 mr-2" />
-                      Rewards & Points
-                    </Button>
-                  </Link>
-                  <Link to="/shop">
-                    <Button variant="outline" className="w-full justify-start">
-                      <ShoppingBag className="w-4 h-4 mr-2" />
-                      Continue Shopping
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            </div>
           </div>
-        </div>
       </div>
-    </PublicLayout>
+    </CustomerLayout>
   );
 };
 

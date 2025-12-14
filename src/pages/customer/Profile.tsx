@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { PublicLayout } from "@/layouts/PublicLayout";
+import { CustomerLayout } from "@/layouts/CustomerLayout";
 import { motion } from "framer-motion";
 import { User, Mail, Phone, MapPin, Save, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,6 @@ const CustomerProfile = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [customer, setCustomer] = useState<any>(null);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
@@ -73,7 +72,6 @@ const CustomerProfile = () => {
 
     setLoading(true);
     try {
-      setCustomer(customer);
       setProfileForm({
         name: customer.name || "",
         email: customer.email || "",
@@ -226,34 +224,27 @@ const CustomerProfile = () => {
 
   if (loading) {
     return (
-      <PublicLayout>
+      <CustomerLayout>
         <div className="min-h-screen flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
-      </PublicLayout>
+      </CustomerLayout>
     );
   }
 
   return (
-    <PublicLayout>
-      <div className="min-h-screen bg-background">
-        <div className="container-custom py-8">
-          <div className="mb-8">
-            <h1 className="text-3xl md:text-4xl font-script text-gradient mb-2">
-              My Profile
-            </h1>
-            <p className="text-muted-foreground">Manage your account information</p>
-          </div>
+    <CustomerLayout>
+      <div className="space-y-6">
 
-          <Tabs defaultValue="profile" className="space-y-6">
-            <TabsList>
-              <TabsTrigger value="profile">Profile</TabsTrigger>
-              <TabsTrigger value="addresses">Addresses</TabsTrigger>
-              <TabsTrigger value="security">Security</TabsTrigger>
-            </TabsList>
+        <Tabs defaultValue="profile" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="profile">Profile</TabsTrigger>
+            <TabsTrigger value="addresses">Addresses</TabsTrigger>
+            <TabsTrigger value="security">Security</TabsTrigger>
+          </TabsList>
 
-            <TabsContent value="profile">
-              <Card>
+          <TabsContent value="profile">
+            <Card>
                 <CardHeader>
                   <CardTitle>Personal Information</CardTitle>
                   <CardDescription>Update your personal details</CardDescription>
@@ -322,11 +313,11 @@ const CustomerProfile = () => {
                     {saving ? "Saving..." : "Save Changes"}
                   </Button>
                 </CardContent>
-              </Card>
-            </TabsContent>
+            </Card>
+          </TabsContent>
 
-            <TabsContent value="addresses">
-              <Card>
+          <TabsContent value="addresses">
+            <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
@@ -428,11 +419,11 @@ const CustomerProfile = () => {
                     </div>
                   )}
                 </CardContent>
-              </Card>
-            </TabsContent>
+            </Card>
+          </TabsContent>
 
-            <TabsContent value="security">
-              <Card>
+          <TabsContent value="security">
+            <Card>
                 <CardHeader>
                   <CardTitle>Security Settings</CardTitle>
                   <CardDescription>Manage your account security</CardDescription>
@@ -455,10 +446,9 @@ const CustomerProfile = () => {
                     </div>
                   </div>
                 </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </div>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Address Form Dialog */}
@@ -588,7 +578,7 @@ const CustomerProfile = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </PublicLayout>
+    </CustomerLayout>
   );
 };
 

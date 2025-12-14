@@ -9,6 +9,8 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { CustomerAuthProvider } from "@/hooks/useCustomerAuth";
 import { CartProvider } from "@/hooks/useCart";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { CustomerProtectedRoute } from "@/components/CustomerProtectedRoute";
+import { StaffProtectedRoute } from "@/components/StaffProtectedRoute";
 import { ConstructionPopup } from "@/components/ConstructionPopup";
 
 // Public Pages - Lazy loaded for better performance
@@ -25,12 +27,18 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Customer Pages
 const CustomerLogin = lazy(() => import("./pages/CustomerLogin"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const EmailConfirmation = lazy(() => import("./pages/EmailConfirmation"));
 const Checkout = lazy(() => import("./pages/Checkout"));
 const OrderConfirmation = lazy(() => import("./pages/OrderConfirmation"));
 const CustomerDashboard = lazy(() => import("./pages/customer/Dashboard"));
 const CustomerOrders = lazy(() => import("./pages/customer/Orders"));
 const CustomerProfile = lazy(() => import("./pages/customer/Profile"));
 const CustomerRewards = lazy(() => import("./pages/customer/Rewards"));
+const CustomerWishlist = lazy(() => import("./pages/customer/Wishlist"));
+const CustomOrders = lazy(() => import("./pages/customer/CustomOrders"));
+const CustomOrderForm = lazy(() => import("./pages/customer/CustomOrderForm"));
+const CustomOrderDetail = lazy(() => import("./pages/customer/CustomOrderDetail"));
 
 // Admin Pages - Lazy loaded
 const Login = lazy(() => import("./pages/Login"));
@@ -38,6 +46,8 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const POS = lazy(() => import("./pages/POS"));
 const Products = lazy(() => import("./pages/Products"));
 const Orders = lazy(() => import("./pages/Orders"));
+const AdminCustomOrders = lazy(() => import("./pages/CustomOrders"));
+const AdminCustomOrderDetail = lazy(() => import("./pages/CustomOrderDetail"));
 const Customers = lazy(() => import("./pages/Customers"));
 const Reports = lazy(() => import("./pages/Reports"));
 const Settings = lazy(() => import("./pages/Settings"));
@@ -88,79 +98,113 @@ const App = () => (
                   
                   {/* Customer Auth Routes */}
                   <Route path="/customer/login" element={<CustomerLogin />} />
+                  <Route path="/customer/reset-password" element={<ResetPassword />} />
+                  <Route path="/customer/confirm" element={<EmailConfirmation />} />
                   
                   {/* Customer Routes */}
                   <Route path="/checkout" element={<Checkout />} />
                   <Route path="/order-confirmation/:id" element={<OrderConfirmation />} />
                   <Route path="/customer/dashboard" element={
-                    <ProtectedRoute>
+                    <CustomerProtectedRoute>
                       <CustomerDashboard />
-                    </ProtectedRoute>
+                    </CustomerProtectedRoute>
                   } />
                   <Route path="/customer/orders" element={
-                    <ProtectedRoute>
+                    <CustomerProtectedRoute>
                       <CustomerOrders />
-                    </ProtectedRoute>
+                    </CustomerProtectedRoute>
                   } />
                   <Route path="/customer/orders/:id" element={
-                    <ProtectedRoute>
+                    <CustomerProtectedRoute>
                       <CustomerOrders />
-                    </ProtectedRoute>
+                    </CustomerProtectedRoute>
                   } />
                   <Route path="/customer/profile" element={
-                    <ProtectedRoute>
+                    <CustomerProtectedRoute>
                       <CustomerProfile />
-                    </ProtectedRoute>
+                    </CustomerProtectedRoute>
                   } />
                   <Route path="/customer/rewards" element={
-                    <ProtectedRoute>
+                    <CustomerProtectedRoute>
                       <CustomerRewards />
-                    </ProtectedRoute>
+                    </CustomerProtectedRoute>
+                  } />
+                  <Route path="/customer/wishlist" element={
+                    <CustomerProtectedRoute>
+                      <CustomerWishlist />
+                    </CustomerProtectedRoute>
+                  } />
+                  <Route path="/customer/custom-orders" element={
+                    <CustomerProtectedRoute>
+                      <CustomOrders />
+                    </CustomerProtectedRoute>
+                  } />
+                  <Route path="/customer/custom-orders/new" element={
+                    <CustomerProtectedRoute>
+                      <CustomOrderForm />
+                    </CustomerProtectedRoute>
+                  } />
+                  <Route path="/customer/custom-orders/:id" element={
+                    <CustomerProtectedRoute>
+                      <CustomOrderDetail />
+                    </CustomerProtectedRoute>
                   } />
                   
                   {/* Admin Auth Routes */}
                   <Route path="/login" element={<Login />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
+                  <Route path="/confirm" element={<EmailConfirmation />} />
                   
-                  {/* Protected Admin Routes */}
+                  {/* Protected Staff Routes (Admin/Staff) */}
                   <Route path="/dashboard" element={
-                    <ProtectedRoute>
+                    <StaffProtectedRoute>
                       <Dashboard />
-                    </ProtectedRoute>
+                    </StaffProtectedRoute>
                   } />
                   <Route path="/pos" element={
-                    <ProtectedRoute>
+                    <StaffProtectedRoute>
                       <POS />
-                    </ProtectedRoute>
+                    </StaffProtectedRoute>
                   } />
                   <Route path="/products" element={
-                    <ProtectedRoute>
+                    <StaffProtectedRoute>
                       <Products />
-                    </ProtectedRoute>
+                    </StaffProtectedRoute>
                   } />
                   <Route path="/orders" element={
-                    <ProtectedRoute>
+                    <StaffProtectedRoute>
                       <Orders />
-                    </ProtectedRoute>
+                    </StaffProtectedRoute>
+                  } />
+                  <Route path="/custom-orders" element={
+                    <StaffProtectedRoute>
+                      <AdminCustomOrders />
+                    </StaffProtectedRoute>
+                  } />
+                  <Route path="/custom-orders/:id" element={
+                    <StaffProtectedRoute>
+                      <AdminCustomOrderDetail />
+                    </StaffProtectedRoute>
                   } />
                   <Route path="/customers" element={
-                    <ProtectedRoute>
+                    <StaffProtectedRoute>
                       <Customers />
-                    </ProtectedRoute>
+                    </StaffProtectedRoute>
                   } />
                   <Route path="/reports" element={
-                    <ProtectedRoute>
+                    <StaffProtectedRoute>
                       <Reports />
-                    </ProtectedRoute>
+                    </StaffProtectedRoute>
                   } />
                   <Route path="/settings" element={
-                    <ProtectedRoute>
+                    <StaffProtectedRoute>
                       <Settings />
-                    </ProtectedRoute>
+                    </StaffProtectedRoute>
                   } />
                   <Route path="/staff" element={
-                    <ProtectedRoute requireAdmin>
+                    <StaffProtectedRoute requireAdmin>
                       <Staff />
-                    </ProtectedRoute>
+                    </StaffProtectedRoute>
                   } />
                   <Route path="/scanner" element={
                     <ProtectedRoute>

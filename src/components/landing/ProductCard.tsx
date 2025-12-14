@@ -1,10 +1,13 @@
-import { Leaf, Eye, ShoppingCart } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Leaf, Eye, ShoppingCart, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { type Product } from "@/types/product";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { motion } from "framer-motion";
 
 interface ProductCardProps {
   product: Product;
@@ -15,6 +18,85 @@ export const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { user } = useAuth();
+  const [isWishlisted, setIsWishlisted] = useState(false);
+  const [isToggling, setIsToggling] = useState(false);
+  
+  const productId = typeof product.id === 'string' ? product.id : product.id.toString();
+
+  useEffect(() => {
+    if (user) {
+      checkWishlist();
+    }
+  }, [user, productId]);
+
+  const checkWishlist = async () => {
+    if (!user) return;
+    try {
+      const { data } = await supabase
+        .from("wishlist")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("product_id", productId)
+        .single();
+      setIsWishlisted(!!data);
+    } catch (error) {
+      // Not in wishlist
+      setIsWishlisted(false);
+    }
+  };
+
+  const toggleWishlist = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) {
+      toast({
+        title: "Please login",
+        description: "You need to login to save designs to your wishlist",
+        variant: "destructive",
+      });
+      navigate("/customer/login");
+      return;
+    }
+
+    setIsToggling(true);
+    try {
+      if (isWishlisted) {
+        const { error } = await supabase
+          .from("wishlist")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("product_id", productId);
+
+        if (error) throw error;
+        setIsWishlisted(false);
+        toast({
+          title: "Removed from wishlist",
+          description: `${product.name} has been removed from your saved designs`,
+        });
+      } else {
+        const { error } = await supabase
+          .from("wishlist")
+          .insert({
+            user_id: user.id,
+            product_id: productId,
+          });
+
+        if (error) throw error;
+        setIsWishlisted(true);
+        toast({
+          title: "Saved to wishlist",
+          description: `${product.name} has been saved to your wishlist`,
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update wishlist",
+        variant: "destructive",
+      });
+    } finally {
+      setIsToggling(false);
+    }
+  };
   
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -27,7 +109,6 @@ export const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
       navigate("/customer/login");
       return;
     }
-    const productId = typeof product.id === 'string' ? product.id : product.id.toString();
     await addToCart(productId, 1);
   };
 
@@ -71,6 +152,29 @@ export const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
             One of a Kind
           </span>
         </div>
+
+        {/* Wishlist Button */}
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={toggleWishlist}
+          disabled={isToggling}
+          className={`absolute top-4 right-4 z-20 p-2.5 rounded-full backdrop-blur-sm transition-all duration-300 ${
+            isWishlisted
+              ? "bg-destructive/90 text-white shadow-lg"
+              : "bg-background/80 text-foreground hover:bg-background"
+          }`}
+          aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+        >
+          <motion.div
+            animate={isWishlisted ? { scale: [1, 1.2, 1] } : {}}
+            transition={{ duration: 0.3 }}
+          >
+            <Heart
+              className={`w-5 h-5 ${isWishlisted ? "fill-current" : ""}`}
+            />
+          </motion.div>
+        </motion.button>
 
         {/* Hover Overlay */}
         <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/10 transition-colors duration-300 z-10" />

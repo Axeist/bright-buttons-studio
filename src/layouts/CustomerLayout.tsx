@@ -3,48 +3,43 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   LayoutDashboard, 
-  ShoppingCart, 
+  User, 
   Package, 
-  ClipboardList, 
-  Users, 
-  BarChart3, 
-  Settings,
+  Gift,
+  Heart,
+  Sparkles as SparklesIcon,
+  ShoppingBag,
   Menu,
   X,
   LogOut,
-  UserCog,
   Sparkles,
-  Leaf,
-  HandHeart
+  Leaf
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/useAuth";
+import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { CuephoriaBranding } from "@/components/CuephoriaBranding";
 
-interface AdminLayoutProps {
+interface CustomerLayoutProps {
   children: React.ReactNode;
   title?: string;
 }
 
 const sidebarItems = [
-  { name: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
-  { name: "POS", icon: ShoppingCart, href: "/pos" },
-  { name: "Products", icon: Package, href: "/products" },
-  { name: "Orders", icon: ClipboardList, href: "/orders" },
-  { name: "Custom Orders", icon: HandHeart, href: "/custom-orders" },
-  { name: "Customers", icon: Users, href: "/customers" },
-  { name: "Reports", icon: BarChart3, href: "/reports" },
-  { name: "Staff", icon: UserCog, href: "/staff", adminOnly: true },
-  { name: "Settings", icon: Settings, href: "/settings" },
+  { name: "Dashboard", icon: LayoutDashboard, href: "/customer/dashboard" },
+  { name: "My Profile", icon: User, href: "/customer/profile" },
+  { name: "My Orders", icon: Package, href: "/customer/orders" },
+  { name: "My Wishlist", icon: Heart, href: "/customer/wishlist" },
+  { name: "Custom Orders", icon: SparklesIcon, href: "/customer/custom-orders" },
+  { name: "Rewards & Points", icon: Gift, href: "/customer/rewards" },
 ];
 
-export const AdminLayout = ({ children, title }: AdminLayoutProps) => {
+export const CustomerLayout = ({ children, title }: CustomerLayoutProps) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, signOut, isAdmin, role } = useAuth();
+  const { customer, signOut } = useCustomerAuth();
 
   // Check if desktop on mount and resize
   useEffect(() => {
@@ -62,15 +57,11 @@ export const AdminLayout = ({ children, title }: AdminLayoutProps) => {
 
   const handleLogout = async () => {
     await signOut();
-    navigate("/login");
+    navigate("/customer/login");
   };
 
-  const filteredSidebarItems = sidebarItems.filter(
-    (item) => !item.adminOnly || isAdmin
-  );
-
   // Get page title from current route
-  const currentPage = filteredSidebarItems.find(
+  const currentPage = sidebarItems.find(
     (item) => item.href === location.pathname
   );
   const pageTitle = title || currentPage?.name || "Dashboard";
@@ -153,7 +144,7 @@ export const AdminLayout = ({ children, title }: AdminLayoutProps) => {
               transition={{ type: "spring", stiffness: 300 }}
               className="flex justify-center mb-4"
             >
-              <Logo size="2xl" linkTo="/dashboard" className="mx-auto" />
+              <Logo size="2xl" linkTo="/" className="mx-auto" />
             </motion.div>
             <div className="flex justify-center">
               <motion.div
@@ -167,7 +158,7 @@ export const AdminLayout = ({ children, title }: AdminLayoutProps) => {
                   <Sparkles className="w-3.5 h-3.5 text-primary" />
                 </motion.div>
                 <span className="text-xs font-script text-gradient bg-clip-text text-transparent bg-gradient-to-r from-primary-700 via-primary-500 to-primary-700 dark:from-primary-300 dark:via-primary-400 dark:to-primary-300">
-                  Management Portal
+                  My Account
                 </span>
               </motion.div>
             </div>
@@ -175,7 +166,7 @@ export const AdminLayout = ({ children, title }: AdminLayoutProps) => {
 
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-            {filteredSidebarItems.map((item, index) => {
+            {sidebarItems.map((item, index) => {
               const isActive = location.pathname === item.href;
               return (
                 <motion.div
@@ -247,29 +238,26 @@ export const AdminLayout = ({ children, title }: AdminLayoutProps) => {
                 whileHover={{ scale: 1.1, rotate: 5 }}
                 className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary-700 dark:from-primary-600 dark:to-primary-800 flex items-center justify-center text-white text-sm font-semibold shadow-lg flex-shrink-0"
               >
-                {user?.email?.charAt(0).toUpperCase() || "U"}
+                {customer?.email?.charAt(0).toUpperCase() || customer?.name?.charAt(0).toUpperCase() || "C"}
               </motion.div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-foreground truncate">
-                  {user?.email?.split("@")[0] || "User"}
+                  {customer?.name || customer?.email?.split("@")[0] || "Customer"}
                 </p>
                 <p className="text-xs text-muted-foreground truncate mb-1">
-                  {user?.email || "admin@brightbuttons.com"}
+                  {customer?.email || "customer@brightbuttons.com"}
                 </p>
-                <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
-                  isAdmin 
-                    ? "bg-primary/20 text-primary border border-primary/30" 
-                    : "bg-earth-100 dark:bg-earth-900/40 text-earth-700 dark:text-earth-400 border border-earth-300 dark:border-earth-700"
-                }`}>
-                  {isAdmin ? "Admin" : (role || "Staff")}
+                <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-primary/20 text-primary border border-primary/30">
+                  {customer?.loyalty_tier ? customer.loyalty_tier.charAt(0).toUpperCase() + customer.loyalty_tier.slice(1) : "Bronze"} Member
                 </span>
               </div>
             </motion.div>
 
-            <Link to="/">
+            <Link to="/shop">
               <motion.div whileHover={{ x: 4 }} whileTap={{ scale: 0.98 }}>
                 <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground hover:text-primary transition-colors rounded-xl">
-                  ← Back to Store
+                  <ShoppingBag className="w-4 h-4 mr-2" />
+                  Continue Shopping
                 </Button>
               </motion.div>
             </Link>
@@ -337,3 +325,4 @@ export const AdminLayout = ({ children, title }: AdminLayoutProps) => {
     </div>
   );
 };
+

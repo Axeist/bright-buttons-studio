@@ -6,8 +6,11 @@ import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
+import { useAuth } from "@/hooks/useAuth";
+import { ToastAction } from "@/components/ui/toast";
 import { z } from "zod";
 
 const loginSchema = z.object({
@@ -28,7 +31,8 @@ const signupSchema = z.object({
 
 const CustomerLogin = () => {
   const navigate = useNavigate();
-  const { customer, signIn, signUp, loading } = useCustomerAuth();
+  const { customer, signIn, signUp, resendConfirmationEmail, resetPassword, loading } = useCustomerAuth();
+  const { user, role } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -40,13 +44,21 @@ const CustomerLogin = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [forgotPasswordError, setForgotPasswordError] = useState("");
 
   useEffect(() => {
-    // If customer is logged in, redirect to customer dashboard
-    if (customer && !loading) {
+    // If user is logged in with customer role, redirect to customer dashboard
+    if (user && role === "customer" && !loading) {
       navigate("/customer/dashboard");
     }
-  }, [customer, loading, navigate]);
+    // If user is staff trying to access customer login, redirect to staff dashboard
+    if (user && (role === "admin" || role === "staff")) {
+      navigate("/dashboard");
+    }
+  }, [user, role, loading, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,7 +89,7 @@ const CustomerLogin = () => {
         title: "Welcome back!",
         description: "Login successful.",
       });
-      navigate("/customer/dashboard");
+      // Redirect will happen automatically via useEffect when role is set
     }
   };
 
@@ -96,7 +108,7 @@ const CustomerLogin = () => {
     }
 
     setIsSubmitting(true);
-    const { error } = await signUp(email, password, fullName, phone);
+    const { error, data } = await signUp(email, password, fullName, phone);
 
     if (error) {
       toast({
@@ -108,12 +120,106 @@ const CustomerLogin = () => {
       return;
     }
 
-    toast({
-      title: "Account created!",
-      description: "Welcome! Your account has been created successfully.",
-    });
+    // Check if email confirmation is required
+    const needsConfirmation = data?.user && !data?.session;
+    
+    if (needsConfirmation) {
+      toast({
+        title: "Account created!",
+        description: "Please check your email (including spam folder) to confirm your account.",
+        duration: 8000,
+      });
+      
+      // Show additional message with resend option after a short delay
+      setTimeout(() => {
+        toast({
+          title: "Didn't receive the email?",
+          description: "Click the button below to resend the confirmation email.",
+          duration: 10000,
+          action: (
+            <ToastAction
+              altText="Resend confirmation email"
+              onClick={async () => {
+                const { error: resendError } = await resendConfirmationEmail(email);
+                if (resendError) {
+                  toast({
+                    title: "Error",
+                    description: "Failed to resend confirmation email. Please try again later.",
+                    variant: "destructive",
+                  });
+                } else {
+                  toast({
+                    title: "Email sent!",
+                    description: "Confirmation email has been resent. Please check your inbox.",
+                  });
+                }
+              }}
+            >
+              Resend Email
+            </ToastAction>
+          ),
+        });
+      }, 2000);
+    } else {
+      toast({
+        title: "Account created!",
+        description: "Welcome! Your account has been created successfully.",
+      });
+    }
     setIsSubmitting(false);
-    navigate("/customer/dashboard");
+    // User will be redirected after email confirmation
+  };
+
+  const handleForgotPassword = async () => {
+    setForgotPasswordError("");
+    
+    if (!forgotPasswordEmail) {
+      setForgotPasswordError("Please enter your email address");
+      return;
+    }
+
+    const emailSchema = z.string().email("Please enter a valid email address");
+    const result = emailSchema.safeParse(forgotPasswordEmail);
+    
+    if (!result.success) {
+      setForgotPasswordError("Please enter a valid email address");
+      return;
+    }
+
+    setIsResettingPassword(true);
+
+    const { error } = await resetPassword(forgotPasswordEmail);
+
+    if (error) {
+      let errorMessage = "Failed to send reset email. Please try again.";
+      const errorMsg = error?.message || String(error);
+      
+      console.error("Password reset error:", error);
+      
+      if (errorMsg.includes("rate limit") || errorMsg.includes("too many")) {
+        errorMessage = "Too many requests. Please wait 10-15 minutes and try again.";
+      } else if (errorMsg.includes("redirect") || errorMsg.includes("invalid")) {
+        errorMessage = "Configuration error. Please contact support.";
+        console.error("Redirect URL issue - check Supabase Dashboard → Authentication → URL Configuration");
+      } else if (errorMsg.includes("user not found") || errorMsg.includes("not found")) {
+        errorMessage = "No account found with this email address. Please sign up first.";
+      } else {
+        errorMessage = `Failed to send reset email: ${errorMsg}`;
+      }
+
+      setForgotPasswordError(errorMessage);
+      setIsResettingPassword(false);
+      return;
+    }
+
+    toast({
+      title: "Reset link sent!",
+      description: "Check your email (including spam folder) for password reset instructions. The email should arrive within 30 seconds if custom SMTP is configured, or 2-5 minutes with default settings.",
+      duration: 8000,
+    });
+    setShowForgotPassword(false);
+    setForgotPasswordEmail("");
+    setIsResettingPassword(false);
   };
 
   return (
@@ -237,9 +343,13 @@ const CustomerLogin = () => {
                       Remember me
                     </label>
                   </div>
-                  <Link to="/forgot-password" className="text-sm text-primary hover:underline">
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPassword(true)}
+                    className="text-sm text-primary hover:underline"
+                  >
                     Forgot password?
-                  </Link>
+                  </button>
                 </div>
 
                 <Button 
@@ -359,7 +469,7 @@ const CustomerLogin = () => {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Confirm your password"
-                      className={`h-12 rounded-xl pr-12 ${errors.confirmPassword ? "border-destructive" : ""}`}
+                      className={`h-12 rounded-xl pr-12 ${errors.confirmPassword ? "border-destructive" : confirmPassword && password && password !== confirmPassword ? "border-destructive" : confirmPassword && password && password === confirmPassword ? "border-green-500" : ""}`}
                       disabled={isSubmitting}
                     />
                     <button
@@ -370,6 +480,11 @@ const CustomerLogin = () => {
                       {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
                   </div>
+                  {confirmPassword && password && (
+                    <p className={`text-sm ${password === confirmPassword ? "text-green-600 dark:text-green-400" : "text-destructive"}`}>
+                      {password === confirmPassword ? "✓ Passwords match" : "✗ Passwords do not match"}
+                    </p>
+                  )}
                   {errors.confirmPassword && (
                     <p className="text-sm text-destructive">{errors.confirmPassword}</p>
                   )}
@@ -407,6 +522,75 @@ const CustomerLogin = () => {
           </div>
         </div>
       </motion.div>
+
+      {/* Forgot Password Dialog */}
+      <Dialog open={showForgotPassword} onOpenChange={setShowForgotPassword}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Enter your email address and we'll send you a link to reset your password.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="forgot-email" className="text-sm font-medium">
+                Email Address
+              </label>
+              <Input
+                id="forgot-email"
+                type="email"
+                placeholder="you@example.com"
+                value={forgotPasswordEmail}
+                onChange={(e) => {
+                  setForgotPasswordEmail(e.target.value);
+                  setForgotPasswordError("");
+                }}
+                disabled={isResettingPassword}
+                className={forgotPasswordError ? "border-destructive" : ""}
+              />
+              {forgotPasswordError && (
+                <p className="text-sm text-destructive">
+                  <span>{forgotPasswordError}</span>
+                </p>
+              )}
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowForgotPassword(false);
+                  setForgotPasswordEmail("");
+                  setForgotPasswordError("");
+                }}
+                className="flex-1 rounded-xl"
+                disabled={isResettingPassword}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleForgotPassword}
+                className="flex-1 rounded-xl bg-gradient-to-r from-primary to-primary-700 dark:from-primary-600 dark:to-primary-800"
+                disabled={isResettingPassword}
+              >
+                {isResettingPassword ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Mail className="mr-2 h-4 w-4" />
+                    Send Reset Link
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

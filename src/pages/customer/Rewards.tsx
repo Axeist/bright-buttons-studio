@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { PublicLayout } from "@/layouts/PublicLayout";
+import { CustomerLayout } from "@/layouts/CustomerLayout";
 import { motion } from "framer-motion";
 import { Gift, Star, TrendingUp, Award, Clock } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/hooks/useAuth";
+import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { supabase } from "@/integrations/supabase/client";
 
 interface LoyaltyTransaction {
@@ -19,7 +19,7 @@ interface LoyaltyTransaction {
 }
 
 const CustomerRewards = () => {
-  const { user } = useAuth();
+  const { customer, loading: customerLoading } = useCustomerAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [loyaltyPoints, setLoyaltyPoints] = useState(0);
@@ -27,45 +27,31 @@ const CustomerRewards = () => {
   const [transactions, setTransactions] = useState<LoyaltyTransaction[]>([]);
 
   useEffect(() => {
-    if (!user) {
+    if (!customerLoading && !customer) {
       navigate("/customer/login");
       return;
     }
-    fetchData();
-  }, [user]);
+    if (customer) {
+      fetchData();
+    }
+  }, [customer, customerLoading]);
 
   const fetchData = async () => {
-    if (!user) return;
+    if (!customer) return;
 
     setLoading(true);
     try {
-      const { data: customer } = await supabase
-        .from("customers")
-        .select("loyalty_points, loyalty_tier")
-        .eq("user_id", user.id)
-        .single();
+      setLoyaltyPoints(customer.loyalty_points || 0);
+      setLoyaltyTier(customer.loyalty_tier || "bronze");
 
-      if (customer) {
-        setLoyaltyPoints(customer.loyalty_points || 0);
-        setLoyaltyTier(customer.loyalty_tier || "bronze");
-      }
+      const { data: transactionsData } = await supabase
+        .from("loyalty_points_transactions")
+        .select("*")
+        .eq("customer_id", customer.id)
+        .order("created_at", { ascending: false })
+        .limit(20);
 
-      const { data: customerData } = await supabase
-        .from("customers")
-        .select("id")
-        .eq("user_id", user.id)
-        .single();
-
-      if (customerData) {
-        const { data: transactionsData } = await supabase
-          .from("loyalty_points_transactions")
-          .select("*")
-          .eq("customer_id", customerData.id)
-          .order("created_at", { ascending: false })
-          .limit(20);
-
-        setTransactions(transactionsData || []);
-      }
+      setTransactions(transactionsData || []);
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
@@ -129,26 +115,19 @@ const CustomerRewards = () => {
 
   if (loading) {
     return (
-      <PublicLayout>
+      <CustomerLayout>
         <div className="min-h-screen flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
-      </PublicLayout>
+      </CustomerLayout>
     );
   }
 
   const nextTier = getNextTierInfo(loyaltyTier, loyaltyPoints);
 
   return (
-    <PublicLayout>
-      <div className="min-h-screen bg-background">
-        <div className="container-custom py-8">
-          <div className="mb-8">
-            <h1 className="text-3xl md:text-4xl font-script text-gradient mb-2">
-              Rewards & Points
-            </h1>
-            <p className="text-muted-foreground">Your loyalty program benefits</p>
-          </div>
+    <CustomerLayout>
+      <div className="space-y-6">
 
           {/* Loyalty Points Card */}
           <Card className={`bg-gradient-to-br ${getTierColor(loyaltyTier)} text-white mb-6`}>
@@ -273,9 +252,8 @@ const CustomerRewards = () => {
               </Card>
             </div>
           </div>
-        </div>
       </div>
-    </PublicLayout>
+    </CustomerLayout>
   );
 };
 

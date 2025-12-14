@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-type AppRole = "admin" | "staff" | null;
+type AppRole = "admin" | "staff" | "customer" | null;
 
 interface AuthContextType {
   user: User | null;
@@ -14,6 +14,8 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any | null }>;
   isAdmin: boolean;
+  isStaff: boolean;
+  isCustomer: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -55,6 +57,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error("Unexpected error fetching user role:", err);
       return null;
     }
+  };
+
+  // Helper to check if user is staff (admin or staff)
+  const isStaff = (userRole: AppRole) => {
+    return userRole === "admin" || userRole === "staff";
+  };
+
+  // Helper to check if user is customer
+  const isCustomer = (userRole: AppRole) => {
+    return userRole === "customer";
   };
 
   useEffect(() => {
@@ -138,7 +150,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const resetPassword = async (email: string) => {
     try {
-      const redirectUrl = `${window.location.origin}/login`;
+      const redirectUrl = `${window.location.origin}/reset-password`;
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: redirectUrl,
       });
@@ -167,6 +179,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         signOut,
         resetPassword,
         isAdmin: role === "admin",
+        isStaff: isStaff(role),
+        isCustomer: isCustomer(role),
       }}
     >
       {children}

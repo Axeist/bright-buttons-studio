@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { PublicLayout } from "@/layouts/PublicLayout";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingCart, Heart, Share2, Check, Leaf, Star, ArrowLeft, Ruler } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +41,7 @@ const ProductDetail = () => {
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [quantity, setQuantity] = useState(1);
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [isToggling, setIsToggling] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   useEffect(() => {
@@ -102,14 +103,16 @@ const ProductDetail = () => {
     if (!user) {
       toast({
         title: "Please login",
-        description: "You need to login to add items to wishlist",
+        description: "You need to login to save designs to your wishlist",
         variant: "destructive",
       });
+      navigate("/customer/login");
       return;
     }
 
     if (!id) return;
 
+    setIsToggling(true);
     try {
       if (isWishlisted) {
         const { error } = await supabase
@@ -121,8 +124,8 @@ const ProductDetail = () => {
         if (error) throw error;
         setIsWishlisted(false);
         toast({
-          title: "Removed",
-          description: "Removed from wishlist",
+          title: "Removed from wishlist",
+          description: `${product?.name} has been removed from your saved designs`,
         });
       } else {
         const { error } = await supabase
@@ -135,8 +138,8 @@ const ProductDetail = () => {
         if (error) throw error;
         setIsWishlisted(true);
         toast({
-          title: "Added",
-          description: "Added to wishlist",
+          title: "Saved to wishlist",
+          description: `${product?.name} has been saved to your wishlist`,
         });
       }
     } catch (error: any) {
@@ -145,6 +148,8 @@ const ProductDetail = () => {
         description: error.message || "Failed to update wishlist",
         variant: "destructive",
       });
+    } finally {
+      setIsToggling(false);
     }
   };
 
@@ -421,28 +426,62 @@ const ProductDetail = () => {
                 </Button>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="rounded-full"
-                    onClick={toggleWishlist}
-                  >
-                    <Heart
-                      className={`w-5 h-5 mr-2 ${
-                        isWishlisted ? "fill-destructive text-destructive" : ""
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className={`rounded-full w-full ${
+                        isWishlisted
+                          ? "border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                          : ""
                       }`}
-                    />
-                    Wishlist
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="rounded-full"
-                    onClick={handleShare}
-                  >
-                    <Share2 className="w-5 h-5 mr-2" />
-                    Share
-                  </Button>
+                      onClick={toggleWishlist}
+                      disabled={isToggling}
+                    >
+                      <motion.div
+                        animate={isWishlisted ? { scale: [1, 1.2, 1] } : {}}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <Heart
+                          className={`w-5 h-5 mr-2 ${
+                            isWishlisted ? "fill-destructive text-destructive" : ""
+                          }`}
+                        />
+                      </motion.div>
+                      <AnimatePresence mode="wait">
+                        {isWishlisted ? (
+                          <motion.span
+                            key="saved"
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 10 }}
+                          >
+                            Saved
+                          </motion.span>
+                        ) : (
+                          <motion.span
+                            key="save"
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 10 }}
+                          >
+                            Save Design
+                          </motion.span>
+                        )}
+                      </AnimatePresence>
+                    </Button>
+                  </motion.div>
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="rounded-full w-full"
+                      onClick={handleShare}
+                    >
+                      <Share2 className="w-5 h-5 mr-2" />
+                      Share
+                    </Button>
+                  </motion.div>
                 </div>
 
                 <WhatsAppButton
