@@ -5,6 +5,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { ProductCard } from "./ProductCard";
 import { ProductQuickView } from "./ProductQuickView";
 import { Button } from "@/components/ui/button";
+import { getProductImageUrl } from "@/lib/utils";
+
+interface ProductPhoto {
+  id: string;
+  product_id: string;
+  image_url: string;
+  display_order: number;
+  is_primary: boolean;
+}
 
 interface Product {
   id: string;
@@ -15,6 +24,7 @@ interface Product {
   image_url: string | null;
   tagline: string | null;
   price: number;
+  product_photos?: ProductPhoto[];
 }
 
 const categories = ['All', 'Kurthas & Co-ords', 'Sarees', 'Shawls', "Men's Shirts", 'T-Shirts', 'Kidswear'];
@@ -35,7 +45,23 @@ export const CollectionsSection = () => {
     try {
       const { data, error } = await supabase
         .from("products")
-        .select("id, name, category, fabric, technique, image_url, tagline, price")
+        .select(`
+          id,
+          name,
+          category,
+          fabric,
+          technique,
+          image_url,
+          tagline,
+          price,
+          product_photos (
+            id,
+            product_id,
+            image_url,
+            display_order,
+            is_primary
+          )
+        `)
         .eq("status", "active")
         .order("created_at", { ascending: false });
 
@@ -124,7 +150,7 @@ export const CollectionsSection = () => {
                     category: product.category as any,
                     fabric: product.fabric as any,
                     technique: product.technique as any,
-                    image: product.image_url || "",
+                    image: getProductImageUrl(product) || "",
                     tagline: product.tagline || "",
                     price: `₹${product.price.toLocaleString()}`,
                   }}
@@ -148,7 +174,7 @@ export const CollectionsSection = () => {
               category: selectedProduct.category as any,
               fabric: selectedProduct.fabric as any,
               technique: selectedProduct.technique as any,
-              image: selectedProduct.image_url || "",
+              image: getProductImageUrl(selectedProduct) || "",
               tagline: selectedProduct.tagline || "",
               price: `₹${selectedProduct.price.toLocaleString()}`,
             }}

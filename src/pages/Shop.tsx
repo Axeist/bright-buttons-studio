@@ -11,6 +11,15 @@ import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
 import { ShoppingCart } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { getProductImageUrl } from "@/lib/utils";
+
+interface ProductPhoto {
+  id: string;
+  product_id: string;
+  image_url: string;
+  display_order: number;
+  is_primary: boolean;
+}
 
 interface Product {
   id: string;
@@ -28,6 +37,7 @@ interface Product {
     quantity: number;
     reserved_quantity: number;
   }>;
+  product_photos?: ProductPhoto[];
 }
 
 const categories = ['All', 'Kurthas & Co-ords', 'Sarees', 'Shawls', "Men's Shirts", 'T-Shirts', 'Kidswear'];
@@ -70,6 +80,13 @@ const Shop = () => {
           inventory (
             quantity,
             reserved_quantity
+          ),
+          product_photos (
+            id,
+            product_id,
+            image_url,
+            display_order,
+            is_primary
           )
         `)
         .eq("status", "active")
@@ -415,9 +432,9 @@ const Shop = () => {
                           : "w-32 h-32 rounded-lg overflow-hidden bg-gradient-to-br from-primary-50 to-earth-50 relative"
                       }
                     >
-                      {product.image_url ? (
+                      {getProductImageUrl(product) ? (
                         <img
-                          src={product.image_url}
+                          src={getProductImageUrl(product)!}
                           alt={product.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           onError={(e) => {

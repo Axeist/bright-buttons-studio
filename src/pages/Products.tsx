@@ -13,6 +13,7 @@ import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { useAuth } from "@/hooks/useAuth";
 import { generateBarcode, generateBarcodeImage } from "@/lib/barcode";
 import { parseCSV, validateCSVData, generateSampleCSV, CSVProductRow, CSVValidationError } from "@/lib/csvImport";
+import { getProductImageUrl } from "@/lib/utils";
 
 const categories = [
   'Kurthas & Co-ords',
@@ -1139,9 +1140,22 @@ const Products = () => {
                         <div className="flex items-center gap-3">
                           <motion.div
                             whileHover={{ scale: 1.1, rotate: 5 }}
-                            className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-100 to-earth-100 dark:from-primary-900/40 dark:to-earth-900/40 flex items-center justify-center flex-shrink-0 shadow-md"
+                            className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-100 to-earth-100 dark:from-primary-900/40 dark:to-earth-900/40 flex items-center justify-center flex-shrink-0 shadow-md overflow-hidden"
                           >
-                            <Leaf className="w-6 h-6 text-primary" />
+                            {getProductImageUrl(product) ? (
+                              <img
+                                src={getProductImageUrl(product)!}
+                                alt={product.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  const fallback = target.parentElement?.querySelector('.fallback-icon') as HTMLElement;
+                                  if (fallback) fallback.style.display = 'flex';
+                                }}
+                              />
+                            ) : null}
+                            <Leaf className="w-6 h-6 text-primary fallback-icon" style={{ display: getProductImageUrl(product) ? 'none' : 'flex' }} />
                           </motion.div>
                           <div>
                             <p className="font-semibold text-foreground">{product.name}</p>
