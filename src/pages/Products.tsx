@@ -89,8 +89,13 @@ const Products = () => {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const imageInputEditRef = useRef<HTMLInputElement>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [productPhotos, setProductPhotos] = useState<Array<{ file?: File; url: string; isPrimary?: boolean }>>([]);
-  const [editingProductPhotos, setEditingProductPhotos] = useState<Array<{ id?: string; file?: File; url: string; isPrimary?: boolean }>>([]);
+  const [productPhotos, setProductPhotos] = useState<Array<{ file?: File; url: string; isPrimary?: boolean; fromGallery?: boolean }>>([]);
+  const [editingProductPhotos, setEditingProductPhotos] = useState<Array<{ id?: string; file?: File; url: string; isPrimary?: boolean; fromGallery?: boolean }>>([]);
+  const [isGalleryModalOpen, setIsGalleryModalOpen] = useState(false);
+  const [galleryPhotos, setGalleryPhotos] = useState<Array<{ id: string; image_url: string; title: string | null }>>([]);
+  const [galleryLoading, setGalleryLoading] = useState(false);
+  const [photoSelectionMode, setPhotoSelectionMode] = useState<"gallery" | "upload">("upload");
+  const [isForEdit, setIsForEdit] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -548,9 +553,55 @@ const Products = () => {
     }
   };
 
+  const fetchGalleryPhotos = async () => {
+    setGalleryLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("gallery_photos")
+        .select("id, image_url, title")
+        .order("created_at", { ascending: false })
+        .limit(100);
+
+      if (error) throw error;
+      setGalleryPhotos(data || []);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to fetch gallery photos",
+        variant: "destructive",
+      });
+    } finally {
+      setGalleryLoading(false);
+    }
+  };
+
+  const openGalleryModal = (forEdit: boolean = false) => {
+    setIsForEdit(forEdit);
+    setIsGalleryModalOpen(true);
+    fetchGalleryPhotos();
+  };
+
+  const handleSelectGalleryPhoto = (photo: { id: string; image_url: string; title: string | null }) => {
+    if (isForEdit) {
+      setEditingProductPhotos([...editingProductPhotos, { 
+        id: photo.id, 
+        url: photo.image_url, 
+        isPrimary: editingProductPhotos.length === 0,
+        fromGallery: true 
+      }]);
+    } else {
+      setProductPhotos([...productPhotos, { 
+        url: photo.image_url, 
+        isPrimary: productPhotos.length === 0,
+        fromGallery: true 
+      }]);
+    }
+    // Don't close modal automatically - let user select multiple photos
+  };
+
   const handleAddPhoto = (file: File) => {
     const url = URL.createObjectURL(file);
-    setProductPhotos([...productPhotos, { file, url, isPrimary: productPhotos.length === 0 }]);
+    setProductPhotos([...productPhotos, { file, url, isPrimary: productPhotos.length === 0, fromGallery: false }]);
   };
 
   const handleRemovePhoto = (index: number) => {
@@ -570,7 +621,7 @@ const Products = () => {
 
   const handleAddEditPhoto = (file: File) => {
     const url = URL.createObjectURL(file);
-    setEditingProductPhotos([...editingProductPhotos, { file, url, isPrimary: editingProductPhotos.length === 0 }]);
+    setEditingProductPhotos([...editingProductPhotos, { file, url, isPrimary: editingProductPhotos.length === 0, fromGallery: false }]);
   };
 
   const handleRemoveEditPhoto = (index: number) => {
@@ -672,6 +723,7 @@ const Products = () => {
     setImagePreview(null);
     setProductPhotos([]);
     setEditingProductPhotos([]);
+    setPhotoSelectionMode("upload");
     if (imageInputRef.current) {
       imageInputRef.current.value = '';
     }
@@ -694,11 +746,11 @@ const Products = () => {
       return;
     }
 
-    // Validate file size (5MB)
-    if (file.size > 5 * 1024 * 1024) {
+    // Validate file size (50MB)
+    if (file.size > 50 * 1024 * 1024) {
       toast({
         title: "File Too Large",
-        description: "Image must be less than 5MB",
+        description: "Image must be less than 50MB",
         variant: "destructive",
       });
       return;
@@ -1196,7 +1248,14 @@ const Products = () => {
       </motion.div>
 
       {/* Add Product Modal */}
-      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+      <Dialog open={isAddModalOpen} onOpenChange={(open) => {
+        setIsAddModalOpen(open);
+        if (!open) {
+          resetForm();
+        } else {
+          setPhotoSelectionMode("upload");
+        }
+      }}>
         <DialogContent className="sm:max-w-2xl rounded-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl font-script text-gradient flex items-center gap-2">
@@ -1389,6 +1448,11 @@ const Products = () => {
                               Primary
                             </div>
                           )}
+                          {photo.fromGallery && (
+                            <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded">
+                              Gallery
+                            </div>
+                          )}
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
                             <Button
                               type="button"
@@ -1413,36 +1477,82 @@ const Products = () => {
                     ))}
                   </div>
                 )}
-                <div className="border-2 border-dashed border-primary-200 dark:border-primary-800 rounded-xl p-6">
-                  <div className="flex flex-col items-center justify-center gap-2">
-                    <ImageIcon className="w-8 h-8 text-muted-foreground" />
-                    <Label htmlFor="product-photos" className="cursor-pointer">
-                      <span className="text-primary font-semibold hover:underline">
-                        Click to add photos
-                      </span>
-                      <input
-                        ref={imageInputRef}
-                        id="product-photos"
-                        type="file"
-                        accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            handleAddPhoto(file);
-                            if (imageInputRef.current) {
-                              imageInputRef.current.value = '';
-                            }
-                          }
-                        }}
-                        className="hidden"
-                        multiple
-                      />
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      PNG, JPG, WebP up to 5MB each. You can add multiple photos.
-                    </p>
-                  </div>
+                <div className="flex gap-2 mb-3">
+                  <Button
+                    type="button"
+                    variant={photoSelectionMode === "gallery" ? "default" : "outline"}
+                    onClick={() => {
+                      setPhotoSelectionMode("gallery");
+                      openGalleryModal(false);
+                    }}
+                    className="flex-1"
+                  >
+                    <ImageIcon className="w-4 h-4 mr-2" />
+                    Select from Gallery
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={photoSelectionMode === "upload" ? "default" : "outline"}
+                    onClick={() => setPhotoSelectionMode("upload")}
+                    className="flex-1"
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Upload New
+                  </Button>
                 </div>
+                {photoSelectionMode === "gallery" && (
+                  <div className="border-2 border-dashed border-primary-200 dark:border-primary-800 rounded-xl p-6">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => openGalleryModal(false)}
+                        className="w-full"
+                      >
+                        <ImageIcon className="w-4 h-4 mr-2" />
+                        Browse Gallery Photos
+                      </Button>
+                      <p className="text-xs text-muted-foreground">
+                        Select photos from your gallery to add to this product
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {photoSelectionMode === "upload" && (
+                  <div className="border-2 border-dashed border-primary-200 dark:border-primary-800 rounded-xl p-6">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                      <Label htmlFor="product-photos" className="cursor-pointer">
+                        <span className="text-primary font-semibold hover:underline">
+                          Click to add photos
+                        </span>
+                        <input
+                          ref={imageInputRef}
+                          id="product-photos"
+                          type="file"
+                          accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                          onChange={(e) => {
+                            const files = e.target.files;
+                            if (files) {
+                              Array.from(files).forEach((file) => {
+                                handleAddPhoto(file);
+                              });
+                              if (imageInputRef.current) {
+                                imageInputRef.current.value = '';
+                              }
+                            }
+                          }}
+                          className="hidden"
+                          multiple
+                        />
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        PNG, JPG, WebP up to 50MB each. You can add multiple photos.
+                      </p>
+                    </div>
+                  </div>
+                )}
                 {imageUploading && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -1479,7 +1589,15 @@ const Products = () => {
       </Dialog>
 
       {/* Edit Product Modal */}
-      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+      <Dialog open={isEditModalOpen} onOpenChange={(open) => {
+        setIsEditModalOpen(open);
+        if (!open) {
+          setEditingProduct(null);
+          resetForm();
+        } else {
+          setPhotoSelectionMode("upload");
+        }
+      }}>
         <DialogContent className="sm:max-w-2xl rounded-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl font-script text-gradient flex items-center gap-2">
@@ -1672,6 +1790,11 @@ const Products = () => {
                               Primary
                             </div>
                           )}
+                          {photo.fromGallery && (
+                            <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded">
+                              Gallery
+                            </div>
+                          )}
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
                             <Button
                               type="button"
@@ -1696,36 +1819,82 @@ const Products = () => {
                     ))}
                   </div>
                 )}
-                <div className="border-2 border-dashed border-primary-200 dark:border-primary-800 rounded-xl p-6">
-                  <div className="flex flex-col items-center justify-center gap-2">
-                    <ImageIcon className="w-8 h-8 text-muted-foreground" />
-                    <Label htmlFor="product-photos-edit" className="cursor-pointer">
-                      <span className="text-primary font-semibold hover:underline">
-                        Click to add photos
-                      </span>
-                      <input
-                        ref={imageInputEditRef}
-                        id="product-photos-edit"
-                        type="file"
-                        accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            handleAddEditPhoto(file);
-                            if (imageInputEditRef.current) {
-                              imageInputEditRef.current.value = '';
-                            }
-                          }
-                        }}
-                        className="hidden"
-                        multiple
-                      />
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      PNG, JPG, WebP up to 5MB each. You can add multiple photos.
-                    </p>
-                  </div>
+                <div className="flex gap-2 mb-3">
+                  <Button
+                    type="button"
+                    variant={photoSelectionMode === "gallery" ? "default" : "outline"}
+                    onClick={() => {
+                      setPhotoSelectionMode("gallery");
+                      openGalleryModal(true);
+                    }}
+                    className="flex-1"
+                  >
+                    <ImageIcon className="w-4 h-4 mr-2" />
+                    Select from Gallery
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={photoSelectionMode === "upload" ? "default" : "outline"}
+                    onClick={() => setPhotoSelectionMode("upload")}
+                    className="flex-1"
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Upload New
+                  </Button>
                 </div>
+                {photoSelectionMode === "gallery" && (
+                  <div className="border-2 border-dashed border-primary-200 dark:border-primary-800 rounded-xl p-6">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => openGalleryModal(true)}
+                        className="w-full"
+                      >
+                        <ImageIcon className="w-4 h-4 mr-2" />
+                        Browse Gallery Photos
+                      </Button>
+                      <p className="text-xs text-muted-foreground">
+                        Select photos from your gallery to add to this product
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {photoSelectionMode === "upload" && (
+                  <div className="border-2 border-dashed border-primary-200 dark:border-primary-800 rounded-xl p-6">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                      <Label htmlFor="product-photos-edit" className="cursor-pointer">
+                        <span className="text-primary font-semibold hover:underline">
+                          Click to add photos
+                        </span>
+                        <input
+                          ref={imageInputEditRef}
+                          id="product-photos-edit"
+                          type="file"
+                          accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                          onChange={(e) => {
+                            const files = e.target.files;
+                            if (files) {
+                              Array.from(files).forEach((file) => {
+                                handleAddEditPhoto(file);
+                              });
+                              if (imageInputEditRef.current) {
+                                imageInputEditRef.current.value = '';
+                              }
+                            }
+                          }}
+                          className="hidden"
+                          multiple
+                        />
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        PNG, JPG, WebP up to 50MB each. You can add multiple photos.
+                      </p>
+                    </div>
+                  </div>
+                )}
                 {imageUploading && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -1962,6 +2131,87 @@ const Products = () => {
                   Import Products
                 </>
               )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Gallery Photo Selection Modal */}
+      <Dialog open={isGalleryModalOpen} onOpenChange={setIsGalleryModalOpen}>
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-script text-gradient flex items-center gap-2">
+              <ImageIcon className="w-6 h-6 text-primary" />
+              Select Photos from Gallery
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground pt-2">
+              Choose photos from your gallery to add to this product
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {galleryLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            ) : galleryPhotos.length === 0 ? (
+              <div className="text-center py-12">
+                <ImageIcon className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No photos in gallery</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                {galleryPhotos.map((photo) => {
+                  const isSelected = isForEdit
+                    ? editingProductPhotos.some(p => p.url === photo.image_url)
+                    : productPhotos.some(p => p.url === photo.image_url);
+                  
+                  return (
+                    <div
+                      key={photo.id}
+                      className={`relative group cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${
+                        isSelected
+                          ? "border-primary ring-2 ring-primary"
+                          : "border-border hover:border-primary"
+                      }`}
+                      onClick={() => {
+                        if (!isSelected) {
+                          handleSelectGalleryPhoto(photo);
+                        }
+                      }}
+                    >
+                      <div className="aspect-square">
+                        <img
+                          src={photo.image_url}
+                          alt={photo.title || "Gallery photo"}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      {isSelected && (
+                        <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                          <div className="bg-primary text-primary-foreground rounded-full p-2">
+                            <X className="w-4 h-4" />
+                          </div>
+                        </div>
+                      )}
+                      {photo.title && (
+                        <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs p-1 truncate">
+                          {photo.title}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            <Button
+              variant="outline"
+              onClick={() => setIsGalleryModalOpen(false)}
+            >
+              Done
             </Button>
           </div>
         </DialogContent>
