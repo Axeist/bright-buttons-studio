@@ -1,17 +1,23 @@
 import { useState, useEffect } from "react";
 import { PublicLayout } from "@/layouts/PublicLayout";
 import { motion } from "framer-motion";
-import { Search, Filter, Grid, List, SlidersHorizontal, X, Heart } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Grid, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
-import { ShoppingCart } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { getProductImageUrl } from "@/lib/utils";
+import {
+  ProductGrid,
+  ProductFilters,
+  LoadingState,
+  EmptyState,
+} from "@/components/ecommerce";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ProductPhoto {
   id: string;
@@ -51,14 +57,14 @@ const Shop = () => {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedFabric, setSelectedFabric] = useState("All");
   const [selectedTechnique, setSelectedTechnique] = useState("All");
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
   const [sortBy, setSortBy] = useState("newest");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [showFilters, setShowFilters] = useState(false);
   const [wishlistIds, setWishlistIds] = useState<Set<string>>(new Set());
-  const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set());
   const { addToCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     fetchProducts();
@@ -107,7 +113,8 @@ const Shop = () => {
     const matchesCategory = selectedCategory === "All" || product.category === selectedCategory;
     const matchesFabric = selectedFabric === "All" || product.fabric === selectedFabric;
     const matchesTechnique = selectedTechnique === "All" || product.technique === selectedTechnique;
-    return matchesSearch && matchesCategory && matchesFabric && matchesTechnique;
+    const matchesPrice = product.price >= priceRange[0] && product.price <= priceRange[1];
+    return matchesSearch && matchesCategory && matchesFabric && matchesTechnique && matchesPrice;
   });
 
   const sortedProducts = [...filteredProducts].sort((a, b) => {
@@ -124,6 +131,15 @@ const Shop = () => {
   });
 
   const handleAddToCart = async (product: Product) => {
+    if (!user) {
+      toast({
+        title: "Please login",
+        description: "You need to login to add items to cart",
+        variant: "destructive",
+      });
+      navigate("/customer/login");
+      return;
+    }
     await addToCart(product.id, 1);
   };
 
@@ -143,10 +159,7 @@ const Shop = () => {
     }
   };
 
-  const toggleWishlist = async (product: Product, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
+  const toggleWishlist = async (product: Product) => {
     if (!user) {
       toast({
         title: "Please login",
@@ -158,7 +171,6 @@ const Shop = () => {
     }
 
     const isWishlisted = wishlistIds.has(product.id);
-    setTogglingIds((prev) => new Set(prev).add(product.id));
 
     try {
       if (isWishlisted) {
@@ -199,17 +211,10 @@ const Shop = () => {
         description: error.message || "Failed to update wishlist",
         variant: "destructive",
       });
-    } finally {
-      setTogglingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(product.id);
-        return next;
-      });
     }
   };
 
   const getAvailableStock = (product: Product) => {
-    // Handle both array and object formats from Supabase
     const inventory = Array.isArray(product.inventory) 
       ? product.inventory[0] 
       : product.inventory;
@@ -217,6 +222,49 @@ const Shop = () => {
     const qty = inventory?.quantity || 0;
     const reserved = inventory?.reserved_quantity || 0;
     return qty - reserved;
+  };
+
+  // Convert products to ProductGrid format
+  const productGridItems = sortedProducts.map((product) => ({
+    id: product.id,
+    name: product.name,
+    price: product.price,
+    image: getProductImageUrl(product) || undefined,
+    inStock: getAvailableStock(product) > 0,
+    category: product.category,
+    tags: [product.fabric, product.technique].filter(Boolean) as string[],
+  }));
+
+  // Prepare filter options
+  const categoryOptions = categories
+    .filter(cat => cat !== "All")
+    .map(cat => ({
+      id: cat,
+      label: cat,
+      count: products.filter(p => p.category === cat).length,
+    }));
+
+  const fabricOptions = fabrics
+    .filter(f => f !== "All")
+    .map(f => ({
+      id: f,
+      label: f,
+      count: products.filter(p => p.fabric === f).length,
+    }));
+
+  const handleCategoryChange = (categories: string[]) => {
+    if (categories.length === 0 || categories.includes("All")) {
+      setSelectedCategory("All");
+    } else {
+      setSelectedCategory(categories[0]);
+    }
+  };
+
+  const handleClearFilters = () => {
+    setSelectedCategory("All");
+    setSelectedFabric("All");
+    setSelectedTechnique("All");
+    setPriceRange([0, 10000]);
   };
 
   return (
@@ -239,315 +287,105 @@ const Shop = () => {
         </div>
 
         <div className="container-custom py-6">
-          {/* Search and Filters Bar */}
-          <div className="mb-6 space-y-4">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Search products..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-12 rounded-xl"
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            {/* Filters Sidebar */}
+            <div className="lg:col-span-1">
+              <ProductFilters
+                categories={categoryOptions}
+                priceRange={priceRange}
+                onPriceRangeChange={setPriceRange}
+                selectedCategories={selectedCategory !== "All" ? [selectedCategory] : []}
+                onCategoryChange={handleCategoryChange}
+                onClearFilters={handleClearFilters}
+                isMobile={isMobile}
               />
             </div>
 
-            {/* Filters and Sort */}
-            <div className="flex flex-wrap items-center gap-3">
-              <Button
-                variant="outline"
-                onClick={() => setShowFilters(!showFilters)}
-                className="rounded-xl"
-              >
-                <SlidersHorizontal className="w-4 h-4 mr-2" />
-                Filters
-              </Button>
-
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="h-10 px-4 rounded-xl border border-input bg-background text-sm"
-              >
-                <option value="newest">Newest First</option>
-                <option value="price-low">Price: Low to High</option>
-                <option value="price-high">Price: High to Low</option>
-                <option value="name">Name: A to Z</option>
-              </select>
-
-              <div className="flex gap-2 ml-auto">
-                <Button
-                  variant={viewMode === "grid" ? "default" : "outline"}
-                  size="icon"
-                  onClick={() => setViewMode("grid")}
-                  className="rounded-xl"
-                >
-                  <Grid className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant={viewMode === "list" ? "default" : "outline"}
-                  size="icon"
-                  onClick={() => setViewMode("list")}
-                  className="rounded-xl"
-                >
-                  <List className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-
-            {/* Filter Panel */}
-            {showFilters && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="bg-card border border-border rounded-xl p-4 space-y-4"
-              >
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold">Filters</h3>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setShowFilters(false)}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
+            {/* Main Content */}
+            <div className="lg:col-span-3 space-y-6">
+              {/* Search and Sort Controls */}
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                <div className="relative flex-1 w-full sm:max-w-md">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    type="search"
+                    placeholder="Search products..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 rounded-full"
+                  />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Category</label>
-                    <div className="flex flex-wrap gap-2">
-                      {categories.map((cat) => (
-                        <Badge
-                          key={cat}
-                          variant={selectedCategory === cat ? "default" : "outline"}
-                          className="cursor-pointer"
-                          onClick={() => setSelectedCategory(cat)}
-                        >
-                          {cat}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Fabric</label>
-                    <div className="flex flex-wrap gap-2">
-                      {fabrics.map((fabric) => (
-                        <Badge
-                          key={fabric}
-                          variant={selectedFabric === fabric ? "default" : "outline"}
-                          className="cursor-pointer"
-                          onClick={() => setSelectedFabric(fabric)}
-                        >
-                          {fabric}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Technique</label>
-                    <div className="flex flex-wrap gap-2">
-                      {techniques.map((tech) => (
-                        <Badge
-                          key={tech}
-                          variant={selectedTechnique === tech ? "default" : "outline"}
-                          className="cursor-pointer"
-                          onClick={() => setSelectedTechnique(tech)}
-                        >
-                          {tech}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Active Filters */}
-            {(selectedCategory !== "All" || selectedFabric !== "All" || selectedTechnique !== "All") && (
-              <div className="flex flex-wrap gap-2">
-                {selectedCategory !== "All" && (
-                  <Badge variant="secondary" className="gap-2">
-                    {selectedCategory}
-                    <X
-                      className="w-3 h-3 cursor-pointer"
-                      onClick={() => setSelectedCategory("All")}
-                    />
-                  </Badge>
-                )}
-                {selectedFabric !== "All" && (
-                  <Badge variant="secondary" className="gap-2">
-                    {selectedFabric}
-                    <X
-                      className="w-3 h-3 cursor-pointer"
-                      onClick={() => setSelectedFabric("All")}
-                    />
-                  </Badge>
-                )}
-                {selectedTechnique !== "All" && (
-                  <Badge variant="secondary" className="gap-2">
-                    {selectedTechnique}
-                    <X
-                      className="w-3 h-3 cursor-pointer"
-                      onClick={() => setSelectedTechnique("All")}
-                    />
-                  </Badge>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Products Grid/List */}
-          {loading ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">Loading products...</p>
-            </div>
-          ) : sortedProducts.length > 0 ? (
-            <div
-              className={
-                viewMode === "grid"
-                  ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                  : "space-y-4"
-              }
-            >
-              {sortedProducts.map((product, index) => (
-                <motion.div
-                  key={product.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className={viewMode === "grid" ? "" : "flex gap-4 bg-card rounded-xl p-4 border border-border"}
-                >
-                  <Link
-                    to={`/product/${product.id}`}
-                    className={viewMode === "grid" ? "block group" : "flex-shrink-0 w-32 h-32"}
+                <div className="flex items-center gap-3">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="h-10 px-4 rounded-full border border-input bg-background text-sm"
                   >
-                    <div
-                      className={
-                        viewMode === "grid"
-                          ? "relative aspect-[4/5] overflow-hidden bg-gradient-to-br from-primary-50 to-earth-50 rounded-xl mb-3"
-                          : "w-32 h-32 rounded-lg overflow-hidden bg-gradient-to-br from-primary-50 to-earth-50 relative"
-                      }
+                    <option value="newest">Newest First</option>
+                    <option value="price-low">Price: Low to High</option>
+                    <option value="price-high">Price: High to Low</option>
+                    <option value="name">Name: A to Z</option>
+                  </select>
+
+                  <div className="flex gap-2 border rounded-full p-1">
+                    <Button
+                      variant={viewMode === "grid" ? "default" : "ghost"}
+                      size="icon"
+                      className="h-8 w-8 rounded-full"
+                      onClick={() => setViewMode("grid")}
                     >
-                      {getProductImageUrl(product) ? (
-                        <img
-                          src={getProductImageUrl(product)!}
-                          alt={product.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                            const fallback = target.nextElementSibling as HTMLElement;
-                            if (fallback) fallback.style.display = 'flex';
-                          }}
-                        />
-                      ) : null}
-                      <div 
-                        className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-primary-50 to-earth-50 ${product.image_url ? 'hidden' : ''}`}
-                      >
-                        <div className="text-center p-4">
-                          <div className="w-16 h-16 mx-auto mb-2 rounded-full bg-primary/10 flex items-center justify-center">
-                            <ShoppingCart className="w-8 h-8 text-primary/50" />
-                          </div>
-                          <p className="text-muted-foreground text-sm font-medium">{product.name}</p>
-                          {product.category && (
-                            <p className="text-muted-foreground text-xs mt-1">{product.category}</p>
-                          )}
-                        </div>
-                      </div>
-                      {getAvailableStock(product) === 0 && (
-                        <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
-                          <Badge variant="destructive">Out of Stock</Badge>
-                        </div>
-                      )}
-                      {/* Wishlist Button */}
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={(e) => toggleWishlist(product, e)}
-                        disabled={togglingIds.has(product.id)}
-                        className={`absolute top-2 right-2 z-20 p-2 rounded-full backdrop-blur-sm transition-all duration-300 ${
-                          wishlistIds.has(product.id)
-                            ? "bg-destructive/90 text-white shadow-lg"
-                            : "bg-background/80 text-foreground hover:bg-background"
-                        }`}
-                        aria-label={wishlistIds.has(product.id) ? "Remove from wishlist" : "Add to wishlist"}
-                      >
-                        {togglingIds.has(product.id) ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
-                        ) : (
-                          <motion.div
-                            animate={wishlistIds.has(product.id) ? { scale: [1, 1.2, 1] } : {}}
-                            transition={{ duration: 0.3 }}
-                          >
-                            <Heart
-                              className={`w-4 h-4 ${wishlistIds.has(product.id) ? "fill-current" : ""}`}
-                            />
-                          </motion.div>
-                        )}
-                      </motion.button>
-                    </div>
-                  </Link>
-
-                  <div className={viewMode === "grid" ? "" : "flex-1"}>
-                    <Link to={`/product/${product.id}`}>
-                      <h3 className="font-semibold text-foreground mb-1 hover:text-primary transition-colors">
-                        {product.name}
-                      </h3>
-                    </Link>
-                    <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
-                      {product.tagline}
-                    </p>
-
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      <Link to={`/category/${encodeURIComponent(product.category)}`}>
-                        <Badge variant="outline" className="text-xs hover:bg-primary hover:text-primary-foreground transition-colors cursor-pointer">
-                          {product.category}
-                        </Badge>
-                      </Link>
-                      {product.fabric && (
-                        <Badge variant="outline" className="text-xs">
-                          {product.fabric}
-                        </Badge>
-                      )}
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <p className="text-lg font-bold text-primary">
-                        ₹{product.price.toLocaleString()}
-                      </p>
-                      <Button
-                        size="sm"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          handleAddToCart(product);
-                        }}
-                        disabled={getAvailableStock(product) === 0}
-                        className="rounded-full"
-                      >
-                        <ShoppingCart className="w-4 h-4 mr-1" />
-                        Add to Cart
-                      </Button>
-                    </div>
+                      <Grid className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant={viewMode === "list" ? "default" : "ghost"}
+                      size="icon"
+                      className="h-8 w-8 rounded-full"
+                      onClick={() => setViewMode("list")}
+                    >
+                      <List className="w-4 h-4" />
+                    </Button>
                   </div>
-                </motion.div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">No products found matching your criteria.</p>
-            </div>
-          )}
+                </div>
+              </div>
 
-          {/* Results Count */}
-          {!loading && (
-            <div className="mt-6 text-center text-sm text-muted-foreground">
-              Showing {sortedProducts.length} of {products.length} products
+              {/* Products */}
+              {loading ? (
+                <LoadingState variant="grid" count={8} />
+              ) : productGridItems.length === 0 ? (
+                <EmptyState
+                  title="No products found"
+                  description="Try adjusting your search terms or filters to find what you're looking for."
+                  action={{
+                    label: "Clear Filters",
+                    onClick: handleClearFilters,
+                  }}
+                />
+              ) : (
+                <ProductGrid
+                  products={productGridItems}
+                  columns={viewMode === "grid" ? 3 : 1}
+                  onProductClick={(product) => navigate(`/product/${product.id}`)}
+                  onAddToCart={(product) => {
+                    const originalProduct = products.find(p => p.id === product.id);
+                    if (originalProduct) handleAddToCart(originalProduct);
+                  }}
+                  onWishlistToggle={(product) => {
+                    const originalProduct = products.find(p => p.id === product.id);
+                    if (originalProduct) toggleWishlist(originalProduct);
+                  }}
+                  wishlistedIds={wishlistIds}
+                />
+              )}
+
+              {/* Results Count */}
+              {!loading && sortedProducts.length > 0 && (
+                <div className="text-center text-sm text-muted-foreground">
+                  Showing {sortedProducts.length} of {products.length} products
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
     </PublicLayout>

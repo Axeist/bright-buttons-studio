@@ -21,9 +21,13 @@ interface ProductOverviewProps {
     category?: string;
     tags?: string[];
   };
-  onAddToCart?: (quantity: number) => void;
+  onAddToCart?: (quantity: number, size?: string) => void;
   onWishlistToggle?: () => void;
   isWishlisted?: boolean;
+  sizeOptions?: string[];
+  selectedSize?: string;
+  onSizeChange?: (size: string) => void;
+  requireSize?: boolean;
 }
 
 export const ProductOverview = ({
@@ -31,10 +35,15 @@ export const ProductOverview = ({
   onAddToCart,
   onWishlistToggle,
   isWishlisted = false,
+  sizeOptions = [],
+  selectedSize: externalSelectedSize,
+  onSizeChange,
+  requireSize = false,
 }: ProductOverviewProps) => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
-  const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
+  const [internalSelectedSize, setInternalSelectedSize] = useState<string>("");
+  const selectedSize = externalSelectedSize !== undefined ? externalSelectedSize : internalSelectedSize;
 
   const handleQuantityChange = (delta: number) => {
     setQuantity((prev) => Math.max(1, prev + delta));
@@ -184,6 +193,41 @@ export const ProductOverview = ({
           </div>
         )}
 
+        {/* Size Selection */}
+        {sizeOptions.length > 0 && (
+          <div className="space-y-3">
+            <label className="text-sm font-medium">
+              Size {requireSize && <span className="text-destructive">*</span>}
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {sizeOptions.map((size) => {
+                const handleSizeClick = () => {
+                  if (onSizeChange) {
+                    onSizeChange(size);
+                  } else {
+                    setInternalSelectedSize(size);
+                  }
+                };
+                const isSelected = selectedSize === size;
+                return (
+                  <button
+                    key={size}
+                    onClick={handleSizeClick}
+                    className={cn(
+                      "px-6 py-3 rounded-lg font-medium transition-all min-w-[60px]",
+                      isSelected
+                        ? "bg-primary text-primary-foreground shadow-md"
+                        : "bg-secondary text-secondary-foreground hover:bg-accent"
+                    )}
+                  >
+                    {size}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Quantity Selector */}
         <div className="space-y-3">
           <label className="text-sm font-medium">Quantity</label>
@@ -216,8 +260,8 @@ export const ProductOverview = ({
           <Button
             size="lg"
             className="flex-1 rounded-full h-12"
-            onClick={() => onAddToCart?.(quantity)}
-            disabled={!product.inStock}
+            onClick={() => onAddToCart?.(quantity, selectedSize || undefined)}
+            disabled={!product.inStock || (requireSize && sizeOptions.length > 0 && !selectedSize)}
           >
             <ShoppingCart className="w-5 h-5 mr-2" />
             Add to Cart
