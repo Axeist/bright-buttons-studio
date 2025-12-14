@@ -23,6 +23,7 @@ const ShippingPolicy = lazy(() => import("./pages/ShippingPolicy"));
 const Shop = lazy(() => import("./pages/Shop"));
 const Category = lazy(() => import("./pages/Category"));
 const ProductDetail = lazy(() => import("./pages/ProductDetail"));
+const ProductComparison = lazy(() => import("./pages/ProductComparison"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Customer Pages
@@ -91,6 +92,7 @@ const App = () => (
                   <Route path="/shop" element={<Shop />} />
                   <Route path="/category/:category" element={<Category />} />
                   <Route path="/product/:id" element={<ProductDetail />} />
+                  <Route path="/compare" element={<ProductComparison />} />
                   <Route path="/about-founder" element={<AboutFounder />} />
                   <Route path="/terms-conditions" element={<TermsConditions />} />
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />

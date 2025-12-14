@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Heart, ShoppingCart, Eye, Star } from "lucide-react";
+import { Heart, ShoppingCart, Eye, Star, GitCompare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -25,6 +25,7 @@ interface ProductGridProps {
   onProductClick?: (product: Product) => void;
   onAddToCart?: (product: Product) => void;
   onWishlistToggle?: (product: Product) => void;
+  onCompare?: (product: Product) => void;
   wishlistedIds?: Set<string>;
   columns?: 2 | 3 | 4;
   className?: string;
@@ -35,6 +36,7 @@ export const ProductGrid = ({
   onProductClick,
   onAddToCart,
   onWishlistToggle,
+  onCompare,
   wishlistedIds = new Set(),
   columns = 4,
   className,
@@ -118,7 +120,7 @@ export const ProductGrid = ({
 
                 {/* Hover Overlay with Actions */}
                 <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/10 transition-colors duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-2">
                     {onProductClick && (
                       <Button
                         size="sm"
@@ -144,6 +146,20 @@ export const ProductGrid = ({
                       >
                         <ShoppingCart className="w-4 h-4 mr-1" />
                         Add to Cart
+                      </Button>
+                    )}
+                    {onCompare && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="rounded-full bg-background/90"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onCompare(product);
+                        }}
+                      >
+                        <GitCompare className="w-4 h-4 mr-1" />
+                        Compare
                       </Button>
                     )}
                   </div>

@@ -6,7 +6,7 @@ import { Logo } from "./Logo";
 import { WhatsAppButton } from "./WhatsAppButton";
 import { ThemeToggle } from "./ThemeToggle";
 import { LocationSelector } from "./LocationSelector";
-import { CartDrawer } from "./CartDrawer";
+import { EnhancedShoppingCart } from "@/components/ecommerce";
 import { SearchBar } from "./SearchBar";
 import { Button } from "./ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -40,7 +40,7 @@ export const Navbar = () => {
   const navigate = useNavigate();
   const menuRef = useRef<HTMLDivElement>(null);
   const { user, role, isCustomer: isCustomerRole, signOut } = useAuth();
-  const { getTotalItems } = useCart();
+  const { items, getTotalItems, updateQuantity, removeFromCart, getTotalPrice } = useCart();
   const cartItemCount = getTotalItems();
   const isCustomer = user && isCustomerRole; // Customer if logged in with customer role
 
@@ -404,8 +404,45 @@ export const Navbar = () => {
         </AnimatePresence>
       </motion.header>
 
-      {/* Cart Drawer */}
-      <CartDrawer open={isCartOpen} onOpenChange={setIsCartOpen} />
+      {/* Enhanced Shopping Cart */}
+      <EnhancedShoppingCart
+        items={items.map(item => ({
+          id: item.id,
+          productId: item.product_id,
+          name: item.product?.name || "Product",
+          price: item.product?.price || 0,
+          quantity: item.quantity,
+          image: item.product?.image_url || undefined,
+          variant: item.size || undefined,
+          inStock: true, // You can add stock check if needed
+        }))}
+        isOpen={isCartOpen}
+        onOpenChange={setIsCartOpen}
+        onUpdateQuantity={(itemId, quantity) => {
+          const item = items.find(i => i.id === itemId);
+          if (item) {
+            updateQuantity(itemId, quantity);
+          }
+        }}
+        onRemoveItem={(itemId) => removeFromCart(itemId)}
+        onCheckout={() => {
+          setIsCartOpen(false);
+          if (!user) {
+            navigate("/customer/login");
+          } else {
+            navigate("/checkout");
+          }
+        }}
+        onContinueShopping={() => {
+          setIsCartOpen(false);
+          navigate("/shop");
+        }}
+        subtotal={getTotalPrice()}
+        shipping={getTotalPrice() >= 2000 ? 0 : 150}
+        tax={getTotalPrice() * 0.18}
+        total={getTotalPrice() + (getTotalPrice() >= 2000 ? 0 : 150) + (getTotalPrice() * 0.18)}
+        freeShippingThreshold={2000}
+      />
     </>
   );
 };

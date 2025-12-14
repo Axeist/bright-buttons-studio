@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { PublicLayout } from "@/layouts/PublicLayout";
-import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingCart, Heart, Share2, Check, Leaf, Star, ArrowLeft, Ruler } from "lucide-react";
+import { motion } from "framer-motion";
+import { ArrowLeft, Share2, GitCompare } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/hooks/useCart";
@@ -12,6 +11,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { ProductReviews } from "@/components/ProductReviews";
+import {
+  ProductOverview,
+  RelatedProducts,
+  LoadingState,
+  EmptyState,
+} from "@/components/ecommerce";
+import { getProductImageUrl } from "@/lib/utils";
+import { Check } from "lucide-react";
 
 interface ProductPhoto {
   id: string;
@@ -49,12 +56,12 @@ const ProductDetail = () => {
   const { user } = useAuth();
   const { addToCart } = useCart();
   const [product, setProduct] = useState<Product | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [quantity, setQuantity] = useState(1);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   useEffect(() => {
     if (id) {
@@ -64,6 +71,12 @@ const ProductDetail = () => {
       }
     }
   }, [id, user]);
+
+  useEffect(() => {
+    if (product) {
+      fetchRelatedProducts();
+    }
+  }, [product]);
 
   const fetchProduct = async () => {
     setLoading(true);
@@ -99,6 +112,38 @@ const ProductDetail = () => {
       navigate("/shop");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchRelatedProducts = async () => {
+    if (!product) return;
+    try {
+      const { data, error } = await supabase
+        .from("products")
+        .select(`
+          *,
+          inventory (
+            quantity,
+            reserved_quantity
+          ),
+          product_photos (
+            id,
+            product_id,
+            image_url,
+            display_order,
+            is_primary
+          )
+        `)
+        .eq("status", "active")
+        .eq("category", product.category)
+        .neq("id", product.id)
+        .limit(4)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setRelatedProducts(data || []);
+    } catch (error) {
+      console.error("Error fetching related products:", error);
     }
   };
 
@@ -172,10 +217,10 @@ const ProductDetail = () => {
     }
   };
 
-  const handleAddToCart = async () => {
+  const handleAddToCart = async (qty: number, size?: string) => {
     if (!product) return;
 
-    if (!selectedSize && sizes.length > 0) {
+    if (!size && sizes.length > 0) {
       toast({
         title: "Select size",
         description: "Please select a size",
@@ -185,7 +230,7 @@ const ProductDetail = () => {
     }
 
     const availableStock = getAvailableStock();
-    if (quantity > availableStock) {
+    if (qty > availableStock) {
       toast({
         title: "Insufficient stock",
         description: `Only ${availableStock} available`,
@@ -194,14 +239,13 @@ const ProductDetail = () => {
       return;
     }
 
-    for (let i = 0; i < quantity; i++) {
-      await addToCart(product.id, 1, selectedSize);
+    for (let i = 0; i < qty; i++) {
+      await addToCart(product.id, 1, size);
     }
   };
 
   const getAvailableStock = () => {
     if (!product?.inventory) return 0;
-    // Handle both array and object formats from Supabase
     const inventory = Array.isArray(product.inventory) 
       ? product.inventory[0] 
       : product.inventory;
@@ -232,8 +276,8 @@ const ProductDetail = () => {
   if (loading) {
     return (
       <PublicLayout>
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <div className="container-custom py-6">
+          <LoadingState variant="detail" />
         </div>
       </PublicLayout>
     );
@@ -242,13 +286,15 @@ const ProductDetail = () => {
   if (!product) {
     return (
       <PublicLayout>
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <h2 className="text-2xl font-semibold mb-2">Product not found</h2>
-            <Link to="/shop" className="text-primary hover:underline">
-              Continue Shopping
-            </Link>
-          </div>
+        <div className="container-custom py-6">
+          <EmptyState
+            title="Product not found"
+            description="The product you're looking for doesn't exist or has been removed."
+            action={{
+              label: "Continue Shopping",
+              onClick: () => navigate("/shop"),
+            }}
+          />
         </div>
       </PublicLayout>
     );
@@ -257,13 +303,39 @@ const ProductDetail = () => {
   // Get product images from product_photos, fallback to image_url
   const productImages = (() => {
     if (product.product_photos && product.product_photos.length > 0) {
-      // Sort by display_order and return image URLs
       const sortedPhotos = [...product.product_photos].sort((a, b) => a.display_order - b.display_order);
       return sortedPhotos.map(photo => photo.image_url);
     }
-    // Fallback to main image_url if no photos
     return product.image_url ? [product.image_url] : [];
   })();
+
+  // Prepare product data for ProductOverview
+  const productOverviewData = {
+    id: product.id,
+    name: product.name,
+    price: product.price,
+    description: product.description || undefined,
+    images: productImages,
+    rating: 4.5, // You can fetch actual rating from reviews
+    reviewCount: 0, // You can fetch actual count
+    inStock: getAvailableStock() > 0,
+    category: product.category,
+    tags: [product.fabric, product.technique].filter(Boolean) as string[],
+  };
+
+  // Prepare related products for RelatedProducts component
+  const relatedProductsData = relatedProducts.map(p => ({
+    id: p.id,
+    name: p.name,
+    price: p.price,
+    image: getProductImageUrl(p) || undefined,
+    inStock: (() => {
+      const inv = Array.isArray(p.inventory) ? p.inventory[0] : p.inventory;
+      return (inv?.quantity || 0) - (inv?.reserved_quantity || 0) > 0;
+    })(),
+    category: p.category,
+    tags: [p.fabric, p.technique].filter(Boolean) as string[],
+  }));
 
   return (
     <PublicLayout>
@@ -272,283 +344,67 @@ const ProductDetail = () => {
           <Button
             variant="ghost"
             onClick={() => navigate(-1)}
-            className="mb-6"
+            className="mb-6 rounded-full"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
           </Button>
 
-          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
-            {/* Image Gallery */}
-            <div className="space-y-4">
-              <div className="relative aspect-square bg-gradient-to-br from-primary-50 to-earth-50 rounded-xl overflow-hidden">
-                {productImages[currentImageIndex] ? (
-                  <img
-                    src={productImages[currentImageIndex]}
-                    alt={product.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = 'none';
-                      const fallback = target.nextElementSibling as HTMLElement;
-                      if (fallback) fallback.style.display = 'flex';
-                    }}
-                  />
-                ) : null}
-                <div 
-                  className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-primary-50 to-earth-50 ${productImages[currentImageIndex] ? 'hidden' : ''}`}
-                >
-                  <div className="text-center p-8">
-                    <Leaf className="w-20 h-20 text-primary-400 mx-auto mb-4" />
-                    <p className="text-lg font-semibold text-foreground mb-2">{product.name}</p>
-                    {product.category && (
-                      <p className="text-muted-foreground">{product.category}</p>
-                    )}
-                  </div>
-                </div>
-                {getAvailableStock() === 0 && (
-                  <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
-                    <Badge variant="destructive" className="text-lg px-4 py-2">
-                      Out of Stock
-                    </Badge>
-                  </div>
-                )}
-              </div>
+          {/* Product Overview */}
+          <ProductOverview
+            product={productOverviewData}
+            onAddToCart={handleAddToCart}
+            onWishlistToggle={toggleWishlist}
+            isWishlisted={isWishlisted}
+            sizeOptions={sizes}
+            selectedSize={selectedSize}
+            onSizeChange={setSelectedSize}
+            requireSize={sizes.length > 0}
+          />
 
-              {productImages.length > 1 && (
-                <div className="grid grid-cols-4 gap-2">
-                  {productImages.map((img, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setCurrentImageIndex(index)}
-                      className={`aspect-square rounded-lg overflow-hidden border-2 ${
-                        currentImageIndex === index
-                          ? "border-primary"
-                          : "border-transparent"
-                      }`}
-                    >
-                      {img ? (
-                        <img
-                          src={img}
-                          alt={`${product.name} ${index + 1}`}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                            const fallback = target.nextElementSibling as HTMLElement;
-                            if (fallback) fallback.style.display = 'flex';
-                          }}
-                        />
-                      ) : null}
-                      <div 
-                        className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-primary-50 to-earth-50 ${img ? 'hidden' : ''}`}
-                      >
-                        <Leaf className="w-6 h-6 text-primary-400" />
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Product Info */}
-            <div className="space-y-6">
-              <div>
-                <Badge variant="outline" className="mb-3">
-                  {product.category}
-                </Badge>
-                <h1 className="text-3xl md:text-4xl font-script text-gradient mb-3">
-                  {product.name}
-                </h1>
-                {product.tagline && (
-                  <p className="text-lg text-muted-foreground mb-4">
-                    {product.tagline}
-                  </p>
-                )}
-                <div className="flex items-center gap-4 mb-6">
-                  <p className="text-3xl font-bold text-primary">
-                    ₹{product.price.toLocaleString()}
-                  </p>
-                  <div className="flex items-center gap-1">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star
-                        key={star}
-                        className="w-5 h-5 fill-earth-400 text-earth-400"
-                      />
-                    ))}
-                    <span className="ml-2 text-sm text-muted-foreground">
-                      (4.5)
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {product.description && (
-                <div>
-                  <h3 className="font-semibold mb-2">Description</h3>
-                  <p className="text-muted-foreground leading-relaxed">
-                    {product.description}
-                  </p>
-                </div>
-              )}
-
-              {/* Size Selection */}
-              {sizes.length > 0 && (
-                <div>
-                  <h3 className="font-semibold mb-3">
-                    Size <span className="text-destructive">*</span>
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {sizes.map((size) => (
-                      <button
-                        key={size}
-                        onClick={() => setSelectedSize(size)}
-                        className={`px-6 py-3 rounded-lg font-medium transition-all min-w-[60px] ${
-                          selectedSize === size
-                            ? "bg-primary text-primary-foreground shadow-md"
-                            : "bg-secondary text-secondary-foreground hover:bg-accent"
-                        }`}
-                      >
-                        {size}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Quantity */}
-              <div>
-                <h3 className="font-semibold mb-3">Quantity</h3>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2 border border-border rounded-lg">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      disabled={quantity <= 1}
-                    >
-                      -
-                    </Button>
-                    <span className="w-12 text-center">{quantity}</span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setQuantity(Math.min(getAvailableStock(), quantity + 1))}
-                      disabled={quantity >= getAvailableStock()}
-                    >
-                      +
-                    </Button>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {getAvailableStock()} available
-                  </p>
-                </div>
-              </div>
-
-              {/* Product Details */}
-              <div className="space-y-2 border-t border-b border-border py-4">
-                <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-primary" />
-                  <span className="text-sm">Handmade with care</span>
-                </div>
-                {product.technique && (
-                  <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-primary" />
-                    <span className="text-sm">Technique: {product.technique}</span>
-                  </div>
-                )}
-                {product.fabric && (
-                  <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-primary" />
-                    <span className="text-sm">Fabric: {product.fabric}</span>
-                  </div>
-                )}
-                <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-primary" />
-                  <span className="text-sm">Each piece is unique</span>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="space-y-3">
-                <Button
-                  size="lg"
-                  className="w-full rounded-full h-14 text-lg"
-                  onClick={handleAddToCart}
-                  disabled={getAvailableStock() === 0 || (sizes.length > 0 && !selectedSize)}
-                >
-                  <ShoppingCart className="w-5 h-5 mr-2" />
-                  Add to Cart
-                </Button>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      className={`rounded-full w-full ${
-                        isWishlisted
-                          ? "border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                          : ""
-                      }`}
-                      onClick={toggleWishlist}
-                      disabled={isToggling}
-                    >
-                      <motion.div
-                        animate={isWishlisted ? { scale: [1, 1.2, 1] } : {}}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <Heart
-                          className={`w-5 h-5 mr-2 ${
-                            isWishlisted ? "fill-destructive text-destructive" : ""
-                          }`}
-                        />
-                      </motion.div>
-                      <AnimatePresence mode="wait">
-                        {isWishlisted ? (
-                          <motion.span
-                            key="saved"
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 10 }}
-                          >
-                            Saved
-                          </motion.span>
-                        ) : (
-                          <motion.span
-                            key="save"
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 10 }}
-                          >
-                            Save Design
-                          </motion.span>
-                        )}
-                      </AnimatePresence>
-                    </Button>
-                  </motion.div>
-                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      className="rounded-full w-full"
-                      onClick={handleShare}
-                    >
-                      <Share2 className="w-5 h-5 mr-2" />
-                      Share
-                    </Button>
-                  </motion.div>
-                </div>
-
-                <WhatsAppButton
-                  variant="inline"
-                  className="w-full"
-                  message={`Hi! I'm interested in ${product.name} (${product.category}) from Bright Buttons. Can you share more details?`}
-                >
-                  Enquire on WhatsApp
-                </WhatsAppButton>
-              </div>
-            </div>
+          {/* Additional Actions */}
+          <div className="mt-6 flex flex-col sm:flex-row gap-3">
+            <Button
+              variant="outline"
+              size="lg"
+              className="rounded-full flex-1"
+              onClick={() => {
+                const currentIds = new URLSearchParams(window.location.search).get("compare")?.split(",") || [];
+                if (currentIds.length >= 4) {
+                  toast({
+                    title: "Limit Reached",
+                    description: "You can compare up to 4 products at a time",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                if (!currentIds.includes(product.id)) {
+                  const newIds = [...currentIds, product.id];
+                  navigate(`/compare?ids=${newIds.join(",")}`);
+                } else {
+                  navigate("/compare");
+                }
+              }}
+            >
+              <GitCompare className="w-5 h-5 mr-2" />
+              Compare
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              className="rounded-full flex-1"
+              onClick={handleShare}
+            >
+              <Share2 className="w-5 h-5 mr-2" />
+              Share
+            </Button>
+            <WhatsAppButton
+              variant="inline"
+              className="flex-1 rounded-full"
+              message={`Hi! I'm interested in ${product.name} (${product.category}) from Bright Buttons. Can you share more details?`}
+            >
+              Enquire on WhatsApp
+            </WhatsAppButton>
           </div>
 
           {/* Product Details Tabs */}
@@ -644,6 +500,24 @@ const ProductDetail = () => {
               </TabsContent>
             </Tabs>
           </div>
+
+          {/* Related Products */}
+          {relatedProductsData.length > 0 && (
+            <div className="mt-16">
+              <RelatedProducts
+                products={relatedProductsData}
+                title="You May Also Like"
+                onProductClick={(product) => navigate(`/product/${product.id}`)}
+                onAddToCart={(product) => {
+                  const originalProduct = relatedProducts.find(p => p.id === product.id);
+                  if (originalProduct) {
+                    addToCart(originalProduct.id, 1);
+                  }
+                }}
+                onViewAll={() => navigate(`/category/${encodeURIComponent(product.category)}`)}
+              />
+            </div>
+          )}
         </div>
       </div>
     </PublicLayout>

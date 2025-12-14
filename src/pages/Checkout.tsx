@@ -15,6 +15,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { LocationSelector } from "@/components/LocationSelector";
+import { CheckoutSteps, OrderSummary, LoadingState } from "@/components/ecommerce";
+import { getProductImageUrl } from "@/lib/utils";
 
 interface Address {
   id: string;
@@ -387,11 +389,24 @@ const Checkout = () => {
   const shippingAmount = subtotal >= 2000 ? 0 : 150;
   const totalAmount = subtotal + taxAmount + shippingAmount;
 
+  // Determine current step
+  const currentStep = selectedAddress || (!customer && addressForm.full_name) ? 2 : 1;
+
+  // Prepare order items for OrderSummary
+  const orderItems = items.map(item => ({
+    id: item.id,
+    name: item.product?.name || "Product",
+    price: item.product?.price || 0,
+    quantity: item.quantity,
+    image: getProductImageUrl(item.product || {}) || undefined,
+    variant: item.size || undefined,
+  }));
+
   if (cartLoading) {
     return (
       <PublicLayout>
         <div className="min-h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <LoadingState variant="detail" />
         </div>
       </PublicLayout>
     );
@@ -404,11 +419,24 @@ const Checkout = () => {
           <Button
             variant="ghost"
             onClick={() => navigate("/shop")}
-            className="mb-6"
+            className="mb-6 rounded-full"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Continue Shopping
           </Button>
+
+          {/* Checkout Steps */}
+          <div className="mb-8">
+            <CheckoutSteps
+              currentStep={currentStep}
+              steps={[
+                { id: "cart", label: "Cart" },
+                { id: "shipping", label: "Shipping" },
+                { id: "payment", label: "Payment" },
+                { id: "review", label: "Review" },
+              ]}
+            />
+          </div>
 
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Main Content */}
@@ -732,94 +760,33 @@ const Checkout = () => {
 
             {/* Order Summary */}
             <div className="lg:col-span-1">
-              <div className="bg-card rounded-xl p-6 border border-border sticky top-20">
-                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                  <ShoppingCart className="w-5 h-5 text-primary" />
-                  Order Summary
-                </h2>
-
-                <div className="space-y-3 mb-4">
-                  {items.map((item) => (
-                    <div key={item.id} className="flex gap-3">
-                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-gradient-to-br from-primary-50 to-earth-50 flex-shrink-0">
-                        {item.product?.image_url ? (
-                          <img
-                            src={item.product.image_url}
-                            alt={item.product.name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <ShoppingCart className="w-6 h-6 text-muted-foreground" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm line-clamp-1">
-                          {item.product?.name || "Product"}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Qty: {item.quantity} × ₹{item.product?.price.toLocaleString() || 0}
-                        </p>
-                        {item.size && (
-                          <p className="text-xs text-muted-foreground">Size: {item.size}</p>
-                        )}
-                      </div>
-                      <p className="font-semibold text-sm">
-                        ₹{((item.product?.price || 0) * item.quantity).toLocaleString()}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="border-t border-border pt-4 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Subtotal</span>
-                    <span>₹{subtotal.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Tax (GST 18%)</span>
-                    <span>₹{taxAmount.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Shipping</span>
-                    <span>
-                      {shippingAmount === 0 ? (
-                        <span className="text-primary font-semibold">FREE</span>
-                      ) : (
-                        `₹${shippingAmount}`
-                      )}
-                    </span>
-                  </div>
-                  <div className="border-t border-border pt-2 flex justify-between font-bold text-lg">
-                    <span>Total</span>
-                    <span>₹{totalAmount.toFixed(2)}</span>
-                  </div>
-                </div>
-
-                <Button
-                  size="lg"
-                  className="w-full mt-6 rounded-full h-12"
-                  onClick={handlePlaceOrder}
-                  disabled={!selectedAddress || isProcessing || items.length === 0}
-                >
-                  {isProcessing ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <Lock className="w-4 h-4 mr-2" />
-                      Place Order
-                    </>
-                  )}
-                </Button>
-
-                <p className="text-xs text-center text-muted-foreground mt-4">
-                  Your personal information is secure and encrypted
-                </p>
-              </div>
+              <OrderSummary
+                items={orderItems}
+                subtotal={subtotal}
+                shipping={shippingAmount}
+                tax={taxAmount}
+                discount={0}
+                total={totalAmount}
+                showCouponInput={false}
+              />
+              <Button
+                size="lg"
+                className="w-full mt-6 rounded-full h-12"
+                onClick={handlePlaceOrder}
+                disabled={(!selectedAddress && (!customer || addresses.length === 0)) || isProcessing || items.length === 0}
+              >
+                {isProcessing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-4 h-4 mr-2" />
+                    Place Order
+                  </>
+                )}
+              </Button>
             </div>
           </div>
         </div>

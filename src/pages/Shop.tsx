@@ -374,6 +374,23 @@ const Shop = () => {
                     const originalProduct = products.find(p => p.id === product.id);
                     if (originalProduct) toggleWishlist(originalProduct);
                   }}
+                  onCompare={(product) => {
+                    const currentIds = new URLSearchParams(window.location.search).get("compare")?.split(",").filter(Boolean) || [];
+                    if (currentIds.length >= 4) {
+                      toast({
+                        title: "Limit Reached",
+                        description: "You can compare up to 4 products at a time",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    if (!currentIds.includes(product.id)) {
+                      const newIds = [...currentIds, product.id];
+                      navigate(`/compare?ids=${newIds.join(",")}`);
+                    } else {
+                      navigate("/compare");
+                    }
+                  }}
                   wishlistedIds={wishlistIds}
                 />
               )}
