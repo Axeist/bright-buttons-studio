@@ -45,6 +45,7 @@ const Login = lazy(() => import("./pages/Login"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const POS = lazy(() => import("./pages/POS"));
 const Products = lazy(() => import("./pages/Products"));
+const Gallery = lazy(() => import("./pages/Gallery"));
 const Orders = lazy(() => import("./pages/Orders"));
 const AdminCustomOrders = lazy(() => import("./pages/CustomOrders"));
 const AdminCustomOrderDetail = lazy(() => import("./pages/CustomOrderDetail"));
@@ -169,6 +170,11 @@ const App = () => (
                   <Route path="/products" element={
                     <StaffProtectedRoute>
                       <Products />
+                    </StaffProtectedRoute>
+                  } />
+                  <Route path="/gallery" element={
+                    <StaffProtectedRoute>
+                      <Gallery />
                     </StaffProtectedRoute>
                   } />
                   <Route path="/orders" element={

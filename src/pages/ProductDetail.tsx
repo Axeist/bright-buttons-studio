@@ -13,6 +13,14 @@ import { toast } from "@/hooks/use-toast";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { ProductReviews } from "@/components/ProductReviews";
 
+interface ProductPhoto {
+  id: string;
+  product_id: string;
+  image_url: string;
+  display_order: number;
+  is_primary: boolean;
+}
+
 interface Product {
   id: string;
   name: string;
@@ -30,6 +38,7 @@ interface Product {
     quantity: number;
     reserved_quantity: number;
   }>;
+  product_photos?: ProductPhoto[];
 }
 
 const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
@@ -66,6 +75,13 @@ const ProductDetail = () => {
           inventory (
             quantity,
             reserved_quantity
+          ),
+          product_photos (
+            id,
+            product_id,
+            image_url,
+            display_order,
+            is_primary
           )
         `)
         .eq("id", id)
@@ -238,10 +254,16 @@ const ProductDetail = () => {
     );
   }
 
-  const productImages = [
-    product.image_url,
-    product.image_url, // In real app, you'd have multiple images
-  ].filter(Boolean);
+  // Get product images from product_photos, fallback to image_url
+  const productImages = (() => {
+    if (product.product_photos && product.product_photos.length > 0) {
+      // Sort by display_order and return image URLs
+      const sortedPhotos = [...product.product_photos].sort((a, b) => a.display_order - b.display_order);
+      return sortedPhotos.map(photo => photo.image_url);
+    }
+    // Fallback to main image_url if no photos
+    return product.image_url ? [product.image_url] : [];
+  })();
 
   return (
     <PublicLayout>

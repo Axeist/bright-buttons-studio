@@ -15,7 +15,8 @@ import {
   UserCog,
   Sparkles,
   Leaf,
-  HandHeart
+  HandHeart,
+  Image as ImageIcon
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ const sidebarItems = [
   { name: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
   { name: "POS", icon: ShoppingCart, href: "/pos" },
   { name: "Products", icon: Package, href: "/products" },
+  { name: "Gallery", icon: ImageIcon, href: "/gallery" },
   { name: "Orders", icon: ClipboardList, href: "/orders" },
   { name: "Custom Orders", icon: HandHeart, href: "/custom-orders" },
   { name: "Customers", icon: Users, href: "/customers" },

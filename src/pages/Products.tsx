@@ -40,6 +40,14 @@ const fabrics = [
   'Tussar'
 ];
 
+interface ProductPhoto {
+  id: string;
+  product_id: string;
+  image_url: string;
+  display_order: number;
+  is_primary: boolean;
+}
+
 interface Product {
   id: string;
   name: string;
@@ -55,6 +63,7 @@ interface Product {
     quantity: number;
     reserved_quantity: number;
   };
+  product_photos?: ProductPhoto[];
 }
 
 const Products = () => {
@@ -80,6 +89,8 @@ const Products = () => {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const imageInputEditRef = useRef<HTMLInputElement>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [productPhotos, setProductPhotos] = useState<Array<{ file?: File; url: string; isPrimary?: boolean }>>([]);
+  const [editingProductPhotos, setEditingProductPhotos] = useState<Array<{ id?: string; file?: File; url: string; isPrimary?: boolean }>>([]);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -110,6 +121,13 @@ const Products = () => {
           inventory (
             quantity,
             reserved_quantity
+          ),
+          product_photos (
+            id,
+            product_id,
+            image_url,
+            display_order,
+            is_primary
           )
         `)
         .order("created_at", { ascending: false });
@@ -329,6 +347,11 @@ const Products = () => {
         }
       }
 
+      // Upload product photos if any
+      if (productPhotos.length > 0) {
+        await uploadProductPhotos(product.id, productPhotos);
+      }
+
       toast({
         title: "Success",
         description: "Product added successfully",
@@ -421,6 +444,66 @@ const Products = () => {
         }
       }
 
+      // Handle product photos updates
+      // Delete existing photos that were removed
+      const existingPhotoIds = editingProductPhotos
+        .filter(p => p.id)
+        .map(p => p.id as string);
+      
+      const { data: existingPhotos } = await supabase
+        .from("product_photos")
+        .select("id")
+        .eq("product_id", editingProduct.id);
+
+      if (existingPhotos) {
+        const photosToDelete = existingPhotos
+          .filter(p => !existingPhotoIds.includes(p.id))
+          .map(p => p.id);
+        
+        if (photosToDelete.length > 0) {
+          await supabase
+            .from("product_photos")
+            .delete()
+            .in("id", photosToDelete);
+        }
+      }
+
+      // Upload new photos and update existing ones
+      for (let i = 0; i < editingProductPhotos.length; i++) {
+        const photo = editingProductPhotos[i];
+        let imageUrl = photo.url;
+
+        if (photo.file) {
+          // Upload new file
+          const uploadedUrl = await uploadImageFromFile(photo.file);
+          if (uploadedUrl) {
+            imageUrl = uploadedUrl;
+          }
+        }
+
+        if (photo.id) {
+          // Update existing photo
+          await supabase
+            .from("product_photos")
+            .update({
+              image_url: imageUrl,
+              display_order: i,
+              is_primary: photo.isPrimary || false,
+            })
+            .eq("id", photo.id);
+        } else {
+          // Insert new photo
+          await supabase
+            .from("product_photos")
+            .insert({
+              product_id: editingProduct.id,
+              image_url: imageUrl,
+              display_order: i,
+              is_primary: photo.isPrimary || false,
+            });
+        }
+      }
+
       toast({
         title: "Success",
         description: "Product updated successfully",
@@ -465,6 +548,110 @@ const Products = () => {
     }
   };
 
+  const handleAddPhoto = (file: File) => {
+    const url = URL.createObjectURL(file);
+    setProductPhotos([...productPhotos, { file, url, isPrimary: productPhotos.length === 0 }]);
+  };
+
+  const handleRemovePhoto = (index: number) => {
+    const newPhotos = productPhotos.filter((_, i) => i !== index);
+    if (newPhotos.length > 0 && productPhotos[index].isPrimary) {
+      newPhotos[0].isPrimary = true;
+    }
+    setProductPhotos(newPhotos);
+  };
+
+  const handleSetPrimaryPhoto = (index: number) => {
+    setProductPhotos(productPhotos.map((photo, i) => ({
+      ...photo,
+      isPrimary: i === index
+    })));
+  };
+
+  const handleAddEditPhoto = (file: File) => {
+    const url = URL.createObjectURL(file);
+    setEditingProductPhotos([...editingProductPhotos, { file, url, isPrimary: editingProductPhotos.length === 0 }]);
+  };
+
+  const handleRemoveEditPhoto = (index: number) => {
+    const newPhotos = editingProductPhotos.filter((_, i) => i !== index);
+    if (newPhotos.length > 0 && editingProductPhotos[index].isPrimary) {
+      newPhotos[0].isPrimary = true;
+    }
+    setEditingProductPhotos(newPhotos);
+  };
+
+  const handleSetPrimaryEditPhoto = (index: number) => {
+    setEditingProductPhotos(editingProductPhotos.map((photo, i) => ({
+      ...photo,
+      isPrimary: i === index
+    })));
+  };
+
+  const uploadProductPhotos = async (productId: string, photos: Array<{ file?: File; url: string; isPrimary?: boolean }>): Promise<void> => {
+    const uploadPromises = photos.map(async (photo, index) => {
+      let imageUrl = photo.url;
+      
+      // If it's a file, upload it
+      if (photo.file) {
+        const uploadedUrl = await uploadImageFromFile(photo.file);
+        if (uploadedUrl) {
+          imageUrl = uploadedUrl;
+        } else {
+          return null;
+        }
+      }
+
+      // Save to product_photos table
+      const { error } = await supabase
+        .from("product_photos")
+        .insert({
+          product_id: productId,
+          image_url: imageUrl,
+          display_order: index,
+          is_primary: photo.isPrimary || false,
+        });
+
+      if (error) throw error;
+      return imageUrl;
+    });
+
+    await Promise.all(uploadPromises);
+  };
+
+  const uploadImageFromFile = async (file: File): Promise<string | null> => {
+    setImageUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `${user?.id || 'anonymous'}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('product-images')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error: any) {
+      toast({
+        title: "Upload Failed",
+        description: error.message || "Failed to upload image",
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setImageUploading(false);
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       name: "",
@@ -483,6 +670,8 @@ const Products = () => {
     });
     setImageFile(null);
     setImagePreview(null);
+    setProductPhotos([]);
+    setEditingProductPhotos([]);
     if (imageInputRef.current) {
       imageInputRef.current.value = '';
     }
@@ -760,6 +949,19 @@ const Products = () => {
     });
     setImageFile(null);
     setImagePreview(product.image_url || null);
+    
+    // Load existing product photos
+    if (product.product_photos && product.product_photos.length > 0) {
+      const sortedPhotos = [...product.product_photos].sort((a, b) => a.display_order - b.display_order);
+      setEditingProductPhotos(sortedPhotos.map(photo => ({
+        id: photo.id,
+        url: photo.image_url,
+        isPrimary: photo.is_primary,
+      })));
+    } else {
+      setEditingProductPhotos([]);
+    }
+    
     setIsEditModalOpen(true);
   };
 
@@ -1170,58 +1372,81 @@ const Products = () => {
             </div>
 
             <div>
-              <Label>Product Image</Label>
+              <Label>Product Photos</Label>
               <div className="space-y-3">
-                {imagePreview && (
-                  <div className="relative w-full h-48 rounded-xl overflow-hidden border border-primary-200 dark:border-primary-800">
-                    <img
-                      src={imagePreview}
-                      alt="Preview"
-                      className="w-full h-full object-cover"
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-2 right-2"
-                      onClick={() => {
-                        setImageFile(null);
-                        setImagePreview(null);
-                        setFormData({ ...formData, image_url: "" });
-                        if (imageInputRef.current) {
-                          imageInputRef.current.value = '';
-                        }
-                      }}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
+                {productPhotos.length > 0 && (
+                  <div className="grid grid-cols-3 gap-3">
+                    {productPhotos.map((photo, index) => (
+                      <div key={index} className="relative group">
+                        <div className="relative aspect-square rounded-xl overflow-hidden border-2 border-primary-200 dark:border-primary-800">
+                          <img
+                            src={photo.url}
+                            alt={`Photo ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                          {photo.isPrimary && (
+                            <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded">
+                              Primary
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => handleSetPrimaryPhoto(index)}
+                              disabled={photo.isPrimary}
+                            >
+                              Set Primary
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleRemovePhoto(index)}
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
                 <div className="border-2 border-dashed border-primary-200 dark:border-primary-800 rounded-xl p-6">
                   <div className="flex flex-col items-center justify-center gap-2">
                     <ImageIcon className="w-8 h-8 text-muted-foreground" />
-                    <Label htmlFor="product-image" className="cursor-pointer">
+                    <Label htmlFor="product-photos" className="cursor-pointer">
                       <span className="text-primary font-semibold hover:underline">
-                        {imagePreview ? "Change Image" : "Click to upload image"}
+                        Click to add photos
                       </span>
                       <input
                         ref={imageInputRef}
-                        id="product-image"
+                        id="product-photos"
                         type="file"
                         accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
-                        onChange={handleImageSelect}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            handleAddPhoto(file);
+                            if (imageInputRef.current) {
+                              imageInputRef.current.value = '';
+                            }
+                          }
+                        }}
                         className="hidden"
+                        multiple
                       />
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      PNG, JPG, WebP up to 5MB
+                      PNG, JPG, WebP up to 5MB each. You can add multiple photos.
                     </p>
                   </div>
                 </div>
                 {imageUploading && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Uploading image...
+                    Uploading photos...
                   </div>
                 )}
               </div>
@@ -1430,58 +1655,81 @@ const Products = () => {
             </div>
 
             <div>
-              <Label>Product Image</Label>
+              <Label>Product Photos</Label>
               <div className="space-y-3">
-                {imagePreview && (
-                  <div className="relative w-full h-48 rounded-xl overflow-hidden border border-primary-200 dark:border-primary-800">
-                    <img
-                      src={imagePreview}
-                      alt="Preview"
-                      className="w-full h-full object-cover"
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-2 right-2"
-                      onClick={() => {
-                        setImageFile(null);
-                        setImagePreview(editingProduct?.image_url || null);
-                        setFormData({ ...formData, image_url: editingProduct?.image_url || "" });
-                        if (imageInputEditRef.current) {
-                          imageInputEditRef.current.value = '';
-                        }
-                      }}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
+                {editingProductPhotos.length > 0 && (
+                  <div className="grid grid-cols-3 gap-3">
+                    {editingProductPhotos.map((photo, index) => (
+                      <div key={index} className="relative group">
+                        <div className="relative aspect-square rounded-xl overflow-hidden border-2 border-primary-200 dark:border-primary-800">
+                          <img
+                            src={photo.url}
+                            alt={`Photo ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                          {photo.isPrimary && (
+                            <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded">
+                              Primary
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => handleSetPrimaryEditPhoto(index)}
+                              disabled={photo.isPrimary}
+                            >
+                              Set Primary
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleRemoveEditPhoto(index)}
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
                 <div className="border-2 border-dashed border-primary-200 dark:border-primary-800 rounded-xl p-6">
                   <div className="flex flex-col items-center justify-center gap-2">
                     <ImageIcon className="w-8 h-8 text-muted-foreground" />
-                    <Label htmlFor="product-image-edit" className="cursor-pointer">
+                    <Label htmlFor="product-photos-edit" className="cursor-pointer">
                       <span className="text-primary font-semibold hover:underline">
-                        {imagePreview ? "Change Image" : "Click to upload image"}
+                        Click to add photos
                       </span>
                       <input
                         ref={imageInputEditRef}
-                        id="product-image-edit"
+                        id="product-photos-edit"
                         type="file"
                         accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
-                        onChange={handleImageSelect}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            handleAddEditPhoto(file);
+                            if (imageInputEditRef.current) {
+                              imageInputEditRef.current.value = '';
+                            }
+                          }
+                        }}
                         className="hidden"
+                        multiple
                       />
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      PNG, JPG, WebP up to 5MB
+                      PNG, JPG, WebP up to 5MB each. You can add multiple photos.
                     </p>
                   </div>
                 </div>
                 {imageUploading && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Uploading image...
+                    Uploading photos...
                   </div>
                 )}
               </div>
