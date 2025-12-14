@@ -269,9 +269,6 @@ const Checkout = () => {
       const { data: orderNumberData } = await supabase.rpc("generate_order_number");
       const orderNumber = orderNumberData || `ORD-${Date.now()}`;
 
-      const selectedAddr = addresses.find((a) => a.id === selectedAddress);
-      if (!selectedAddr) throw new Error("Address not found");
-
       const subtotal = getTotalPrice();
       const taxRate = 0.18; // 18% GST
       const taxAmount = subtotal * taxRate;
@@ -534,8 +531,6 @@ const Checkout = () => {
                     ))}
                   </div>
                 </RadioGroup>
-
-                    </RadioGroup>
                 ) : (
                   <div className="text-center py-4">
                     {!showAddressForm && (

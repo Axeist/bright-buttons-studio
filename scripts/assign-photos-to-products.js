@@ -9,14 +9,40 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load environment variables from .env file if it exists
+// Load environment variables from .env file
+function loadEnvFile() {
+  try {
+    const envPath = path.join(__dirname, '..', '.env');
+    if (fs.existsSync(envPath)) {
+      const envContent = fs.readFileSync(envPath, 'utf-8');
+      const lines = envContent.split('\n');
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed && !trimmed.startsWith('#')) {
+          const [key, ...valueParts] = trimmed.split('=');
+          if (key && valueParts.length > 0) {
+            const value = valueParts.join('=').replace(/^["']|["']$/g, '');
+            process.env[key.trim()] = value.trim();
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.warn('Could not load .env file:', error.message);
+  }
+}
+
+loadEnvFile();
+
+// Load environment variables
 const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || '';
+const supabaseKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
 const photosPath = 'D:\\Bb';
 
 if (!supabaseUrl || !supabaseKey) {
-  console.error('Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables');
+  console.error('Please set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY environment variables');
   console.error('You can create a .env file in the root directory with these values');
+  console.error('Or set them as environment variables before running the script');
   process.exit(1);
 }
 
