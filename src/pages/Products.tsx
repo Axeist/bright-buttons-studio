@@ -1481,10 +1481,7 @@ const Products = () => {
                   <Button
                     type="button"
                     variant={photoSelectionMode === "gallery" ? "default" : "outline"}
-                    onClick={() => {
-                      setPhotoSelectionMode("gallery");
-                      openGalleryModal(false);
-                    }}
+                    onClick={() => setPhotoSelectionMode("gallery")}
                     className="flex-1"
                   >
                     <ImageIcon className="w-4 h-4 mr-2" />
@@ -1823,10 +1820,7 @@ const Products = () => {
                   <Button
                     type="button"
                     variant={photoSelectionMode === "gallery" ? "default" : "outline"}
-                    onClick={() => {
-                      setPhotoSelectionMode("gallery");
-                      openGalleryModal(true);
-                    }}
+                    onClick={() => setPhotoSelectionMode("gallery")}
                     className="flex-1"
                   >
                     <ImageIcon className="w-4 h-4 mr-2" />
