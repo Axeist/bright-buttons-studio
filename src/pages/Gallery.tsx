@@ -48,8 +48,11 @@ const Gallery = () => {
   const [editingPhoto, setEditingPhoto] = useState<GalleryPhoto | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [bulkImageFiles, setBulkImageFiles] = useState<Array<{ file: File; preview: string }>>([]);
   const [imageUploading, setImageUploading] = useState(false);
+  const [bulkUploading, setBulkUploading] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const bulkImageInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -97,10 +100,10 @@ const Gallery = () => {
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > 50 * 1024 * 1024) {
       toast({
         title: "File Too Large",
-        description: "Image must be less than 5MB",
+        description: "Image must be less than 50MB",
         variant: "destructive",
       });
       return;
@@ -112,6 +115,52 @@ const Gallery = () => {
       setImagePreview(reader.result as string);
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleBulkImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    const fileArray = Array.from(files);
+    const validFiles: Array<{ file: File; preview: string }> = [];
+    const invalidFiles: string[] = [];
+    let processedCount = 0;
+    const totalValidFiles = fileArray.filter(f => 
+      f.type.startsWith('image/') && f.size <= 50 * 1024 * 1024
+    ).length;
+
+    fileArray.forEach((file) => {
+      if (!file.type.startsWith('image/')) {
+        invalidFiles.push(`${file.name} (not an image)`);
+        return;
+      }
+
+      if (file.size > 50 * 1024 * 1024) {
+        invalidFiles.push(`${file.name} (exceeds 50MB)`);
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        validFiles.push({
+          file,
+          preview: reader.result as string,
+        });
+        processedCount++;
+        if (processedCount === totalValidFiles) {
+          setBulkImageFiles((prev) => [...prev, ...validFiles]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    if (invalidFiles.length > 0) {
+      toast({
+        title: "Some Files Invalid",
+        description: `Skipped ${invalidFiles.length} invalid file(s): ${invalidFiles.slice(0, 3).join(', ')}${invalidFiles.length > 3 ? '...' : ''}`,
+        variant: "destructive",
+      });
+    }
   };
 
   const uploadImage = async (): Promise<string | null> => {
@@ -146,6 +195,54 @@ const Gallery = () => {
       return null;
     } finally {
       setImageUploading(false);
+    }
+  };
+
+  const uploadBulkImages = async (): Promise<string[]> => {
+    if (bulkImageFiles.length === 0) return [];
+
+    setBulkUploading(true);
+    const uploadedUrls: string[] = [];
+    const errors: string[] = [];
+
+    try {
+      for (let i = 0; i < bulkImageFiles.length; i++) {
+        const { file } = bulkImageFiles[i];
+        try {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${Date.now()}-${i}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+          const filePath = `gallery/${user?.id || 'anonymous'}/${fileName}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('product-images')
+            .upload(filePath, file, {
+              cacheControl: '3600',
+              upsert: false
+            });
+
+          if (uploadError) throw uploadError;
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('product-images')
+            .getPublicUrl(filePath);
+
+          uploadedUrls.push(publicUrl);
+        } catch (error: any) {
+          errors.push(`${file.name}: ${error.message || 'Upload failed'}`);
+        }
+      }
+
+      if (errors.length > 0) {
+        toast({
+          title: "Some Uploads Failed",
+          description: `${errors.length} file(s) failed to upload`,
+          variant: "destructive",
+        });
+      }
+
+      return uploadedUrls;
+    } finally {
+      setBulkUploading(false);
     }
   };
 
@@ -199,6 +296,63 @@ const Gallery = () => {
       toast({
         title: "Error",
         description: error.message || "Failed to add photo",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleBulkAddPhotos = async () => {
+    if (bulkImageFiles.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please select at least one image",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const imageUrls = await uploadBulkImages();
+      if (imageUrls.length === 0) return;
+
+      const tagsArray = formData.tags
+        .split(',')
+        .map(tag => tag.trim())
+        .filter(tag => tag.length > 0);
+
+      const maxOrder = photos.length > 0 
+        ? Math.max(...photos.map(p => p.display_order)) 
+        : 0;
+
+      const photosToInsert = imageUrls.map((imageUrl, index) => ({
+        image_url: imageUrl,
+        title: formData.title ? `${formData.title} ${index + 1 > 1 ? `(${index + 1})` : ''}`.trim() : null,
+        description: formData.description || null,
+        category: formData.category || null,
+        tags: tagsArray.length > 0 ? tagsArray : null,
+        is_featured: formData.is_featured && index === 0, // Only first photo is featured if checked
+        display_order: maxOrder + index + 1,
+        created_by: user?.id || null,
+      }));
+
+      const { error } = await supabase
+        .from("gallery_photos")
+        .insert(photosToInsert);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `${imageUrls.length} photo(s) added to gallery`,
+      });
+
+      resetBulkForm();
+      setIsAddModalOpen(false);
+      fetchPhotos();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add photos",
         variant: "destructive",
       });
     }
@@ -327,6 +481,24 @@ const Gallery = () => {
     }
   };
 
+  const resetBulkForm = () => {
+    setFormData({
+      title: "",
+      description: "",
+      category: "",
+      tags: "",
+      is_featured: false,
+    });
+    setBulkImageFiles([]);
+    if (bulkImageInputRef.current) {
+      bulkImageInputRef.current.value = '';
+    }
+  };
+
+  const removeBulkImage = (index: number) => {
+    setBulkImageFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const filteredPhotos = photos.filter((photo) => {
     const matchesSearch = 
       photo.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -382,7 +554,20 @@ const Gallery = () => {
           >
             {viewMode === "grid" ? <List className="w-4 h-4" /> : <Grid3x3 className="w-4 h-4" />}
           </Button>
-          <Button onClick={() => setIsAddModalOpen(true)}>
+          <Button 
+            variant="outline"
+            onClick={() => {
+              setIsAddModalOpen(true);
+              setBulkImageFiles([]);
+            }}
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            Bulk Upload
+          </Button>
+          <Button onClick={() => {
+            setIsAddModalOpen(true);
+            setBulkImageFiles([]);
+          }}>
             <Plus className="w-4 h-4 mr-2" />
             Add Photo
           </Button>
@@ -486,17 +671,24 @@ const Gallery = () => {
       )}
 
       {/* Add Photo Modal */}
-      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-        <DialogContent className="max-w-2xl">
+      <Dialog open={isAddModalOpen} onOpenChange={(open) => {
+        setIsAddModalOpen(open);
+        if (!open) {
+          resetForm();
+          resetBulkForm();
+        }
+      }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Add Photo to Gallery</DialogTitle>
+            <DialogTitle>Add Photo(s) to Gallery</DialogTitle>
             <DialogDescription>
-              Upload a new photo to the gallery
+              Upload a single photo or multiple photos to the gallery (Max 50MB per image)
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            {/* Single Upload Section */}
             <div>
-              <Label>Image</Label>
+              <Label>Single Photo Upload</Label>
               <div className="mt-2">
                 <input
                   ref={imageInputRef}
@@ -534,7 +726,78 @@ const Gallery = () => {
                     className="w-full"
                   >
                     <Upload className="w-4 h-4 mr-2" />
-                    Select Image
+                    Select Single Image
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">Or</span>
+              </div>
+            </div>
+
+            {/* Bulk Upload Section */}
+            <div>
+              <Label>Bulk Photo Upload</Label>
+              <div className="mt-2">
+                <input
+                  ref={bulkImageInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleBulkImageSelect}
+                  className="hidden"
+                />
+                {bulkImageFiles.length > 0 ? (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-64 overflow-y-auto p-2 border rounded-lg">
+                      {bulkImageFiles.map((item, index) => (
+                        <div key={index} className="relative group">
+                          <img
+                            src={item.preview}
+                            alt={`Preview ${index + 1}`}
+                            className="w-full h-24 object-cover rounded-lg"
+                          />
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => removeBulkImage(index)}
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                          <div className="absolute bottom-1 left-1 bg-black/50 text-white text-xs px-1 rounded">
+                            {item.file.name.length > 15 ? item.file.name.substring(0, 15) + '...' : item.file.name}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <Button
+                      variant="outline"
+                      onClick={() => bulkImageInputRef.current?.click()}
+                      className="w-full"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add More Images
+                    </Button>
+                    <p className="text-xs text-muted-foreground text-center">
+                      {bulkImageFiles.length} image(s) selected
+                    </p>
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline"
+                    onClick={() => bulkImageInputRef.current?.click()}
+                    className="w-full"
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Select Multiple Images
                   </Button>
                 )}
               </div>
@@ -595,23 +858,40 @@ const Gallery = () => {
                 onClick={() => {
                   setIsAddModalOpen(false);
                   resetForm();
+                  resetBulkForm();
                 }}
               >
                 Cancel
               </Button>
-              <Button
-                onClick={handleAddPhoto}
-                disabled={imageUploading || !imageFile}
-              >
-                {imageUploading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Uploading...
-                  </>
-                ) : (
-                  "Add Photo"
-                )}
-              </Button>
+              {bulkImageFiles.length > 0 ? (
+                <Button
+                  onClick={handleBulkAddPhotos}
+                  disabled={bulkUploading || bulkImageFiles.length === 0}
+                >
+                  {bulkUploading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Uploading {bulkImageFiles.length} photos...
+                    </>
+                  ) : (
+                    `Add ${bulkImageFiles.length} Photo(s)`
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleAddPhoto}
+                  disabled={imageUploading || !imageFile}
+                >
+                  {imageUploading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    "Add Photo"
+                  )}
+                </Button>
+              )}
             </div>
           </div>
         </DialogContent>
