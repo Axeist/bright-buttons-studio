@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useCart } from "@/hooks/useCart";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -69,7 +69,7 @@ const Checkout = () => {
     }
   }, [customer, customerLoading, items, cartLoading]);
 
-  const fetchAddresses = async () => {
+  const fetchAddresses = async (skipAutoSelect = false) => {
     if (!customer) return;
 
     try {
@@ -81,12 +81,17 @@ const Checkout = () => {
 
       if (error) throw error;
       setAddresses(data || []);
-      if (data && data.length > 0) {
+      if (!skipAutoSelect && data && data.length > 0) {
         const defaultAddress = data.find((a) => a.is_default) || data[0];
         setSelectedAddress(defaultAddress.id);
       }
     } catch (error: any) {
       console.error("Error fetching addresses:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch addresses",
+        variant: "destructive",
+      });
     }
   };
 
@@ -131,7 +136,10 @@ const Checkout = () => {
           .single();
 
         if (error) throw error;
-        savedAddressId = newAddress?.id || null;
+        if (!newAddress) {
+          throw new Error("Failed to create address - no data returned");
+        }
+        savedAddressId = newAddress.id;
         toast({
           title: "Success",
           description: "Address added",
@@ -154,7 +162,7 @@ const Checkout = () => {
       });
       
       // Refresh addresses and auto-select the saved address
-      await fetchAddresses();
+      await fetchAddresses(true); // Skip auto-select since we'll set it manually
       if (savedAddressId) {
         setSelectedAddress(savedAddressId);
       }
@@ -1123,6 +1131,9 @@ const Checkout = () => {
             <DialogTitle>
               {editingAddress ? "Edit Address" : "Add New Address"}
             </DialogTitle>
+            <DialogDescription>
+              {editingAddress ? "Update your delivery address details" : "Enter your delivery address details"}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-3 gap-2">
