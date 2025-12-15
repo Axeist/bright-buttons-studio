@@ -1,25 +1,7 @@
 import { motion } from "framer-motion";
 import { useInView } from "framer-motion";
 import { useRef } from "react";
-import { Leaf, Fingerprint, Palette, Sparkles } from "lucide-react";
-
-const valueProps = [
-  {
-    icon: Fingerprint,
-    title: "Truly One-of-a-Kind",
-    description: "No two pieces are ever identical – each carries nature's unique signature."
-  },
-  {
-    icon: Palette,
-    title: "Personalized Designs",
-    description: "Custom creations tailored to your style, occasion, and preferences."
-  },
-  {
-    icon: Leaf,
-    title: "Nature-Friendly Fashion",
-    description: "Sustainable practices and natural dyes that respect our planet."
-  }
-];
+import { Sparkles } from "lucide-react";
 
 export const StorySection = () => {
   const ref = useRef(null);
@@ -136,30 +118,6 @@ export const StorySection = () => {
             ))}
           </motion.div>
         </div>
-
-        {/* Value Props */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          className="grid md:grid-cols-3 gap-6 mt-16"
-        >
-          {valueProps.map((prop, index) => (
-            <motion.div
-              key={prop.title}
-              initial={{ opacity: 0, y: 20 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.5, delay: 0.5 + index * 0.1 }}
-              className="glass-card p-6 hover-lift"
-            >
-              <div className="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center mb-4">
-                <prop.icon className="w-6 h-6 text-primary-600 dark:text-primary-400" />
-              </div>
-              <h3 className="font-semibold text-foreground mb-2">{prop.title}</h3>
-              <p className="text-sm text-muted-foreground">{prop.description}</p>
-            </motion.div>
-          ))}
-        </motion.div>
       </div>
     </section>
   );
