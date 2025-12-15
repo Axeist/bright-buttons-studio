@@ -12,18 +12,26 @@ export interface LocationData {
  */
 export const checkPincodeServiceable = async (pincode: string): Promise<boolean> => {
   try {
+    // Normalize pincode: trim whitespace and ensure it's 6 digits
+    const normalizedPincode = pincode.toString().trim().replace(/\D/g, "").slice(0, 6);
+    
+    if (normalizedPincode.length !== 6) {
+      console.error('Invalid pincode format:', pincode);
+      return false;
+    }
+
     const { data, error } = await supabase.rpc('is_pincode_serviceable', {
-      p_pincode: pincode
+      p_pincode: normalizedPincode
     });
     
     if (error) {
-      console.error('Error checking pincode:', error);
+      console.error('Error checking pincode:', error, 'Pincode:', normalizedPincode);
       return false;
     }
     
     return data === true;
   } catch (error) {
-    console.error('Error checking pincode:', error);
+    console.error('Error checking pincode:', error, 'Pincode:', pincode);
     return false;
   }
 };

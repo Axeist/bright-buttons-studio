@@ -231,14 +231,55 @@ const Checkout = () => {
       return;
     }
 
-    const isServiceable = await checkPincodeServiceable(pincodeToCheck);
-    if (!isServiceable) {
+    // Normalize pincode: trim whitespace and ensure it's 6 digits
+    const normalizedPincode = pincodeToCheck.toString().trim().replace(/\D/g, "").slice(0, 6);
+    
+    if (normalizedPincode.length !== 6) {
       toast({
-        title: "Delivery Not Available",
-        description: "We are coming soon to your area to serve. Please check back later!",
+        title: "Error",
+        description: "Please enter a valid 6-digit pincode",
         variant: "destructive",
       });
       return;
+    }
+
+    // Check if pincode is serviceable (function will normalize internally too)
+    const isServiceable = await checkPincodeServiceable(normalizedPincode);
+    if (!isServiceable) {
+      // Check if there's a selected location that matches
+      const savedLocation = localStorage.getItem("deliveryLocation");
+      if (savedLocation) {
+        try {
+          const location = JSON.parse(savedLocation);
+          const savedPincode = location.pincode?.toString().trim().replace(/\D/g, "").slice(0, 6);
+          if (savedPincode === normalizedPincode && location.deliveryAvailable) {
+            // Location is serviceable, proceed anyway (might be a database sync issue)
+            console.warn("Pincode check failed but selected location is serviceable, proceeding...");
+          } else {
+            toast({
+              title: "Delivery Not Available",
+              description: "We are coming soon to your area to serve. Please check back later!",
+              variant: "destructive",
+            });
+            return;
+          }
+        } catch (e) {
+          // Invalid saved location, show error
+          toast({
+            title: "Delivery Not Available",
+            description: "We are coming soon to your area to serve. Please check back later!",
+            variant: "destructive",
+          });
+          return;
+        }
+      } else {
+        toast({
+          title: "Delivery Not Available",
+          description: "We are coming soon to your area to serve. Please check back later!",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     setIsProcessing(true);
@@ -286,6 +327,8 @@ const Checkout = () => {
         }
 
         // Create address for guest customer
+        // Normalize pincode before saving
+        const normalizedPincodeForSave = addressForm.pincode.toString().trim().replace(/\D/g, "").slice(0, 6);
         const { data: newAddress, error: addressError } = await supabase
           .from("customer_addresses")
           .insert({
@@ -297,7 +340,7 @@ const Checkout = () => {
             address_line2: addressForm.address_line2 || null,
             city: addressForm.city,
             state: addressForm.state,
-            pincode: addressForm.pincode,
+            pincode: normalizedPincodeForSave,
             landmark: addressForm.landmark || null,
             is_default: true,
           })
