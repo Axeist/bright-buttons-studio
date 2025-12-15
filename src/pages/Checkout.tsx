@@ -17,6 +17,7 @@ import { Link } from "react-router-dom";
 import { LocationSelector } from "@/components/LocationSelector";
 import { CheckoutSteps, OrderSummary, LoadingState } from "@/components/ecommerce";
 import { getProductImageUrl } from "@/lib/utils";
+import { checkPincodeServiceable } from "@/lib/pincodeUtils";
 
 interface Address {
   id: string;
@@ -191,6 +192,30 @@ const Checkout = () => {
       toast({
         title: "Error",
         description: "Please select a delivery address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate pincode is serviceable
+    const pincodeToCheck = selectedAddress 
+      ? addresses.find(a => a.id === selectedAddress)?.pincode 
+      : addressForm.pincode;
+
+    if (!pincodeToCheck) {
+      toast({
+        title: "Error",
+        description: "Pincode is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const isServiceable = await checkPincodeServiceable(pincodeToCheck);
+    if (!isServiceable) {
+      toast({
+        title: "Delivery Not Available",
+        description: "We are coming soon to your area to serve. Please check back later!",
         variant: "destructive",
       });
       return;

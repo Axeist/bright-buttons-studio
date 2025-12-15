@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2, Plus, Edit, Trash2, Tag } from "lucide-react";
+import { Loader2, Plus, Edit, Trash2, Tag, MapPin } from "lucide-react";
 
 interface Coupon {
   id: string;
@@ -29,6 +29,14 @@ interface Coupon {
   expires_at: string | null;
 }
 
+interface ServiceablePincode {
+  id: string;
+  pincode: string;
+  city: string;
+  state: string;
+  is_active: boolean;
+}
+
 const Settings = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -36,6 +44,15 @@ const Settings = () => {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
   const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
+  const [serviceablePincodes, setServiceablePincodes] = useState<ServiceablePincode[]>([]);
+  const [isPincodeModalOpen, setIsPincodeModalOpen] = useState(false);
+  const [editingPincode, setEditingPincode] = useState<ServiceablePincode | null>(null);
+  const [pincodeForm, setPincodeForm] = useState({
+    pincode: "",
+    city: "",
+    state: "",
+    is_active: true,
+  });
   const [couponForm, setCouponForm] = useState({
     code: "",
     name: "",
@@ -67,6 +84,7 @@ const Settings = () => {
   useEffect(() => {
     fetchSettings();
     fetchCoupons();
+    fetchServiceablePincodes();
   }, []);
 
   const fetchSettings = async () => {
@@ -312,6 +330,132 @@ const Settings = () => {
     });
   };
 
+  const fetchServiceablePincodes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("serviceable_pincodes")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setServiceablePincodes(data || []);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to load serviceable pincodes",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSavePincode = async () => {
+    if (!pincodeForm.pincode.trim() || pincodeForm.pincode.length !== 6) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid 6-digit pincode",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!pincodeForm.city.trim() || !pincodeForm.state.trim()) {
+      toast({
+        title: "Error",
+        description: "City and State are required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const pincodeData = {
+        pincode: pincodeForm.pincode.trim(),
+        city: pincodeForm.city.trim(),
+        state: pincodeForm.state.trim(),
+        is_active: pincodeForm.is_active,
+        created_by: user?.id || null,
+      };
+
+      if (editingPincode) {
+        const { error } = await supabase
+          .from("serviceable_pincodes")
+          .update(pincodeData)
+          .eq("id", editingPincode.id);
+
+        if (error) throw error;
+        toast({
+          title: "Success",
+          description: "Serviceable pincode updated successfully",
+        });
+      } else {
+        const { error } = await supabase
+          .from("serviceable_pincodes")
+          .insert(pincodeData);
+
+        if (error) throw error;
+        toast({
+          title: "Success",
+          description: "Serviceable pincode added successfully",
+        });
+      }
+
+      setIsPincodeModalOpen(false);
+      resetPincodeForm();
+      fetchServiceablePincodes();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save serviceable pincode",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeletePincode = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this serviceable pincode?")) return;
+
+    try {
+      const { error } = await supabase
+        .from("serviceable_pincodes")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+      toast({
+        title: "Success",
+        description: "Serviceable pincode deleted successfully",
+      });
+      fetchServiceablePincodes();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete serviceable pincode",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const openEditPincode = (pincode: ServiceablePincode) => {
+    setEditingPincode(pincode);
+    setPincodeForm({
+      pincode: pincode.pincode,
+      city: pincode.city,
+      state: pincode.state,
+      is_active: pincode.is_active,
+    });
+    setIsPincodeModalOpen(true);
+  };
+
+  const resetPincodeForm = () => {
+    setEditingPincode(null);
+    setPincodeForm({
+      pincode: "",
+      city: "",
+      state: "",
+      is_active: true,
+    });
+  };
+
   if (loading) {
     return (
       <AdminLayout title="Settings">
@@ -463,6 +607,79 @@ const Settings = () => {
               className="rounded-xl mt-1.5"
             />
           </div>
+        </section>
+
+        {/* Serviceable Pincodes Management */}
+        <section className="bg-card rounded-xl p-6 shadow-soft">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-primary" />
+              Serviceable Pincodes
+            </h2>
+            <Button
+              onClick={() => {
+                resetPincodeForm();
+                setIsPincodeModalOpen(true);
+              }}
+              className="rounded-xl"
+              size="sm"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Pincode
+            </Button>
+          </div>
+          
+          <p className="text-sm text-muted-foreground mb-4">
+            Manage the list of pincodes where delivery is available. Customers will only be able to place orders for serviceable pincodes.
+          </p>
+
+          {serviceablePincodes.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No serviceable pincodes added yet</p>
+              <p className="text-sm mt-1">Click "Add Pincode" to add your first serviceable pincode</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {serviceablePincodes.map((pincode) => (
+                <div
+                  key={pincode.id}
+                  className="flex items-center justify-between p-4 bg-accent rounded-lg border border-border"
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-foreground">{pincode.pincode}</span>
+                      {!pincode.is_active && (
+                        <span className="px-2 py-0.5 text-xs rounded-full bg-muted text-muted-foreground">
+                          Inactive
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                      {pincode.city}, {pincode.state}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openEditPincode(pincode)}
+                      className="rounded-xl"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeletePincode(pincode.id)}
+                      className="rounded-xl text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
 
         {/* Coupon Management */}
@@ -733,6 +950,80 @@ const Settings = () => {
                 className="flex-1 rounded-xl"
               >
                 {editingCoupon ? "Update Coupon" : "Create Coupon"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Serviceable Pincode Modal */}
+      <Dialog open={isPincodeModalOpen} onOpenChange={(open) => {
+        setIsPincodeModalOpen(open);
+        if (!open) resetPincodeForm();
+      }}>
+        <DialogContent className="sm:max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>{editingPincode ? "Edit Serviceable Pincode" : "Add Serviceable Pincode"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div>
+              <Label>Pincode *</Label>
+              <Input
+                value={pincodeForm.pincode}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, "").slice(0, 6);
+                  setPincodeForm({ ...pincodeForm, pincode: value });
+                }}
+                placeholder="110001"
+                className="rounded-xl h-12"
+                maxLength={6}
+                disabled={!!editingPincode}
+              />
+              <p className="text-xs text-muted-foreground mt-1.5">
+                6-digit Indian pincode
+              </p>
+            </div>
+            <div>
+              <Label>City *</Label>
+              <Input
+                value={pincodeForm.city}
+                onChange={(e) => setPincodeForm({ ...pincodeForm, city: e.target.value })}
+                placeholder="New Delhi"
+                className="rounded-xl h-12"
+              />
+            </div>
+            <div>
+              <Label>State *</Label>
+              <Input
+                value={pincodeForm.state}
+                onChange={(e) => setPincodeForm({ ...pincodeForm, state: e.target.value })}
+                placeholder="Delhi"
+                className="rounded-xl h-12"
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label>Active</Label>
+              <Switch
+                checked={pincodeForm.is_active}
+                onCheckedChange={(checked) => setPincodeForm({ ...pincodeForm, is_active: checked })}
+              />
+            </div>
+            <div className="flex gap-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsPincodeModalOpen(false);
+                  resetPincodeForm();
+                }}
+                className="flex-1 rounded-xl"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSavePincode}
+                className="flex-1 rounded-xl"
+              >
+                {editingPincode ? "Update Pincode" : "Add Pincode"}
               </Button>
             </div>
           </div>

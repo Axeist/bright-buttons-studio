@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { MapPin, Search, X, Check } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { MapPin, Search, X, Check, Loader2, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -11,29 +11,16 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import {
+  getCurrentLocation,
+  getLocationFromCoordinates,
+  getPincodeDetails,
+  checkPincodeServiceable,
+  type LocationData,
+} from "@/lib/pincodeUtils";
 
-interface Location {
-  pincode: string;
-  city: string;
-  state: string;
-  deliveryAvailable: boolean;
-}
-
-// Common Indian cities and pincodes for quick selection
-const popularLocations: Location[] = [
-  { pincode: "110001", city: "New Delhi", state: "Delhi", deliveryAvailable: true },
-  { pincode: "400001", city: "Mumbai", state: "Maharashtra", deliveryAvailable: true },
-  { pincode: "560001", city: "Bangalore", state: "Karnataka", deliveryAvailable: true },
-  { pincode: "600001", city: "Chennai", state: "Tamil Nadu", deliveryAvailable: true },
-  { pincode: "700001", city: "Kolkata", state: "West Bengal", deliveryAvailable: true },
-  { pincode: "380001", city: "Ahmedabad", state: "Gujarat", deliveryAvailable: true },
-  { pincode: "500001", city: "Hyderabad", state: "Telangana", deliveryAvailable: true },
-  { pincode: "110092", city: "Gurgaon", state: "Haryana", deliveryAvailable: true },
-  { pincode: "411001", city: "Pune", state: "Maharashtra", deliveryAvailable: true },
-  { pincode: "302001", city: "Jaipur", state: "Rajasthan", deliveryAvailable: true },
-];
+interface Location extends LocationData {}
 
 export const LocationSelector = () => {
   const { user } = useAuth();
@@ -42,6 +29,52 @@ export const LocationSelector = () => {
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [recentLocations, setRecentLocations] = useState<Location[]>([]);
   const [searchResults, setSearchResults] = useState<Location[]>([]);
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+
+  const handleDetectLocation = useCallback(async () => {
+    setIsDetectingLocation(true);
+    try {
+      const position = await getCurrentLocation();
+      const location = await getLocationFromCoordinates(
+        position.coords.latitude,
+        position.coords.longitude
+      );
+
+      if (location) {
+        if (location.deliveryAvailable) {
+          handleSelectLocation(location);
+          toast({
+            title: "Location Detected",
+            description: `We found your location: ${location.city}, ${location.state} - ${location.pincode}`,
+          });
+        } else {
+          setSearchResults([location]);
+          toast({
+            title: "Location Detected",
+            description: `We found your location, but delivery is not available in this area yet.`,
+            variant: "destructive",
+          });
+        }
+        localStorage.setItem("hasAutoDetectedLocation", "true");
+      } else {
+        toast({
+          title: "Location Detection Failed",
+          description: "Could not determine your location. Please enter your pincode manually.",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error("Error detecting location:", error);
+      toast({
+        title: "Location Detection Failed",
+        description: error.message || "Please allow location access or enter your pincode manually.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDetectingLocation(false);
+    }
+  }, []);
 
   useEffect(() => {
     // Load saved location from localStorage
@@ -64,9 +97,15 @@ export const LocationSelector = () => {
         // Invalid saved data
       }
     }
-  }, []);
 
-  const handlePincodeSearch = () => {
+    // Auto-detect location when component mounts (only once)
+    const hasAutoDetected = localStorage.getItem("hasAutoDetectedLocation");
+    if (!hasAutoDetected && !saved) {
+      handleDetectLocation();
+    }
+  }, [handleDetectLocation]);
+
+  const handlePincodeSearch = async () => {
     if (!pincode || pincode.length !== 6) {
       toast({
         title: "Invalid Pincode",
@@ -76,27 +115,54 @@ export const LocationSelector = () => {
       return;
     }
 
-    // Simulate pincode validation (in real app, use an API)
-    const found = popularLocations.find((loc) => loc.pincode === pincode);
-    if (found) {
-      setSearchResults([found]);
-      // Auto-select the location if it's a valid match from popular locations
-      setTimeout(() => {
-        handleSelectLocation(found);
-      }, 100);
-    } else {
-      // For demo, assume delivery is available
-      const newLocation: Location = {
-        pincode,
-        city: "City",
-        state: "State",
-        deliveryAvailable: true,
-      };
-      setSearchResults([newLocation]);
+    setIsSearching(true);
+    try {
+      // First check if pincode exists in database
+      const locationDetails = await getPincodeDetails(pincode);
+      
+      if (locationDetails) {
+        setSearchResults([locationDetails]);
+      } else {
+        // If not in database, check if it's serviceable (shouldn't happen, but fallback)
+        const isServiceable = await checkPincodeServiceable(pincode);
+        const location: Location = {
+          pincode,
+          city: "Unknown",
+          state: "Unknown",
+          deliveryAvailable: isServiceable,
+        };
+        setSearchResults([location]);
+        
+        if (!isServiceable) {
+          toast({
+            title: "Delivery Not Available",
+            description: "We are coming soon to your area to serve. Please check back later!",
+            variant: "destructive",
+          });
+        }
+      }
+    } catch (error: any) {
+      console.error("Error searching pincode:", error);
+      toast({
+        title: "Error",
+        description: "Failed to check pincode. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSearching(false);
     }
   };
 
   const handleSelectLocation = (location: Location) => {
+    if (!location.deliveryAvailable) {
+      toast({
+        title: "Delivery Not Available",
+        description: "We are coming soon to your area to serve. Please check back later!",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSelectedLocation(location);
     localStorage.setItem("deliveryLocation", JSON.stringify(location));
 
@@ -157,6 +223,35 @@ export const LocationSelector = () => {
           </DialogHeader>
 
           <div className="space-y-4 mt-4">
+            {/* Auto-detect Location Button */}
+            <Button
+              variant="outline"
+              onClick={handleDetectLocation}
+              disabled={isDetectingLocation}
+              className="w-full"
+            >
+              {isDetectingLocation ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Detecting Location...
+                </>
+              ) : (
+                <>
+                  <Navigation className="w-4 h-4 mr-2" />
+                  Detect My Location
+                </>
+              )}
+            </Button>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">Or</span>
+              </div>
+            </div>
+
             {/* Pincode Search */}
             <div className="space-y-2">
               <div className="flex gap-2">
@@ -176,8 +271,15 @@ export const LocationSelector = () => {
                   className="flex-1"
                   maxLength={6}
                 />
-                <Button onClick={handlePincodeSearch} disabled={pincode.length !== 6}>
-                  <Search className="w-4 h-4" />
+                <Button 
+                  onClick={handlePincodeSearch} 
+                  disabled={pincode.length !== 6 || isSearching}
+                >
+                  {isSearching ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Search className="w-4 h-4" />
+                  )}
                 </Button>
               </div>
             </div>
@@ -230,31 +332,6 @@ export const LocationSelector = () => {
               </div>
             )}
 
-            {/* Popular Locations */}
-            {!selectedLocation && recentLocations.length === 0 && (
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Popular Cities</p>
-                <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
-                  {popularLocations.map((location) => (
-                    <div
-                      key={location.pincode}
-                      onClick={() => handleSelectLocation(location)}
-                      className="p-3 border rounded-lg cursor-pointer hover:bg-accent transition-colors"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">{location.city}, {location.state}</p>
-                          <p className="text-sm text-muted-foreground">Pincode: {location.pincode}</p>
-                        </div>
-                        {location.deliveryAvailable && (
-                          <Badge variant="outline">Available</Badge>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Current Location */}
             {selectedLocation && (
