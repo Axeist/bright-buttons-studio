@@ -9,7 +9,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2, Plus, Edit, Trash2, Tag, MapPin } from "lucide-react";
+import { parseCSV } from "@/lib/csvImport";
+import { validatePincodeCSVData, generateSamplePincodeCSV, type CSVPincodeRow } from "@/lib/pincodeCsvImport";
+import { Loader2, Plus, Edit, Trash2, Tag, MapPin, Upload, Download, FileText } from "lucide-react";
 
 interface Coupon {
   id: string;
@@ -53,6 +55,9 @@ const Settings = () => {
     state: "",
     is_active: true,
   });
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [importErrors, setImportErrors] = useState<any[]>([]);
+  const [isImporting, setIsImporting] = useState(false);
   const [couponForm, setCouponForm] = useState({
     code: "",
     name: "",
@@ -456,6 +461,127 @@ const Settings = () => {
     });
   };
 
+  const handleDownloadSampleCSV = () => {
+    const csvContent = generateSamplePincodeCSV();
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'serviceable_pincodes_sample.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast({
+      title: "Sample CSV Downloaded",
+      description: "Sample CSV file with Tiruchirappalli pincodes has been downloaded",
+    });
+  };
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.csv')) {
+      toast({
+        title: "Invalid File",
+        description: "Please select a CSV file",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setCsvFile(file);
+    setImportErrors([]);
+
+    try {
+      const text = await file.text();
+      const rows = parseCSV(text);
+      const validation = validatePincodeCSVData(rows);
+      
+      if (validation.errors.length > 0) {
+        setImportErrors(validation.errors);
+        toast({
+          title: "Validation Errors Found",
+          description: `Found ${validation.errors.length} error(s). Please fix them before importing.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "File Validated",
+          description: `Found ${validation.valid.length} valid pincode(s) ready to import`,
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error Reading File",
+        description: error.message || "Failed to read CSV file",
+        variant: "destructive",
+      });
+      setCsvFile(null);
+    }
+  };
+
+  const handleImportPincodes = async () => {
+    if (!csvFile) return;
+
+    setIsImporting(true);
+    try {
+      const text = await csvFile.text();
+      const rows = parseCSV(text);
+      const validation = validatePincodeCSVData(rows);
+
+      if (validation.errors.length > 0) {
+        setImportErrors(validation.errors);
+        toast({
+          title: "Validation Errors",
+          description: "Please fix the errors before importing",
+          variant: "destructive",
+        });
+        setIsImporting(false);
+        return;
+      }
+
+      // Import valid pincodes
+      const pincodesToImport = validation.valid.map((row: CSVPincodeRow) => ({
+        pincode: row.pincode,
+        city: row.city,
+        state: row.state,
+        is_active: row.is_active === 'true' || row.is_active === undefined,
+        created_by: user?.id || null,
+      }));
+
+      // Use upsert to handle duplicates (update if exists, insert if not)
+      const { error } = await supabase
+        .from("serviceable_pincodes")
+        .upsert(pincodesToImport, {
+          onConflict: "pincode",
+          ignoreDuplicates: false,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Import Successful",
+        description: `Successfully imported ${pincodesToImport.length} pincode(s)`,
+      });
+
+      setCsvFile(null);
+      setImportErrors([]);
+      fetchServiceablePincodes();
+    } catch (error: any) {
+      console.error("Error importing pincodes:", error);
+      toast({
+        title: "Import Failed",
+        description: error.message || "Failed to import pincodes",
+        variant: "destructive",
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   if (loading) {
     return (
       <AdminLayout title="Settings">
@@ -632,6 +758,86 @@ const Settings = () => {
           <p className="text-sm text-muted-foreground mb-4">
             Manage the list of pincodes where delivery is available. Customers will only be able to place orders for serviceable pincodes.
           </p>
+
+          {/* CSV Import Section */}
+          <div className="mb-6 p-4 bg-muted/50 rounded-lg border border-border">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                Import from CSV
+              </h3>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownloadSampleCSV}
+                className="rounded-xl"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Download Sample CSV
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">
+              Upload a CSV file with columns: pincode, city, state, is_active (optional)
+            </p>
+            <div className="flex gap-2">
+              <label className="flex-1">
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  id="csv-upload"
+                />
+                <Button
+                  variant="outline"
+                  type="button"
+                  className="w-full rounded-xl"
+                  asChild
+                >
+                  <span>
+                    <Upload className="w-4 h-4 mr-2" />
+                    {csvFile ? csvFile.name : "Choose CSV File"}
+                  </span>
+                </Button>
+              </label>
+              <Button
+                onClick={handleImportPincodes}
+                disabled={!csvFile || isImporting || importErrors.length > 0}
+                className="rounded-xl"
+              >
+                {isImporting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Importing...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4 mr-2" />
+                    Import
+                  </>
+                )}
+              </Button>
+            </div>
+            {importErrors.length > 0 && (
+              <div className="mt-3 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                <p className="text-sm font-semibold text-destructive mb-2">
+                  Validation Errors ({importErrors.length}):
+                </p>
+                <div className="max-h-32 overflow-y-auto space-y-1">
+                  {importErrors.slice(0, 10).map((error, index) => (
+                    <p key={index} className="text-xs text-destructive">
+                      Row {error.row}, {error.field}: {error.message}
+                    </p>
+                  ))}
+                  {importErrors.length > 10 && (
+                    <p className="text-xs text-destructive">
+                      ... and {importErrors.length - 10} more errors
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
 
           {serviceablePincodes.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
