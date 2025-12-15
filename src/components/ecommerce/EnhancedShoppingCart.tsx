@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Plus, Minus, Trash2, ShoppingCart, ArrowRight } from "lucide-react";
+import { X, Plus, Minus, Trash2, ShoppingCart, ArrowRight, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -25,6 +25,7 @@ interface EnhancedShoppingCartProps {
   onOpenChange: (open: boolean) => void;
   onUpdateQuantity: (itemId: string, quantity: number) => void;
   onRemoveItem: (itemId: string) => void;
+  onClearCart?: () => void;
   onCheckout: () => void;
   onContinueShopping?: () => void;
   subtotal: number;
@@ -40,6 +41,7 @@ export const EnhancedShoppingCart = ({
   onOpenChange,
   onUpdateQuantity,
   onRemoveItem,
+  onClearCart,
   onCheckout,
   onContinueShopping,
   subtotal,
@@ -66,15 +68,30 @@ export const EnhancedShoppingCart = ({
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-lg flex flex-col p-0">
         <SheetHeader className="px-6 pt-6 pb-4 border-b">
-          <SheetTitle className="flex items-center gap-2">
-            <ShoppingCart className="w-5 h-5" />
-            Shopping Cart ({items.length})
-          </SheetTitle>
-          <SheetDescription>
-            {items.length > 0
-              ? "Review your items before checkout"
-              : "Your cart is empty"}
-          </SheetDescription>
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <SheetTitle className="flex items-center gap-2">
+                <ShoppingCart className="w-5 h-5" />
+                Shopping Cart ({items.length})
+              </SheetTitle>
+              <SheetDescription>
+                {items.length > 0
+                  ? "Review your items before checkout"
+                  : "Your cart is empty"}
+              </SheetDescription>
+            </div>
+            {items.length > 0 && onClearCart && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={onClearCart}
+              >
+                <Trash className="w-4 h-4 mr-2" />
+                Clear Cart
+              </Button>
+            )}
+          </div>
         </SheetHeader>
 
         {items.length > 0 ? (

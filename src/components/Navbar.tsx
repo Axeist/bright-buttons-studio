@@ -40,7 +40,7 @@ export const Navbar = () => {
   const navigate = useNavigate();
   const menuRef = useRef<HTMLDivElement>(null);
   const { user, role, isCustomer: isCustomerRole, signOut } = useAuth();
-  const { items, getTotalItems, updateQuantity, removeFromCart, getTotalPrice } = useCart();
+  const { items, getTotalItems, updateQuantity, removeFromCart, getTotalPrice, clearCart } = useCart();
   const cartItemCount = getTotalItems();
   const isCustomer = user && isCustomerRole; // Customer if logged in with customer role
 
@@ -425,6 +425,7 @@ export const Navbar = () => {
           }
         }}
         onRemoveItem={(itemId) => removeFromCart(itemId)}
+        onClearCart={clearCart}
         onCheckout={() => {
           setIsCartOpen(false);
           if (!user) {
