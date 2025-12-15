@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Tag, Truck, Shield } from "lucide-react";
+import { Tag, Truck, Shield, Leaf } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -63,33 +63,50 @@ export const OrderSummary = ({
       <CardContent className="space-y-6">
         {/* Items List */}
         <div className="space-y-4 max-h-64 overflow-y-auto">
-          {items.map((item) => (
-            <div key={item.id} className="flex gap-3">
-              {item.image && (
-                <div className="w-16 h-16 rounded-lg overflow-hidden bg-gradient-to-br from-primary-50 to-earth-50 flex-shrink-0">
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    className="w-full h-full object-cover"
-                  />
+          {items.map((item) => {
+            const hasImage = item.image && item.image !== "/placeholder.svg";
+            
+            return (
+              <div key={item.id} className="flex gap-3">
+                <div className="w-16 h-16 rounded-lg overflow-hidden bg-gradient-to-br from-primary-50 to-earth-50 flex-shrink-0 relative flex items-center justify-center">
+                  {hasImage ? (
+                    <>
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const fallback = target.nextElementSibling as HTMLElement;
+                          if (fallback) fallback.style.display = 'flex';
+                        }}
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center" style={{ display: 'none' }}>
+                        <Leaf className="w-6 h-6 text-primary-400 dark:text-primary-500" />
+                      </div>
+                    </>
+                  ) : (
+                    <Leaf className="w-6 h-6 text-primary-400 dark:text-primary-500" />
+                  )}
                 </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm line-clamp-1">{item.name}</p>
-                {item.variant && (
-                  <p className="text-xs text-muted-foreground">{item.variant}</p>
-                )}
-                <div className="flex items-center justify-between mt-1">
-                  <span className="text-xs text-muted-foreground">
-                    Qty: {item.quantity}
-                  </span>
-                  <span className="font-semibold text-sm">
-                    ₹{(item.price * item.quantity).toLocaleString()}
-                  </span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm line-clamp-1">{item.name}</p>
+                  {item.variant && (
+                    <p className="text-xs text-muted-foreground">{item.variant}</p>
+                  )}
+                  <div className="flex items-center justify-between mt-1">
+                    <span className="text-xs text-muted-foreground">
+                      Qty: {item.quantity}
+                    </span>
+                    <span className="font-semibold text-sm">
+                      ₹{(item.price * item.quantity).toLocaleString()}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <Separator />

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { PublicLayout } from "@/layouts/PublicLayout";
 import { motion } from "framer-motion";
-import { MapPin, Plus, Edit, Trash2, CreditCard, Lock, ShoppingCart, ArrowLeft } from "lucide-react";
+import { MapPin, Plus, Edit, Trash2, CreditCard, Lock, ShoppingCart, ArrowLeft, Leaf } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -542,33 +542,53 @@ const Checkout = () => {
                     Review Your Cart
                   </h2>
                   <div className="space-y-4">
-                    {items.map((item) => (
-                      <div key={item.id} className="flex gap-4 p-4 border rounded-lg">
-                        {item.product && (
-                          <div className="w-20 h-20 rounded-lg overflow-hidden bg-gradient-to-br from-primary-50 to-earth-50 flex-shrink-0">
-                            <img
-                              src={getProductImageUrl(item.product) || ""}
-                              alt={item.product.name}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        )}
-                        <div className="flex-1">
-                          <h3 className="font-semibold">{item.product?.name || "Product"}</h3>
-                          {item.size && (
-                            <p className="text-sm text-muted-foreground">Size: {item.size}</p>
+                    {items.map((item) => {
+                      const productImageUrl = item.product ? getProductImageUrl(item.product) : null;
+                      const hasImage = productImageUrl && productImageUrl !== "/placeholder.svg";
+                      
+                      return (
+                        <div key={item.id} className="flex gap-4 p-4 border rounded-lg">
+                          {item.product && (
+                            <div className="w-20 h-20 rounded-lg overflow-hidden bg-gradient-to-br from-primary-50 to-earth-50 flex-shrink-0 relative flex items-center justify-center">
+                              {hasImage ? (
+                                <>
+                                  <img
+                                    src={productImageUrl}
+                                    alt={item.product.name}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement;
+                                      target.style.display = 'none';
+                                      const fallback = target.nextElementSibling as HTMLElement;
+                                      if (fallback) fallback.style.display = 'flex';
+                                    }}
+                                  />
+                                  <div className="absolute inset-0 flex items-center justify-center" style={{ display: 'none' }}>
+                                    <Leaf className="w-8 h-8 text-primary-400 dark:text-primary-500" />
+                                  </div>
+                                </>
+                              ) : (
+                                <Leaf className="w-8 h-8 text-primary-400 dark:text-primary-500" />
+                              )}
+                            </div>
                           )}
-                          <div className="flex items-center justify-between mt-2">
-                            <span className="text-sm text-muted-foreground">
-                              Qty: {item.quantity}
-                            </span>
-                            <span className="font-semibold">
-                              ₹{((item.product?.price || 0) * item.quantity).toLocaleString()}
-                            </span>
+                          <div className="flex-1">
+                            <h3 className="font-semibold">{item.product?.name || "Product"}</h3>
+                            {item.size && (
+                              <p className="text-sm text-muted-foreground">Size: {item.size}</p>
+                            )}
+                            <div className="flex items-center justify-between mt-2">
+                              <span className="text-sm text-muted-foreground">
+                                Qty: {item.quantity}
+                              </span>
+                              <span className="font-semibold">
+                                ₹{((item.product?.price || 0) * item.quantity).toLocaleString()}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </motion.div>
               )}
@@ -976,33 +996,53 @@ const Checkout = () => {
                         Order Items
                       </h3>
                       <div className="space-y-3">
-                        {items.map((item) => (
-                          <div key={item.id} className="flex gap-4 p-3 border rounded-lg">
-                            {item.product && (
-                              <div className="w-16 h-16 rounded-lg overflow-hidden bg-gradient-to-br from-primary-50 to-earth-50 flex-shrink-0">
-                                <img
-                                  src={getProductImageUrl(item.product) || ""}
-                                  alt={item.product.name}
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                            )}
-                            <div className="flex-1">
-                              <h4 className="font-medium">{item.product?.name || "Product"}</h4>
-                              {item.size && (
-                                <p className="text-sm text-muted-foreground">Size: {item.size}</p>
+                        {items.map((item) => {
+                          const productImageUrl = item.product ? getProductImageUrl(item.product) : null;
+                          const hasImage = productImageUrl && productImageUrl !== "/placeholder.svg";
+                          
+                          return (
+                            <div key={item.id} className="flex gap-4 p-3 border rounded-lg">
+                              {item.product && (
+                                <div className="w-16 h-16 rounded-lg overflow-hidden bg-gradient-to-br from-primary-50 to-earth-50 flex-shrink-0 relative flex items-center justify-center">
+                                  {hasImage ? (
+                                    <>
+                                      <img
+                                        src={productImageUrl}
+                                        alt={item.product.name}
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                          const target = e.target as HTMLImageElement;
+                                          target.style.display = 'none';
+                                          const fallback = target.nextElementSibling as HTMLElement;
+                                          if (fallback) fallback.style.display = 'flex';
+                                        }}
+                                      />
+                                      <div className="absolute inset-0 flex items-center justify-center" style={{ display: 'none' }}>
+                                        <Leaf className="w-6 h-6 text-primary-400 dark:text-primary-500" />
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <Leaf className="w-6 h-6 text-primary-400 dark:text-primary-500" />
+                                  )}
+                                </div>
                               )}
-                              <div className="flex items-center justify-between mt-1">
-                                <span className="text-sm text-muted-foreground">
-                                  Qty: {item.quantity}
-                                </span>
-                                <span className="font-semibold">
-                                  ₹{((item.product?.price || 0) * item.quantity).toLocaleString()}
-                                </span>
+                              <div className="flex-1">
+                                <h4 className="font-medium">{item.product?.name || "Product"}</h4>
+                                {item.size && (
+                                  <p className="text-sm text-muted-foreground">Size: {item.size}</p>
+                                )}
+                                <div className="flex items-center justify-between mt-1">
+                                  <span className="text-sm text-muted-foreground">
+                                    Qty: {item.quantity}
+                                  </span>
+                                  <span className="font-semibold">
+                                    ₹{((item.product?.price || 0) * item.quantity).toLocaleString()}
+                                  </span>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
