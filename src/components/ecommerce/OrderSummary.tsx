@@ -56,7 +56,7 @@ export const OrderSummary = ({
   };
 
   return (
-    <Card className={cn("sticky top-4", className)}>
+    <Card className={cn("", className)}>
       <CardHeader>
         <CardTitle>Order Summary</CardTitle>
       </CardHeader>

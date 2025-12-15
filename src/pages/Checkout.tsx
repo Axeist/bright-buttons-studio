@@ -1090,35 +1090,37 @@ const Checkout = () => {
 
             {/* Order Summary Sidebar */}
             <div className="lg:col-span-1">
-              <OrderSummary
-                items={orderItems}
-                subtotal={subtotal}
-                shipping={shippingAmount}
-                tax={taxAmount}
-                discount={0}
-                total={totalAmount}
-                showCouponInput={false}
-              />
-              {currentStep === 4 && (
-                <Button
-                  size="lg"
-                  className="w-full mt-6 rounded-full h-12"
-                  onClick={handlePlaceOrder}
-                  disabled={isProcessing || items.length === 0}
-                >
-                  {isProcessing ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <Lock className="w-4 h-4 mr-2" />
-                      Place Order
-                    </>
-                  )}
-                </Button>
-              )}
+              <div className="sticky top-4 space-y-6">
+                <OrderSummary
+                  items={orderItems}
+                  subtotal={subtotal}
+                  shipping={shippingAmount}
+                  tax={taxAmount}
+                  discount={0}
+                  total={totalAmount}
+                  showCouponInput={false}
+                />
+                {currentStep === 4 && (
+                  <Button
+                    size="lg"
+                    className="w-full rounded-full h-12"
+                    onClick={handlePlaceOrder}
+                    disabled={isProcessing || items.length === 0}
+                  >
+                    {isProcessing ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="w-4 h-4 mr-2" />
+                        Place Order
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>
