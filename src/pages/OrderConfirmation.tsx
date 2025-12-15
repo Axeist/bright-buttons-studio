@@ -6,10 +6,12 @@ import { CheckCircle, Package, Truck, Home, ArrowRight, Download } from "lucide-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
+import { Invoice } from "@/components/ecommerce/Invoice";
 
 const OrderConfirmation = () => {
   const { id } = useParams<{ id: string }>();
@@ -17,6 +19,7 @@ const OrderConfirmation = () => {
   const { user } = useAuth();
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [showInvoice, setShowInvoice] = useState(false);
 
   useEffect(() => {
     if (!id) {
@@ -47,11 +50,7 @@ const OrderConfirmation = () => {
   };
 
   const handleDownloadInvoice = () => {
-    // In real app, generate and download PDF invoice
-    toast({
-      title: "Invoice",
-      description: "Invoice download will be available soon",
-    });
+    setShowInvoice(true);
   };
 
   if (loading) {
@@ -215,6 +214,15 @@ const OrderConfirmation = () => {
           </div>
         </div>
       </div>
+
+      {/* Invoice Dialog */}
+      <Dialog open={showInvoice} onOpenChange={setShowInvoice}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto p-0">
+          <div className="p-6">
+            <Invoice order={order} onClose={() => setShowInvoice(false)} />
+          </div>
+        </DialogContent>
+      </Dialog>
     </PublicLayout>
   );
 };
