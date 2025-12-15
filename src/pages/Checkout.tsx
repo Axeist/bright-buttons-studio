@@ -103,6 +103,8 @@ const Checkout = () => {
     }
 
     try {
+      let savedAddressId: string | null = null;
+
       if (editingAddress) {
         const { error } = await supabase
           .from("customer_addresses")
@@ -113,19 +115,23 @@ const Checkout = () => {
           .eq("id", editingAddress.id);
 
         if (error) throw error;
+        savedAddressId = editingAddress.id;
         toast({
           title: "Success",
           description: "Address updated",
         });
       } else {
-        const { error } = await supabase
+        const { data: newAddress, error } = await supabase
           .from("customer_addresses")
           .insert({
             ...addressForm,
             customer_id: customer.id,
-          });
+          })
+          .select()
+          .single();
 
         if (error) throw error;
+        savedAddressId = newAddress?.id || null;
         toast({
           title: "Success",
           description: "Address added",
@@ -146,11 +152,11 @@ const Checkout = () => {
         landmark: "",
         is_default: false,
       });
+      
+      // Refresh addresses and auto-select the saved address
       await fetchAddresses();
-      // Auto-select the newly saved address
-      if (data && data.length > 0) {
-        const newAddress = data.find((a) => a.id === (editingAddress ? editingAddress.id : data[data.length - 1].id)) || data[data.length - 1];
-        setSelectedAddress(newAddress.id);
+      if (savedAddressId) {
+        setSelectedAddress(savedAddressId);
       }
     } catch (error: any) {
       toast({
