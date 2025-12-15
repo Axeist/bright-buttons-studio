@@ -31,8 +31,44 @@ export const LocationSelector = () => {
   const [searchResults, setSearchResults] = useState<Location[]>([]);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [isAutoDetecting, setIsAutoDetecting] = useState(true);
 
-  const handleDetectLocation = useCallback(async () => {
+  const handleSelectLocation = useCallback((location: Location, silent = false) => {
+    if (!location.deliveryAvailable) {
+      if (!silent) {
+        toast({
+          title: "Delivery Not Available",
+          description: "We are coming soon to your area to serve. Please check back later!",
+          variant: "destructive",
+        });
+      }
+      return;
+    }
+
+    setSelectedLocation(location);
+    localStorage.setItem("deliveryLocation", JSON.stringify(location));
+
+    // Add to recent locations
+    setRecentLocations((prev) => {
+      const recent = prev.filter((loc) => loc.pincode !== location.pincode);
+      const updated = [location, ...recent].slice(0, 5);
+      localStorage.setItem("recentLocations", JSON.stringify(updated));
+      return updated;
+    });
+
+    setIsOpen(false);
+    setPincode("");
+    setSearchResults([]);
+
+    if (!silent) {
+      toast({
+        title: "Location Updated",
+        description: `Delivery to ${location.city}, ${location.state} - ${location.pincode}`,
+      });
+    }
+  }, []);
+
+  const handleDetectLocation = useCallback(async (silent = false) => {
     setIsDetectingLocation(true);
     try {
       const position = await getCurrentLocation();
@@ -43,38 +79,47 @@ export const LocationSelector = () => {
 
       if (location) {
         if (location.deliveryAvailable) {
-          handleSelectLocation(location);
-          toast({
-            title: "Location Detected",
-            description: `We found your location: ${location.city}, ${location.state} - ${location.pincode}`,
-          });
+          handleSelectLocation(location, silent);
+          if (!silent) {
+            toast({
+              title: "Location Detected",
+              description: `We found your location: ${location.city}, ${location.state} - ${location.pincode}`,
+            });
+          }
         } else {
           setSearchResults([location]);
+          if (!silent) {
+            toast({
+              title: "Location Detected",
+              description: `We found your location, but delivery is not available in this area yet.`,
+              variant: "destructive",
+            });
+          }
+        }
+      } else {
+        if (!silent) {
           toast({
-            title: "Location Detected",
-            description: `We found your location, but delivery is not available in this area yet.`,
+            title: "Location Detection Failed",
+            description: "Could not determine your location. Please enter your pincode manually.",
             variant: "destructive",
           });
         }
-        localStorage.setItem("hasAutoDetectedLocation", "true");
-      } else {
-        toast({
-          title: "Location Detection Failed",
-          description: "Could not determine your location. Please enter your pincode manually.",
-          variant: "destructive",
-        });
       }
     } catch (error: any) {
       console.error("Error detecting location:", error);
-      toast({
-        title: "Location Detection Failed",
-        description: error.message || "Please allow location access or enter your pincode manually.",
-        variant: "destructive",
-      });
+      // Only show error toast if not silent (user-initiated)
+      if (!silent) {
+        toast({
+          title: "Location Detection Failed",
+          description: error.message || "Please allow location access or enter your pincode manually.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsDetectingLocation(false);
+      setIsAutoDetecting(false);
     }
-  }, []);
+  }, [handleSelectLocation]);
 
   useEffect(() => {
     // Load saved location from localStorage
@@ -83,6 +128,7 @@ export const LocationSelector = () => {
       try {
         const location = JSON.parse(saved);
         setSelectedLocation(location);
+        setIsAutoDetecting(false);
       } catch (e) {
         // Invalid saved data
       }
@@ -98,10 +144,11 @@ export const LocationSelector = () => {
       }
     }
 
-    // Auto-detect location when component mounts (only once)
-    const hasAutoDetected = localStorage.getItem("hasAutoDetectedLocation");
-    if (!hasAutoDetected && !saved) {
-      handleDetectLocation();
+    // Auto-detect location on every page load if no saved location
+    if (!saved) {
+      handleDetectLocation(true); // Silent auto-detection
+    } else {
+      setIsAutoDetecting(false);
     }
   }, [handleDetectLocation]);
 
@@ -153,34 +200,6 @@ export const LocationSelector = () => {
     }
   };
 
-  const handleSelectLocation = (location: Location) => {
-    if (!location.deliveryAvailable) {
-      toast({
-        title: "Delivery Not Available",
-        description: "We are coming soon to your area to serve. Please check back later!",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setSelectedLocation(location);
-    localStorage.setItem("deliveryLocation", JSON.stringify(location));
-
-    // Add to recent locations
-    const recent = recentLocations.filter((loc) => loc.pincode !== location.pincode);
-    const updated = [location, ...recent].slice(0, 5);
-    setRecentLocations(updated);
-    localStorage.setItem("recentLocations", JSON.stringify(updated));
-
-    setIsOpen(false);
-    setPincode("");
-    setSearchResults([]);
-
-    toast({
-      title: "Location Updated",
-      description: `Delivery to ${location.city}, ${location.state} - ${location.pincode}`,
-    });
-  };
 
   const handleRemoveLocation = () => {
     setSelectedLocation(null);
@@ -197,17 +216,28 @@ export const LocationSelector = () => {
         variant="ghost"
         size="sm"
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2 text-sm"
+        className="flex items-center gap-2 text-sm relative"
+        disabled={isAutoDetecting}
       >
-        <MapPin className="w-4 h-4" />
-        <span className="hidden sm:inline">
-          {selectedLocation
-            ? `${selectedLocation.city} - ${selectedLocation.pincode}`
-            : "Select Location"}
-        </span>
-        <span className="sm:hidden">
-          {selectedLocation ? selectedLocation.pincode : "Location"}
-        </span>
+        {isAutoDetecting ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span className="hidden sm:inline">Detecting...</span>
+            <span className="sm:hidden">...</span>
+          </>
+        ) : (
+          <>
+            <MapPin className="w-4 h-4" />
+            <span className="hidden sm:inline">
+              {selectedLocation
+                ? `${selectedLocation.city} - ${selectedLocation.pincode}`
+                : "Select Location"}
+            </span>
+            <span className="sm:hidden">
+              {selectedLocation ? selectedLocation.pincode : "Location"}
+            </span>
+          </>
+        )}
       </Button>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -218,15 +248,36 @@ export const LocationSelector = () => {
               Select Delivery Location
             </DialogTitle>
             <DialogDescription>
-              Enter your pincode to check delivery availability
+              {selectedLocation 
+                ? `Current location: ${selectedLocation.city}, ${selectedLocation.state} - ${selectedLocation.pincode}. You can change it below.`
+                : "Enter your pincode to check delivery availability or use auto-detect"}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 mt-4">
+            {/* Current Location Display */}
+            {selectedLocation && (
+              <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-semibold text-foreground">Current Location</p>
+                  <Badge variant="default" className="text-xs">Active</Badge>
+                </div>
+                <div className="space-y-1">
+                  <p className="font-medium text-foreground">
+                    {selectedLocation.city}, {selectedLocation.state}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Pincode: {selectedLocation.pincode}</p>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Click below to change your delivery location
+                </p>
+              </div>
+            )}
+
             {/* Auto-detect Location Button */}
             <Button
               variant="outline"
-              onClick={handleDetectLocation}
+              onClick={() => handleDetectLocation(false)}
               disabled={isDetectingLocation}
               className="w-full"
             >
@@ -238,7 +289,7 @@ export const LocationSelector = () => {
               ) : (
                 <>
                   <Navigation className="w-4 h-4 mr-2" />
-                  Detect My Location
+                  {selectedLocation ? "Re-detect My Location" : "Detect My Location"}
                 </>
               )}
             </Button>
@@ -311,44 +362,41 @@ export const LocationSelector = () => {
             )}
 
             {/* Recent Locations */}
-            {recentLocations.length > 0 && !selectedLocation && (
+            {recentLocations.length > 0 && (
               <div className="space-y-2">
                 <p className="text-sm font-medium">Recent Locations</p>
-                {recentLocations.map((location) => (
-                  <div
-                    key={location.pincode}
-                    onClick={() => handleSelectLocation(location)}
-                    className="p-3 border rounded-lg cursor-pointer hover:bg-accent transition-colors"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">{location.city}, {location.state}</p>
-                        <p className="text-sm text-muted-foreground">Pincode: {location.pincode}</p>
+                {recentLocations
+                  .filter((loc) => loc.pincode !== selectedLocation?.pincode)
+                  .map((location) => (
+                    <div
+                      key={location.pincode}
+                      onClick={() => handleSelectLocation(location)}
+                      className="p-3 border rounded-lg cursor-pointer hover:bg-accent transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">{location.city}, {location.state}</p>
+                          <p className="text-sm text-muted-foreground">Pincode: {location.pincode}</p>
+                        </div>
+                        <Check className="w-4 h-4 text-primary" />
                       </div>
-                      <Check className="w-4 h-4 text-primary" />
                     </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             )}
 
-
-            {/* Current Location */}
+            {/* Remove Location Option */}
             {selectedLocation && (
-              <div className="pt-4 border-t">
-                <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg">
-                  <div>
-                    <p className="font-medium">{selectedLocation.city}, {selectedLocation.state}</p>
-                    <p className="text-sm text-muted-foreground">Pincode: {selectedLocation.pincode}</p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleRemoveLocation}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
+              <div className="pt-2 border-t">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRemoveLocation}
+                  className="w-full text-destructive hover:text-destructive"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Remove Current Location
+                </Button>
               </div>
             )}
           </div>
