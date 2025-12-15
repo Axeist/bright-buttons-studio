@@ -1,9 +1,10 @@
 import { motion } from "framer-motion";
-import { Heart, ShoppingCart, Eye, Star, GitCompare } from "lucide-react";
+import { Heart, ShoppingCart, Eye, Star, GitCompare, Plus, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { useCart } from "@/hooks/useCart";
 
 interface Product {
   id: string;
@@ -43,6 +44,7 @@ export const ProductGrid = ({
   columns = 4,
   className,
 }: ProductGridProps) => {
+  const { items, updateQuantity } = useCart();
   const gridCols = {
     2: "grid-cols-1 sm:grid-cols-2",
     3: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
@@ -151,19 +153,56 @@ export const ProductGrid = ({
                         View Details
                       </Button>
                     )}
-                    {onAddToCart && product.inStock && (
-                      <Button
-                        size="sm"
-                        className="rounded-full"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onAddToCart(product);
-                        }}
-                      >
-                        <ShoppingCart className="w-4 h-4 mr-1" />
-                        Add to Cart
-                      </Button>
-                    )}
+                    {onAddToCart && product.inStock && (() => {
+                      const cartItem = items.find(item => item.product_id === product.id);
+                      if (cartItem) {
+                        return (
+                          <div className="flex items-center border rounded-full overflow-hidden bg-background">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-none"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (cartItem.quantity > 1) {
+                                  updateQuantity(cartItem.id, cartItem.quantity - 1);
+                                }
+                              }}
+                              disabled={cartItem.quantity <= 1}
+                            >
+                              <Minus className="w-3 h-3" />
+                            </Button>
+                            <span className="w-8 text-center text-sm font-medium">
+                              {cartItem.quantity}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-none"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                updateQuantity(cartItem.id, cartItem.quantity + 1);
+                              }}
+                            >
+                              <Plus className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        );
+                      }
+                      return (
+                        <Button
+                          size="sm"
+                          className="rounded-full"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onAddToCart(product);
+                          }}
+                        >
+                          <ShoppingCart className="w-4 h-4 mr-1" />
+                          Add to Cart
+                        </Button>
+                      );
+                    })()}
                     {onCompare && (
                       <Button
                         size="sm"

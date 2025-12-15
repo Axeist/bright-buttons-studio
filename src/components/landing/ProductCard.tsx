@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Leaf, Eye, ShoppingCart, Heart } from "lucide-react";
+import { Leaf, Eye, ShoppingCart, Heart, Plus, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { type Product } from "@/types/product";
 import { useNavigate } from "react-router-dom";
@@ -16,12 +16,15 @@ interface ProductCardProps {
 
 export const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
   const navigate = useNavigate();
-  const { addToCart } = useCart();
+  const { addToCart, items, updateQuantity } = useCart();
   const { user } = useAuth();
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
   
   const productId = typeof product.id === 'string' ? product.id : product.id.toString();
+  
+  // Find cart item for this product
+  const cartItem = items.find(item => item.product_id === productId);
 
   useEffect(() => {
     if (user) {
@@ -110,6 +113,16 @@ export const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
       return;
     }
     await addToCart(productId, 1);
+  };
+
+  const handleQuantityChange = async (delta: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!cartItem) return;
+    
+    const newQuantity = cartItem.quantity + delta;
+    if (newQuantity < 1) return;
+    
+    await updateQuantity(cartItem.id, newQuantity);
   };
 
   return (
@@ -216,14 +229,37 @@ export const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
             <Eye className="w-4 h-4 mr-1" />
             View
           </Button>
-          <Button 
-            size="sm" 
-            className="flex-1 rounded-full bg-primary hover:bg-primary-700 text-white w-full sm:w-auto min-h-[44px]"
-            onClick={handleAddToCart}
-          >
-            <ShoppingCart className="w-4 h-4 mr-1" />
-            Add to Cart
-          </Button>
+          {cartItem ? (
+            <div className="flex items-center border rounded-full overflow-hidden flex-1 w-full sm:w-auto min-h-[44px]">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-11 w-11 rounded-none"
+                onClick={(e) => handleQuantityChange(-1, e)}
+                disabled={cartItem.quantity <= 1}
+              >
+                <Minus className="w-4 h-4" />
+              </Button>
+              <span className="w-12 text-center font-medium text-sm">{cartItem.quantity}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-11 w-11 rounded-none"
+                onClick={(e) => handleQuantityChange(1, e)}
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
+            </div>
+          ) : (
+            <Button 
+              size="sm" 
+              className="flex-1 rounded-full bg-primary hover:bg-primary-700 text-white w-full sm:w-auto min-h-[44px]"
+              onClick={handleAddToCart}
+            >
+              <ShoppingCart className="w-4 h-4 mr-1" />
+              Add to Cart
+            </Button>
+          )}
         </div>
       </div>
     </div>
