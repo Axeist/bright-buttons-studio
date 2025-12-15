@@ -71,24 +71,65 @@ export const Invoice = ({ order, onClose }: InvoiceProps) => {
       {/* Print Styles */}
       <style>{`
         @media print {
-          body * {
-            visibility: hidden;
+          @page {
+            size: A4;
+            margin: 0.75in;
           }
-          .invoice-container, .invoice-container * {
-            visibility: visible;
+          
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
           }
-          .invoice-container {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
+          
+          body {
+            margin: 0;
+            padding: 0;
+            background: white;
           }
+          
           .no-print {
             display: none !important;
           }
-          @page {
-            margin: 0.5in;
-            size: A4;
+          
+          .invoice-container {
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+            background: white !important;
+            page-break-inside: avoid;
+          }
+          
+          .invoice-container * {
+            color: black !important;
+            background: white !important;
+          }
+          
+          table {
+            page-break-inside: auto;
+            border-collapse: collapse;
+          }
+          
+          tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
+          }
+          
+          thead {
+            display: table-header-group;
+          }
+          
+          tfoot {
+            display: table-footer-group;
+          }
+          
+          .page-break {
+            page-break-before: always;
+          }
+          
+          .no-break {
+            page-break-inside: avoid;
           }
         }
       `}</style>
@@ -112,9 +153,9 @@ export const Invoice = ({ order, onClose }: InvoiceProps) => {
       </div>
 
       {/* Invoice Container */}
-      <div className="invoice-container max-w-4xl mx-auto bg-white p-8 shadow-lg">
+      <div className="invoice-container max-w-4xl mx-auto bg-white p-8 shadow-lg print:shadow-none">
         {/* Header */}
-        <div className="border-b-2 border-gray-800 pb-6 mb-8">
+        <div className="border-b-2 border-gray-800 pb-6 mb-8 no-break">
           <div className="flex justify-between items-start">
             <div className="flex-1">
               <div className="mb-4">
@@ -150,7 +191,7 @@ export const Invoice = ({ order, onClose }: InvoiceProps) => {
         </div>
 
         {/* Invoice Details */}
-        <div className="grid grid-cols-2 gap-8 mb-8">
+        <div className="grid grid-cols-2 gap-8 mb-8 no-break">
           {/* Bill To */}
           <div>
             <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Bill To</h3>
@@ -197,7 +238,7 @@ export const Invoice = ({ order, onClose }: InvoiceProps) => {
 
         {/* Shipping Address */}
         {order.shipping_address && (
-          <div className="mb-8">
+          <div className="mb-8 no-break">
             <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Ship To</h3>
             <div className="text-sm text-gray-600">
               <p>{order.shipping_address}</p>
@@ -206,30 +247,30 @@ export const Invoice = ({ order, onClose }: InvoiceProps) => {
         )}
 
         {/* Items Table */}
-        <div className="mb-8">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-gray-100 border-b-2 border-gray-800">
-                <th className="text-left py-3 px-4 text-sm font-semibold text-black">Item</th>
-                <th className="text-center py-3 px-4 text-sm font-semibold text-black">Quantity</th>
-                <th className="text-right py-3 px-4 text-sm font-semibold text-black">Unit Price</th>
-                <th className="text-right py-3 px-4 text-sm font-semibold text-black">Total</th>
+        <div className="mb-8 no-break">
+          <table className="w-full border-collapse print:border-collapse">
+            <thead className="print:table-header-group">
+              <tr className="bg-gray-100 border-b-2 border-gray-800 print:bg-gray-100">
+                <th className="text-left py-3 px-4 text-sm font-semibold text-black print:border print:border-gray-300">Item</th>
+                <th className="text-center py-3 px-4 text-sm font-semibold text-black print:border print:border-gray-300">Quantity</th>
+                <th className="text-right py-3 px-4 text-sm font-semibold text-black print:border print:border-gray-300">Unit Price</th>
+                <th className="text-right py-3 px-4 text-sm font-semibold text-black print:border print:border-gray-300">Total</th>
               </tr>
             </thead>
             <tbody>
               {order.order_items?.map((item: any, index: number) => (
-                <tr key={index} className="border-b border-gray-200">
-                  <td className="py-3 px-4">
+                <tr key={index} className="border-b border-gray-200 print:border-b print:border-gray-300">
+                  <td className="py-3 px-4 print:border print:border-gray-300">
                     <p className="font-medium text-black">{item.product_name}</p>
                     {item.product_sku && (
-                      <p className="text-xs text-gray-500">SKU: {item.product_sku}</p>
+                      <p className="text-xs text-gray-500 print:text-gray-700">SKU: {item.product_sku}</p>
                     )}
                   </td>
-                  <td className="py-3 px-4 text-center text-gray-600">{item.quantity}</td>
-                  <td className="py-3 px-4 text-right text-gray-600">
+                  <td className="py-3 px-4 text-center text-gray-600 print:border print:border-gray-300 print:text-gray-700">{item.quantity}</td>
+                  <td className="py-3 px-4 text-right text-gray-600 print:border print:border-gray-300 print:text-gray-700">
                     ₹{item.unit_price.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
-                  <td className="py-3 px-4 text-right font-semibold text-black">
+                  <td className="py-3 px-4 text-right font-semibold text-black print:border print:border-gray-300">
                     ₹{item.total_price.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
                 </tr>
@@ -239,7 +280,7 @@ export const Invoice = ({ order, onClose }: InvoiceProps) => {
         </div>
 
         {/* Totals */}
-        <div className="flex justify-end mb-8">
+        <div className="flex justify-end mb-8 no-break">
           <div className="w-80">
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
@@ -281,8 +322,8 @@ export const Invoice = ({ order, onClose }: InvoiceProps) => {
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-300 pt-6 mt-8">
-          <div className="text-center text-xs text-gray-500 space-y-1">
+        <div className="border-t border-gray-300 pt-6 mt-8 no-break">
+          <div className="text-center text-xs text-gray-500 space-y-1 print:text-gray-700">
             <p className="font-semibold text-black">Thank you for your business!</p>
             <p>This is a computer-generated invoice and does not require a signature.</p>
             {shopSettings.shop_email && (
