@@ -176,9 +176,9 @@ export const Navbar = () => {
                 className="rounded-full relative"
                 onClick={() => setIsCartOpen(true)}
               >
-                <ShoppingCart className="w-5 h-5" />
+                <ShoppingCart className="w-5 h-5 relative z-0" />
                 {cartItemCount > 0 && (
-                  <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                  <Badge className="absolute top-0 right-0 h-5 w-5 flex items-center justify-center p-0 text-xs z-10 -translate-y-1/2 translate-x-1/2">
                     {cartItemCount > 9 ? "9+" : cartItemCount}
                   </Badge>
                 )}
@@ -295,9 +295,9 @@ export const Navbar = () => {
                 className="relative"
                 onClick={() => setIsCartOpen(true)}
               >
-                <ShoppingCart className="w-5 h-5" />
+                <ShoppingCart className="w-5 h-5 relative z-0" />
                 {cartItemCount > 0 && (
-                  <Badge className="absolute -top-1 -right-1 h-4 w-4 flex items-center justify-center p-0 text-xs">
+                  <Badge className="absolute top-0 right-0 h-4 w-4 flex items-center justify-center p-0 text-xs z-10 -translate-y-1/2 translate-x-1/2">
                     {cartItemCount > 9 ? "9+" : cartItemCount}
                   </Badge>
                 )}
