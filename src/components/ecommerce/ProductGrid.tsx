@@ -23,6 +23,7 @@ interface Product {
 interface ProductGridProps {
   products: Product[];
   onProductClick?: (product: Product) => void;
+  onQuickView?: (product: Product) => void;
   onAddToCart?: (product: Product) => void;
   onWishlistToggle?: (product: Product) => void;
   onCompare?: (product: Product) => void;
@@ -34,6 +35,7 @@ interface ProductGridProps {
 export const ProductGrid = ({
   products,
   onProductClick,
+  onQuickView,
   onAddToCart,
   onWishlistToggle,
   onCompare,
@@ -121,7 +123,21 @@ export const ProductGrid = ({
                 {/* Hover Overlay with Actions */}
                 <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/10 transition-colors duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
                   <div className="flex flex-col gap-2">
-                    {onProductClick && (
+                    {onQuickView && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="rounded-full"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onQuickView(product);
+                        }}
+                      >
+                        <Eye className="w-4 h-4 mr-1" />
+                        Quick View
+                      </Button>
+                    )}
+                    {!onQuickView && onProductClick && (
                       <Button
                         size="sm"
                         variant="secondary"
@@ -132,7 +148,7 @@ export const ProductGrid = ({
                         }}
                       >
                         <Eye className="w-4 h-4 mr-1" />
-                        Quick View
+                        View Details
                       </Button>
                     )}
                     {onAddToCart && product.inStock && (

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { PublicLayout } from "@/layouts/PublicLayout";
 import { motion } from "framer-motion";
-import { ArrowLeft, Share2, GitCompare } from "lucide-react";
+import { ArrowLeft, GitCompare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +16,14 @@ import {
   RelatedProducts,
   LoadingState,
   EmptyState,
+  ProductBreadcrumbs,
+  ProductShareModal,
+  ProductSizeGuide,
+  ProductStockCounter,
+  ProductRating,
+  ProductDeliveryInfo,
+  RecentlyViewed,
+  addToRecentlyViewed,
 } from "@/components/ecommerce";
 import { getProductImageUrl } from "@/lib/utils";
 import { Check } from "lucide-react";
@@ -62,15 +70,35 @@ const ProductDetail = () => {
   const [quantity, setQuantity] = useState(1);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
+  const [wishlistIds, setWishlistIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (id) {
       fetchProduct();
       if (user) {
         checkWishlist();
+        fetchWishlistIds();
       }
+      // Track recently viewed
+      addToRecentlyViewed(id);
     }
   }, [id, user]);
+
+  const fetchWishlistIds = async () => {
+    if (!user) return;
+    try {
+      const { data } = await supabase
+        .from("wishlist")
+        .select("product_id")
+        .eq("user_id", user.id);
+      
+      if (data) {
+        setWishlistIds(new Set(data.map((item) => item.product_id)));
+      }
+    } catch (error) {
+      console.error("Error fetching wishlist:", error);
+    }
+  };
 
   useEffect(() => {
     if (product) {
@@ -253,25 +281,7 @@ const ProductDetail = () => {
     return inventory.quantity - (inventory.reserved_quantity || 0);
   };
 
-  const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: product?.name,
-          text: product?.tagline || "",
-          url: window.location.href,
-        });
-      } catch (error) {
-        // User cancelled
-      }
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-      toast({
-        title: "Copied",
-        description: "Link copied to clipboard",
-      });
-    }
-  };
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   if (loading) {
     return (
@@ -323,6 +333,10 @@ const ProductDetail = () => {
     tags: [product.fabric, product.technique].filter(Boolean) as string[],
   };
 
+  const inventory = Array.isArray(product.inventory) 
+    ? product.inventory[0] 
+    : product.inventory;
+
   // Prepare related products for RelatedProducts component
   const relatedProductsData = relatedProducts.map(p => ({
     id: p.id,
@@ -341,6 +355,16 @@ const ProductDetail = () => {
     <PublicLayout>
       <div className="min-h-screen bg-background">
         <div className="container-custom py-6">
+          {/* Breadcrumbs */}
+          <ProductBreadcrumbs
+            items={[
+              { label: "Shop", href: "/shop" },
+              { label: product.category, href: `/shop?category=${encodeURIComponent(product.category)}` },
+              { label: product.name },
+            ]}
+            className="mb-6"
+          />
+
           <Button
             variant="ghost"
             onClick={() => navigate(-1)}
@@ -351,16 +375,42 @@ const ProductDetail = () => {
           </Button>
 
           {/* Product Overview */}
-          <ProductOverview
-            product={productOverviewData}
-            onAddToCart={handleAddToCart}
-            onWishlistToggle={toggleWishlist}
-            isWishlisted={isWishlisted}
-            sizeOptions={sizes}
-            selectedSize={selectedSize}
-            onSizeChange={setSelectedSize}
-            requireSize={sizes.length > 0}
-          />
+          <div className="space-y-6">
+            <ProductOverview
+              product={productOverviewData}
+              onAddToCart={handleAddToCart}
+              onWishlistToggle={toggleWishlist}
+              isWishlisted={isWishlisted}
+              sizeOptions={sizes}
+              selectedSize={selectedSize}
+              onSizeChange={setSelectedSize}
+              requireSize={sizes.length > 0}
+            />
+
+            {/* Stock Counter and Rating */}
+            <div className="flex flex-wrap items-center gap-4">
+              {inventory && (
+                <ProductStockCounter
+                  quantity={inventory.quantity}
+                  reserved={inventory.reserved_quantity}
+                  lowStockThreshold={5}
+                />
+              )}
+              <ProductRating
+                rating={4.5}
+                reviewCount={0}
+                size="md"
+                showCount={true}
+              />
+            </div>
+
+            {/* Delivery Info */}
+            <ProductDeliveryInfo
+              estimatedDays={5}
+              freeShippingThreshold={500}
+              currentTotal={product.price}
+            />
+          </div>
 
           {/* Additional Actions */}
           <div className="mt-6 flex flex-col sm:flex-row gap-3">
@@ -389,15 +439,22 @@ const ProductDetail = () => {
               <GitCompare className="w-5 h-5 mr-2" />
               Compare
             </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              className="rounded-full flex-1"
-              onClick={handleShare}
-            >
-              <Share2 className="w-5 h-5 mr-2" />
-              Share
-            </Button>
+            <ProductShareModal
+              productName={product.name}
+              productUrl={window.location.href}
+              productImage={productImages[0]}
+              description={product.tagline || product.description || undefined}
+              trigger={
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="rounded-full flex-1"
+                >
+                  <Share2 className="w-5 h-5 mr-2" />
+                  Share
+                </Button>
+              }
+            />
             <WhatsAppButton
               variant="inline"
               className="flex-1 rounded-full"
@@ -433,37 +490,23 @@ const ProductDetail = () => {
 
               <TabsContent value="size-guide" className="mt-6">
                 <div className="space-y-4">
-                  <h3 className="font-semibold text-lg mb-4">Size Guide</h3>
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr className="border-b">
-                          <th className="text-left p-2">Size</th>
-                          <th className="text-left p-2">Chest (inches)</th>
-                          <th className="text-left p-2">Length (inches)</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {[
-                          { size: "XS", chest: "34-36", length: "26" },
-                          { size: "S", chest: "36-38", length: "27" },
-                          { size: "M", chest: "38-40", length: "28" },
-                          { size: "L", chest: "40-42", length: "29" },
-                          { size: "XL", chest: "42-44", length: "30" },
-                          { size: "XXL", chest: "44-46", length: "31" },
-                        ].map((row) => (
-                          <tr key={row.size} className="border-b">
-                            <td className="p-2 font-medium">{row.size}</td>
-                            <td className="p-2">{row.chest}</td>
-                            <td className="p-2">{row.length}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-4">
-                    * Measurements are approximate. For custom sizing, please contact us.
-                  </p>
+                  <ProductSizeGuide
+                    sizes={[
+                      { size: "XS", chest: "34-36", length: "26" },
+                      { size: "S", chest: "36-38", length: "27" },
+                      { size: "M", chest: "38-40", length: "28" },
+                      { size: "L", chest: "40-42", length: "29" },
+                      { size: "XL", chest: "42-44", length: "30" },
+                      { size: "XXL", chest: "44-46", length: "31" },
+                    ]}
+                    title="Size Guide"
+                    description="Find your perfect fit. Measurements are in inches."
+                    trigger={
+                      <Button variant="outline" className="rounded-full">
+                        View Size Guide
+                      </Button>
+                    }
+                  />
                 </div>
               </TabsContent>
 
@@ -518,6 +561,24 @@ const ProductDetail = () => {
               />
             </div>
           )}
+
+          {/* Recently Viewed */}
+          <div className="mt-16">
+            <RecentlyViewed
+              onProductClick={(product) => navigate(`/product/${product.id}`)}
+              onAddToCart={(product) => {
+                addToCart(product.id, 1);
+              }}
+              wishlistedIds={wishlistIds}
+              onWishlistToggle={(product) => {
+                const originalProduct = relatedProducts.find(p => p.id === product.id);
+                if (originalProduct) {
+                  toggleWishlist();
+                }
+              }}
+              maxItems={4}
+            />
+          </div>
         </div>
       </div>
     </PublicLayout>

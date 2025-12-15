@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { PublicLayout } from "@/layouts/PublicLayout";
 import { motion } from "framer-motion";
-import { Grid, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -14,6 +13,10 @@ import {
   ProductFilters,
   LoadingState,
   EmptyState,
+  FilterChips,
+  ProductSortDropdown,
+  ProductViewToggle,
+  ProductQuickViewModal,
 } from "@/components/ecommerce";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
@@ -61,6 +64,8 @@ const Shop = () => {
   const [sortBy, setSortBy] = useState("newest");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [wishlistIds, setWishlistIds] = useState<Set<string>>(new Set());
+  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
+  const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
   const { addToCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -265,6 +270,37 @@ const Shop = () => {
     setSelectedFabric("All");
     setSelectedTechnique("All");
     setPriceRange([0, 10000]);
+    setSearchQuery("");
+  };
+
+  // Build filter chips
+  const filterChips = [
+    ...(selectedCategory !== "All" ? [{ id: "cat", label: selectedCategory, type: "category" as const }] : []),
+    ...(selectedFabric !== "All" ? [{ id: "fabric", label: selectedFabric, type: "fabric" as const }] : []),
+    ...(selectedTechnique !== "All" ? [{ id: "technique", label: selectedTechnique, type: "technique" as const }] : []),
+    ...(priceRange[0] > 0 || priceRange[1] < 10000 ? [{ id: "price", label: `₹${priceRange[0]} - ₹${priceRange[1]}`, type: "price" as const }] : []),
+  ];
+
+  const handleRemoveFilter = (chipId: string) => {
+    switch (chipId) {
+      case "cat":
+        setSelectedCategory("All");
+        break;
+      case "fabric":
+        setSelectedFabric("All");
+        break;
+      case "technique":
+        setSelectedTechnique("All");
+        break;
+      case "price":
+        setPriceRange([0, 10000]);
+        break;
+    }
+  };
+
+  const handleQuickView = (product: Product) => {
+    setQuickViewProduct(product);
+    setIsQuickViewOpen(true);
   };
 
   return (
@@ -317,37 +353,25 @@ const Shop = () => {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <select
+                  <ProductSortDropdown
                     value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="h-10 px-4 rounded-full border border-input bg-background text-sm"
-                  >
-                    <option value="newest">Newest First</option>
-                    <option value="price-low">Price: Low to High</option>
-                    <option value="price-high">Price: High to Low</option>
-                    <option value="name">Name: A to Z</option>
-                  </select>
-
-                  <div className="flex gap-2 border rounded-full p-1">
-                    <Button
-                      variant={viewMode === "grid" ? "default" : "ghost"}
-                      size="icon"
-                      className="h-8 w-8 rounded-full"
-                      onClick={() => setViewMode("grid")}
-                    >
-                      <Grid className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant={viewMode === "list" ? "default" : "ghost"}
-                      size="icon"
-                      className="h-8 w-8 rounded-full"
-                      onClick={() => setViewMode("list")}
-                    >
-                      <List className="w-4 h-4" />
-                    </Button>
-                  </div>
+                    onValueChange={setSortBy}
+                  />
+                  <ProductViewToggle
+                    viewMode={viewMode}
+                    onViewChange={setViewMode}
+                  />
                 </div>
               </div>
+
+              {/* Filter Chips */}
+              {filterChips.length > 0 && (
+                <FilterChips
+                  chips={filterChips}
+                  onRemove={handleRemoveFilter}
+                  onClearAll={handleClearFilters}
+                />
+              )}
 
               {/* Products */}
               {loading ? (
@@ -362,37 +386,63 @@ const Shop = () => {
                   }}
                 />
               ) : (
-                <ProductGrid
-                  products={productGridItems}
-                  columns={viewMode === "grid" ? 3 : 1}
-                  onProductClick={(product) => navigate(`/product/${product.id}`)}
-                  onAddToCart={(product) => {
-                    const originalProduct = products.find(p => p.id === product.id);
-                    if (originalProduct) handleAddToCart(originalProduct);
-                  }}
-                  onWishlistToggle={(product) => {
-                    const originalProduct = products.find(p => p.id === product.id);
-                    if (originalProduct) toggleWishlist(originalProduct);
-                  }}
-                  onCompare={(product) => {
-                    const currentIds = new URLSearchParams(window.location.search).get("compare")?.split(",").filter(Boolean) || [];
-                    if (currentIds.length >= 4) {
-                      toast({
-                        title: "Limit Reached",
-                        description: "You can compare up to 4 products at a time",
-                        variant: "destructive",
-                      });
-                      return;
-                    }
-                    if (!currentIds.includes(product.id)) {
-                      const newIds = [...currentIds, product.id];
-                      navigate(`/compare?ids=${newIds.join(",")}`);
-                    } else {
-                      navigate("/compare");
-                    }
-                  }}
-                  wishlistedIds={wishlistIds}
-                />
+                <>
+                  <ProductGrid
+                    products={productGridItems}
+                    columns={viewMode === "grid" ? 3 : 1}
+                    onProductClick={(product) => navigate(`/product/${product.id}`)}
+                    onQuickView={(product) => {
+                      const originalProduct = products.find(p => p.id === product.id);
+                      if (originalProduct) handleQuickView(originalProduct);
+                    }}
+                    onAddToCart={(product) => {
+                      const originalProduct = products.find(p => p.id === product.id);
+                      if (originalProduct) handleAddToCart(originalProduct);
+                    }}
+                    onWishlistToggle={(product) => {
+                      const originalProduct = products.find(p => p.id === product.id);
+                      if (originalProduct) toggleWishlist(originalProduct);
+                    }}
+                    onCompare={(product) => {
+                      const currentIds = new URLSearchParams(window.location.search).get("compare")?.split(",").filter(Boolean) || [];
+                      if (currentIds.length >= 4) {
+                        toast({
+                          title: "Limit Reached",
+                          description: "You can compare up to 4 products at a time",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                      if (!currentIds.includes(product.id)) {
+                        const newIds = [...currentIds, product.id];
+                        navigate(`/compare?ids=${newIds.join(",")}`);
+                      } else {
+                        navigate("/compare");
+                      }
+                    }}
+                    wishlistedIds={wishlistIds}
+                  />
+                  
+                  {/* Quick View Modal */}
+                  {quickViewProduct && (
+                    <ProductQuickViewModal
+                      product={quickViewProduct}
+                      isOpen={isQuickViewOpen}
+                      onClose={() => {
+                        setIsQuickViewOpen(false);
+                        setQuickViewProduct(null);
+                      }}
+                      onAddToCart={(qty, size) => {
+                        handleAddToCart(quickViewProduct);
+                      }}
+                      onWishlistToggle={() => {
+                        toggleWishlist(quickViewProduct);
+                      }}
+                      isWishlisted={wishlistIds.has(quickViewProduct.id)}
+                      sizeOptions={["XS", "S", "M", "L", "XL", "XXL"]}
+                    />
+                  )}
+                </>
               )}
 
               {/* Results Count */}
