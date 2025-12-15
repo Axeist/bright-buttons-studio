@@ -37,6 +37,7 @@ const Checkout = () => {
   const navigate = useNavigate();
   const { customer, loading: customerLoading } = useCustomerAuth();
   const { items, loading: cartLoading, getTotalPrice, clearCart, refreshCart } = useCart();
+  const [currentStep, setCurrentStep] = useState(1); // 1: Cart, 2: Shipping, 3: Payment, 4: Review
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddress, setSelectedAddress] = useState<string>("");
   const [showAddressForm, setShowAddressForm] = useState(false);
@@ -145,7 +146,12 @@ const Checkout = () => {
         landmark: "",
         is_default: false,
       });
-      fetchAddresses();
+      await fetchAddresses();
+      // Auto-select the newly saved address
+      if (data && data.length > 0) {
+        const newAddress = data.find((a) => a.id === (editingAddress ? editingAddress.id : data[data.length - 1].id)) || data[data.length - 1];
+        setSelectedAddress(newAddress.id);
+      }
     } catch (error: any) {
       toast({
         title: "Error",
@@ -414,8 +420,66 @@ const Checkout = () => {
   const shippingAmount = subtotal >= 2000 ? 0 : 150;
   const totalAmount = subtotal + taxAmount + shippingAmount;
 
-  // Determine current step
-  const currentStep = selectedAddress || (!customer && addressForm.full_name) ? 2 : 1;
+  // Validation functions
+  const validateCartStep = () => {
+    return items.length > 0;
+  };
+
+  const validateShippingStep = () => {
+    if (customer && addresses.length > 0) {
+      // For logged-in users with saved addresses, they must select one
+      return !!selectedAddress;
+    }
+    // For guest checkout or when no saved addresses, validate the form
+    return !!(
+      addressForm.full_name &&
+      addressForm.phone &&
+      addressForm.address_line1 &&
+      addressForm.city &&
+      addressForm.state &&
+      addressForm.pincode
+    );
+  };
+
+  const validatePaymentStep = () => {
+    return !!paymentMethod;
+  };
+
+  const handleNextStep = () => {
+    if (currentStep === 1 && !validateCartStep()) {
+      toast({
+        title: "Error",
+        description: "Your cart is empty",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (currentStep === 2 && !validateShippingStep()) {
+      toast({
+        title: "Error",
+        description: "Please complete the delivery address",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (currentStep === 3 && !validatePaymentStep()) {
+      toast({
+        title: "Error",
+        description: "Please select a payment method",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (currentStep < 4) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const handlePreviousStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
 
   // Prepare order items for OrderSummary
   const orderItems = items.map(item => ({
@@ -466,8 +530,56 @@ const Checkout = () => {
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Delivery Address */}
-              <div className="bg-card rounded-xl p-6 border border-border">
+              {/* Step 1: Cart Review */}
+              {currentStep === 1 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-card rounded-xl p-6 border border-border"
+                >
+                  <h2 className="text-xl font-semibold flex items-center gap-2 mb-6">
+                    <ShoppingCart className="w-5 h-5 text-primary" />
+                    Review Your Cart
+                  </h2>
+                  <div className="space-y-4">
+                    {items.map((item) => (
+                      <div key={item.id} className="flex gap-4 p-4 border rounded-lg">
+                        {item.product && (
+                          <div className="w-20 h-20 rounded-lg overflow-hidden bg-gradient-to-br from-primary-50 to-earth-50 flex-shrink-0">
+                            <img
+                              src={getProductImageUrl(item.product) || ""}
+                              alt={item.product.name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <h3 className="font-semibold">{item.product?.name || "Product"}</h3>
+                          {item.size && (
+                            <p className="text-sm text-muted-foreground">Size: {item.size}</p>
+                          )}
+                          <div className="flex items-center justify-between mt-2">
+                            <span className="text-sm text-muted-foreground">
+                              Qty: {item.quantity}
+                            </span>
+                            <span className="font-semibold">
+                              ₹{((item.product?.price || 0) * item.quantity).toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Step 2: Delivery Address */}
+              {currentStep === 2 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-card rounded-xl p-6 border border-border"
+                >
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-semibold flex items-center gap-2">
                     <MapPin className="w-5 h-5 text-primary" />
@@ -597,8 +709,8 @@ const Checkout = () => {
                   </div>
                 )}
 
-                {/* Show address form if no addresses or for guest users */}
-                {(showAddressForm || (!customer && addresses.length === 0)) && (
+                {/* Show address form if no addresses or when adding new */}
+                {(showAddressForm || addresses.length === 0) && (
                   <div className="mt-4 p-4 border rounded-lg bg-muted/30">
                     <h3 className="font-semibold mb-4">
                       {editingAddress ? "Edit Address" : "Delivery Address"}
@@ -742,48 +854,187 @@ const Checkout = () => {
                     </div>
                   </div>
                 )}
-              </div>
+              </motion.div>
+              )}
 
-              {/* Payment Method */}
-              <div className="bg-card rounded-xl p-6 border border-border">
-                <h2 className="text-xl font-semibold flex items-center gap-2 mb-4">
-                  <CreditCard className="w-5 h-5 text-primary" />
-                  Payment Method
-                </h2>
-                <RadioGroup value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as "online" | "cod")}>
-                  <div className="space-y-3">
-                    <div className="border rounded-lg p-4 cursor-pointer transition-colors hover:border-primary/50">
-                      <div className="flex items-center gap-3">
-                        <RadioGroupItem value="online" id="online" />
-                        <div className="flex-1">
-                          <Label htmlFor="online" className="font-semibold cursor-pointer">
-                            Online Payment
-                          </Label>
-                          <p className="text-sm text-muted-foreground">
-                            Pay securely with UPI, Cards, or Net Banking
-                          </p>
+              {/* Step 3: Payment Method */}
+              {currentStep === 3 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-card rounded-xl p-6 border border-border"
+                >
+                  <h2 className="text-xl font-semibold flex items-center gap-2 mb-4">
+                    <CreditCard className="w-5 h-5 text-primary" />
+                    Payment Method
+                  </h2>
+                  <RadioGroup value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as "online" | "cod")}>
+                    <div className="space-y-3">
+                      <div className="border rounded-lg p-4 cursor-pointer transition-colors hover:border-primary/50">
+                        <div className="flex items-center gap-3">
+                          <RadioGroupItem value="online" id="online" />
+                          <div className="flex-1">
+                            <Label htmlFor="online" className="font-semibold cursor-pointer">
+                              Online Payment
+                            </Label>
+                            <p className="text-sm text-muted-foreground">
+                              Pay securely with UPI, Cards, or Net Banking
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="border rounded-lg p-4 cursor-pointer transition-colors hover:border-primary/50">
+                        <div className="flex items-center gap-3">
+                          <RadioGroupItem value="cod" id="cod" />
+                          <div className="flex-1">
+                            <Label htmlFor="cod" className="font-semibold cursor-pointer">
+                              Cash on Delivery
+                            </Label>
+                            <p className="text-sm text-muted-foreground">
+                              Pay when you receive your order
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
-                    <div className="border rounded-lg p-4 cursor-pointer transition-colors hover:border-primary/50">
-                      <div className="flex items-center gap-3">
-                        <RadioGroupItem value="cod" id="cod" />
-                        <div className="flex-1">
-                          <Label htmlFor="cod" className="font-semibold cursor-pointer">
-                            Cash on Delivery
-                          </Label>
-                          <p className="text-sm text-muted-foreground">
-                            Pay when you receive your order
-                          </p>
-                        </div>
+                  </RadioGroup>
+                </motion.div>
+              )}
+
+              {/* Step 4: Review & Place Order */}
+              {currentStep === 4 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-6"
+                >
+                  <div className="bg-card rounded-xl p-6 border border-border">
+                    <h2 className="text-xl font-semibold flex items-center gap-2 mb-6">
+                      <Lock className="w-5 h-5 text-primary" />
+                      Review Your Order
+                    </h2>
+
+                    {/* Delivery Address Review */}
+                    <div className="mb-6">
+                      <h3 className="font-semibold mb-3 flex items-center gap-2">
+                        <MapPin className="w-4 h-4" />
+                        Delivery Address
+                      </h3>
+                      {(() => {
+                        const address = selectedAddress 
+                          ? addresses.find(a => a.id === selectedAddress)
+                          : null;
+                        const displayAddress = address || {
+                          full_name: addressForm.full_name,
+                          phone: addressForm.phone,
+                          address_line1: addressForm.address_line1,
+                          address_line2: addressForm.address_line2,
+                          city: addressForm.city,
+                          state: addressForm.state,
+                          pincode: addressForm.pincode,
+                        };
+                        return (
+                          <div className="p-4 bg-muted/30 rounded-lg">
+                            <p className="font-semibold">{displayAddress.full_name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {displayAddress.address_line1}
+                              {displayAddress.address_line2 && `, ${displayAddress.address_line2}`}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {displayAddress.city}, {displayAddress.state} - {displayAddress.pincode}
+                            </p>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Phone: {displayAddress.phone}
+                            </p>
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Payment Method Review */}
+                    <div className="mb-6">
+                      <h3 className="font-semibold mb-3 flex items-center gap-2">
+                        <CreditCard className="w-4 h-4" />
+                        Payment Method
+                      </h3>
+                      <div className="p-4 bg-muted/30 rounded-lg">
+                        <p className="font-semibold">
+                          {paymentMethod === "online" ? "Online Payment" : "Cash on Delivery"}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {paymentMethod === "online" 
+                            ? "Pay securely with UPI, Cards, or Net Banking"
+                            : "Pay when you receive your order"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Order Items Review */}
+                    <div>
+                      <h3 className="font-semibold mb-3 flex items-center gap-2">
+                        <ShoppingCart className="w-4 h-4" />
+                        Order Items
+                      </h3>
+                      <div className="space-y-3">
+                        {items.map((item) => (
+                          <div key={item.id} className="flex gap-4 p-3 border rounded-lg">
+                            {item.product && (
+                              <div className="w-16 h-16 rounded-lg overflow-hidden bg-gradient-to-br from-primary-50 to-earth-50 flex-shrink-0">
+                                <img
+                                  src={getProductImageUrl(item.product) || ""}
+                                  alt={item.product.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            )}
+                            <div className="flex-1">
+                              <h4 className="font-medium">{item.product?.name || "Product"}</h4>
+                              {item.size && (
+                                <p className="text-sm text-muted-foreground">Size: {item.size}</p>
+                              )}
+                              <div className="flex items-center justify-between mt-1">
+                                <span className="text-sm text-muted-foreground">
+                                  Qty: {item.quantity}
+                                </span>
+                                <span className="font-semibold">
+                                  ₹{((item.product?.price || 0) * item.quantity).toLocaleString()}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </div>
-                </RadioGroup>
+                </motion.div>
+              )}
+
+              {/* Navigation Buttons */}
+              <div className="flex justify-between gap-4 pt-4">
+                {currentStep > 1 && (
+                  <Button
+                    variant="outline"
+                    onClick={handlePreviousStep}
+                    className="rounded-full"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Previous
+                  </Button>
+                )}
+                <div className="flex-1" />
+                {currentStep < 4 ? (
+                  <Button
+                    onClick={handleNextStep}
+                    className="rounded-full"
+                  >
+                    Continue
+                    <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
+                  </Button>
+                ) : null}
               </div>
             </div>
 
-            {/* Order Summary */}
+            {/* Order Summary Sidebar */}
             <div className="lg:col-span-1">
               <OrderSummary
                 items={orderItems}
@@ -794,24 +1045,26 @@ const Checkout = () => {
                 total={totalAmount}
                 showCouponInput={false}
               />
-              <Button
-                size="lg"
-                className="w-full mt-6 rounded-full h-12"
-                onClick={handlePlaceOrder}
-                disabled={(!selectedAddress && (!customer || addresses.length === 0)) || isProcessing || items.length === 0}
-              >
-                {isProcessing ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <Lock className="w-4 h-4 mr-2" />
-                    Place Order
-                  </>
-                )}
-              </Button>
+              {currentStep === 4 && (
+                <Button
+                  size="lg"
+                  className="w-full mt-6 rounded-full h-12"
+                  onClick={handlePlaceOrder}
+                  disabled={isProcessing || items.length === 0}
+                >
+                  {isProcessing ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-4 h-4 mr-2" />
+                      Place Order
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
           </div>
         </div>
