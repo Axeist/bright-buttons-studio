@@ -21,6 +21,8 @@ interface Product {
   fabric: string | null;
   technique: string | null;
   description: string | null;
+  tagline: string | null;
+  created_at?: string;
   inventory?: {
     quantity: number;
     reserved_quantity: number;
@@ -40,6 +42,7 @@ const ProductComparisonPage = () => {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [productRatings, setProductRatings] = useState<Map<string, { rating: number; reviewCount: number }>>(new Map());
   const { addToCart } = useCart();
   const { user } = useAuth();
 
@@ -72,6 +75,39 @@ const ProductComparisonPage = () => {
 
       if (error) throw error;
       setProducts(data || []);
+
+      // Fetch ratings for products
+      if (data && data.length > 0) {
+        const productIds = data.map(p => p.id);
+        const { data: reviewsData } = await supabase
+          .from("product_reviews")
+          .select("product_id, rating")
+          .in("product_id", productIds)
+          .eq("is_approved", true);
+
+        // Store ratings in a way we can access later
+        if (reviewsData) {
+          const ratingsMap = new Map<string, { rating: number; reviewCount: number }>();
+          reviewsData.forEach(review => {
+            const existing = ratingsMap.get(review.product_id) || { rating: 0, reviewCount: 0 };
+            ratingsMap.set(review.product_id, {
+              rating: existing.rating + review.rating,
+              reviewCount: existing.reviewCount + 1
+            });
+          });
+
+          // Calculate averages and store
+          const finalRatings = new Map<string, { rating: number; reviewCount: number }>();
+          ratingsMap.forEach((value, productId) => {
+            finalRatings.set(productId, {
+              rating: value.rating / value.reviewCount,
+              reviewCount: value.reviewCount
+            });
+          });
+
+          setProductRatings(finalRatings);
+        }
+      }
     } catch (error) {
       console.error("Error fetching products:", error);
       toast({
@@ -166,21 +202,44 @@ const ProductComparisonPage = () => {
       ? product.inventory[0] 
       : product.inventory;
     const availableStock = (inventory?.quantity || 0) - (inventory?.reserved_quantity || 0);
+    const ratingData = productRatings.get(product.id);
+    const rating = ratingData?.rating || 0;
+    const reviewCount = ratingData?.reviewCount || 0;
+
+    // Calculate if product is new (less than 30 days old)
+    const isNew = product.created_at 
+      ? (Date.now() - new Date(product.created_at).getTime()) < (30 * 24 * 60 * 60 * 1000)
+      : false;
+
+    // Format description/tagline (truncate if too long)
+    const description = product.description || product.tagline || "N/A";
+    const shortDescription = description.length > 100 
+      ? description.substring(0, 100) + "..." 
+      : description;
 
     return {
       id: product.id,
       name: product.name,
       price: product.price,
       image: getProductImageUrl(product) || undefined,
-      rating: 4.5, // You can fetch actual rating
+      rating: rating,
       inStock: availableStock > 0,
       features: {
         "Category": product.category,
         "Fabric": product.fabric || "N/A",
         "Technique": product.technique || "N/A",
+        "Description": shortDescription,
+        "Price": `₹${product.price.toLocaleString()}`,
+        "Rating": rating > 0 ? `${rating.toFixed(1)} (${reviewCount} review${reviewCount !== 1 ? "s" : ""})` : "No ratings yet",
         "In Stock": availableStock > 0 ? "Yes" : "No",
         "Stock Quantity": availableStock.toString(),
-        "Price": `₹${product.price.toLocaleString()}`,
+        "Availability": availableStock > 10 ? "In Stock" : availableStock > 0 ? `Only ${availableStock} left` : "Out of Stock",
+        "New Arrival": isNew ? "Yes" : "No",
+        "Delivery": "5-7 business days",
+        "Free Shipping": product.price >= 500 ? "Yes (Over ₹500)" : "No",
+        "Returns": "30 days return policy",
+        "Care": "Hand wash recommended",
+        "Material": `${product.fabric || "N/A"} - ${product.technique || "N/A"}`,
       },
     };
   });
