@@ -240,55 +240,95 @@ const Dashboard = () => {
         ...data,
       }));
 
-      // Category performance
+      // Category performance and Top products
       const orderIds = orders.map(o => o.id);
-      const { data: orderItems } = await supabase
-        .from("order_items")
-        .select("product_id, quantity, unit_price, order_id, products(category)")
-        .in("order_id", orderIds);
+      let orderItems: any[] = [];
+      let categoryPerformance: Array<{ category: string; revenue: number; orders: number }> = [];
+      let topProducts: Array<{ name: string; sales: number; revenue: number }> = [];
+      
+      if (orderIds.length > 0) {
+        try {
+          const { data: orderItemsData, error: orderItemsError } = await supabase
+            .from("order_items")
+            .select("product_id, quantity, unit_price, order_id, product_name")
+            .in("order_id", orderIds);
+          
+          if (orderItemsError) {
+            console.error("Error fetching order items:", orderItemsError);
+          } else {
+            orderItems = orderItemsData || [];
+          }
 
-      const categoryMap = new Map<string, { revenue: number; orders: Set<string> }>();
-      orderItems?.forEach((item: any) => {
-        const category = item.products?.category || "Uncategorized";
-        const existing = categoryMap.get(category) || { revenue: 0, orders: new Set() };
-        categoryMap.set(category, {
-          revenue: existing.revenue + (item.unit_price * item.quantity),
-          orders: existing.orders.add(item.order_id),
-        });
-      });
-      const categoryPerformance = Array.from(categoryMap.entries())
-        .map(([category, data]) => ({
-          category,
-          revenue: Math.round(data.revenue),
-          orders: data.orders.size,
-        }))
-        .sort((a, b) => b.revenue - a.revenue)
-        .slice(0, 5);
+          // Fetch product categories separately
+          const productIds = orderItems.map((item: any) => item.product_id).filter(Boolean);
+          let productsData: any[] = [];
+          if (productIds.length > 0) {
+            const { data: products } = await supabase
+              .from("products")
+              .select("id, category, name")
+              .in("id", productIds);
+            productsData = products || [];
+          }
+
+          const productMap = new Map<string, { category: string; name: string }>();
+          productsData.forEach((p: any) => {
+            productMap.set(p.id, { category: p.category, name: p.name });
+          });
+
+          // Category performance
+          const categoryMap = new Map<string, { revenue: number; orders: Set<string> }>();
+          orderItems.forEach((item: any) => {
+            const productInfo = productMap.get(item.product_id) || { category: "Uncategorized", name: item.product_name };
+            const category = productInfo.category || "Uncategorized";
+            const existing = categoryMap.get(category) || { revenue: 0, orders: new Set<string>() };
+            existing.orders.add(item.order_id);
+            categoryMap.set(category, {
+              revenue: existing.revenue + (item.unit_price * item.quantity),
+              orders: existing.orders,
+            });
+          });
+          categoryPerformance = Array.from(categoryMap.entries())
+            .map(([category, data]) => ({
+              category,
+              revenue: Math.round(data.revenue),
+              orders: data.orders.size,
+            }))
+            .sort((a, b) => b.revenue - a.revenue)
+            .slice(0, 5);
+
+          // Top products
+          const productSales = new Map<string, { sales: number; revenue: number }>();
+          orderItems.forEach((item: any) => {
+            const productInfo = productMap.get(item.product_id);
+            const productName = item.product_name || productInfo?.name || "Unknown Product";
+            const existing = productSales.get(productName) || { sales: 0, revenue: 0 };
+            productSales.set(productName, {
+              sales: existing.sales + item.quantity,
+              revenue: existing.revenue + (item.unit_price * item.quantity),
+            });
+          });
+          topProducts = Array.from(productSales.entries())
+            .map(([name, data]) => ({ name, ...data }))
+            .sort((a, b) => b.revenue - a.revenue)
+            .slice(0, 5);
+        } catch (err) {
+          console.error("Error processing order items:", err);
+        }
+      }
 
       // New vs Returning customers
       const customerIds = orders.map(o => o.customer_id).filter(Boolean) as string[];
-      const { data: customersData } = await supabase
-        .from("customers")
-        .select("id, total_orders")
-        .in("id", customerIds);
+      let customersData: any[] = [];
+      if (customerIds.length > 0) {
+        const { data: customersDataResult } = await supabase
+          .from("customers")
+          .select("id, total_orders")
+          .in("id", customerIds);
+        customersData = customersDataResult || [];
+      }
 
-      const newCustomers = customersData?.filter(c => (c.total_orders || 0) <= 1).length || 0;
-      const returningCustomers = (customersData?.length || 0) - newCustomers;
-
-      // Top products
-      const productSales = new Map<string, { sales: number; revenue: number }>();
-      orderItems?.forEach((item: any) => {
-        const productName = item.products?.name || "Unknown Product";
-        const existing = productSales.get(productName) || { sales: 0, revenue: 0 };
-        productSales.set(productName, {
-          sales: existing.sales + item.quantity,
-          revenue: existing.revenue + (item.unit_price * item.quantity),
-        });
-      });
-      const topProducts = Array.from(productSales.entries())
-        .map(([name, data]) => ({ name, ...data }))
-        .sort((a, b) => b.revenue - a.revenue)
-        .slice(0, 5);
+      const newCustomers = customersData.filter(c => (c.total_orders || 0) <= 1).length;
+      const returningCustomers = customersData.length - newCustomers;
 
       // Comparison with previous period
       const { start: currentStart } = getDateRange();
@@ -350,15 +390,64 @@ const Dashboard = () => {
         lastPeriodOrders,
       });
     } catch (error: any) {
+      console.error("Dashboard data fetch error:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to load dashboard data",
         variant: "destructive",
       });
+      // Set default values on error to prevent blank screen
+      setStats({
+        todayRevenue: 0,
+        todayOrders: 0,
+        avgOrderValue: 0,
+        whatsappOrders: 0,
+        onlineOrders: 0,
+        lowStockItems: [],
+        topProducts: [],
+        recentOrders: [],
+        monthlyRevenue: [],
+        orderStatusDistribution: [],
+        paymentMethodDistribution: [],
+        categoryPerformance: [],
+        newVsReturningCustomers: { new: 0, returning: 0 },
+        thisPeriodRevenue: 0,
+        lastPeriodRevenue: 0,
+        thisPeriodOrders: 0,
+        lastPeriodOrders: 0,
+      });
     } finally {
       setLoading(false);
     }
   };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "delivered": return "bg-primary/10 text-primary border-primary/20";
+      case "ready": return "bg-earth-100 dark:bg-earth-900/40 text-earth-800 dark:text-earth-400 border-earth-300 dark:border-earth-700";
+      case "processing": return "bg-blush-100 dark:bg-blush-900/40 text-blush-800 dark:text-blush-400 border-blush-300 dark:border-blush-700";
+      case "confirmed": return "bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-400 border-primary-300 dark:border-primary-700";
+      case "pending": return "bg-earth-200 dark:bg-earth-800/40 text-earth-800 dark:text-earth-300 border-earth-400 dark:border-earth-600";
+      default: return "bg-muted text-muted-foreground border-border";
+    }
+  };
+
+  if (loading) {
+    return (
+      <AdminLayout title="Dashboard">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  const revenueChange = stats.lastPeriodRevenue > 0 
+    ? ((stats.thisPeriodRevenue - stats.lastPeriodRevenue) / stats.lastPeriodRevenue * 100).toFixed(1)
+    : "0";
+  const ordersChange = stats.lastPeriodOrders > 0
+    ? ((stats.thisPeriodOrders - stats.lastPeriodOrders) / stats.lastPeriodOrders * 100).toFixed(1)
+    : "0";
 
   const displayStats = [
     { 
@@ -398,34 +487,6 @@ const Dashboard = () => {
       iconColor: "text-blue-600 dark:text-blue-400"
     },
   ];
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "delivered": return "bg-primary/10 text-primary border-primary/20";
-      case "ready": return "bg-earth-100 dark:bg-earth-900/40 text-earth-800 dark:text-earth-400 border-earth-300 dark:border-earth-700";
-      case "processing": return "bg-blush-100 dark:bg-blush-900/40 text-blush-800 dark:text-blush-400 border-blush-300 dark:border-blush-700";
-      case "confirmed": return "bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-400 border-primary-300 dark:border-primary-700";
-      case "pending": return "bg-earth-200 dark:bg-earth-800/40 text-earth-800 dark:text-earth-300 border-earth-400 dark:border-earth-600";
-      default: return "bg-muted text-muted-foreground border-border";
-    }
-  };
-
-  if (loading) {
-    return (
-      <AdminLayout title="Dashboard">
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
-      </AdminLayout>
-    );
-  }
-
-  const revenueChange = stats.lastPeriodRevenue > 0 
-    ? ((stats.thisPeriodRevenue - stats.lastPeriodRevenue) / stats.lastPeriodRevenue * 100).toFixed(1)
-    : "0";
-  const ordersChange = stats.lastPeriodOrders > 0
-    ? ((stats.thisPeriodOrders - stats.lastPeriodOrders) / stats.lastPeriodOrders * 100).toFixed(1)
-    : "0";
 
   return (
     <AdminLayout title="Dashboard">
