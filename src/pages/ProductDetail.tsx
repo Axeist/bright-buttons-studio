@@ -62,7 +62,7 @@ const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { addToCart } = useCart();
+  const { addToCart, refreshCart } = useCart();
   const [product, setProduct] = useState<Product | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -248,6 +248,16 @@ const ProductDetail = () => {
   const handleAddToCart = async (qty: number, size?: string) => {
     if (!product) return;
 
+    if (!user) {
+      toast({
+        title: "Please login",
+        description: "You need to login to add items to cart",
+        variant: "destructive",
+      });
+      navigate("/customer/login");
+      return;
+    }
+
     if (!size && sizes.length > 0) {
       toast({
         title: "Select size",
@@ -267,8 +277,15 @@ const ProductDetail = () => {
       return;
     }
 
-    for (let i = 0; i < qty; i++) {
-      await addToCart(product.id, 1, size);
+    try {
+      // Add all items at once instead of looping
+      await addToCart(product.id, qty, size);
+      
+      // Refresh cart to get updated state
+      await refreshCart();
+    } catch (error: any) {
+      console.error("Error adding to cart:", error);
+      // Error toast is already shown by addToCart in useCart hook
     }
   };
 
