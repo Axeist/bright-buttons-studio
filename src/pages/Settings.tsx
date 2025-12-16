@@ -1631,24 +1631,39 @@ const ManageReviewsSection = () => {
     if (!isAdmin && !isStaff) return;
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("product_reviews")
         .delete()
-        .eq("id", reviewId);
+        .eq("id", reviewId)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Delete review error:", error);
+        throw error;
+      }
 
-      toast({
-        title: "Review Deleted",
-        description: "The review has been deleted successfully.",
-      });
+      // Check if the delete was successful
+      if (data && data.length > 0) {
+        toast({
+          title: "Review Deleted",
+          description: "The review has been deleted successfully.",
+        });
 
-      setDeletingReview(null);
-      fetchAllReviews();
+        setDeletingReview(null);
+        await fetchAllReviews();
+      } else {
+        // No rows were deleted (might be due to RLS policy)
+        toast({
+          title: "Error",
+          description: "Failed to delete review. You may not have permission or the review may not exist.",
+          variant: "destructive",
+        });
+      }
     } catch (error: any) {
+      console.error("Error deleting review:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to delete review",
+        description: error.message || "Failed to delete review. Please check your permissions.",
         variant: "destructive",
       });
     }
