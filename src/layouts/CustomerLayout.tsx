@@ -245,7 +245,7 @@ export const CustomerLayout = ({ children, title }: CustomerLayoutProps) => {
                   {customer?.name || customer?.email?.split("@")[0] || "Customer"}
                 </p>
                 <p className="text-xs text-muted-foreground truncate mb-1">
-                  {customer?.email || "customer@brightbuttons.com"}
+                  {customer?.email || "support@brightbuttons.in"}
                 </p>
                 <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-primary/20 text-primary border border-primary/30">
                   {customer?.loyalty_tier ? customer.loyalty_tier.charAt(0).toUpperCase() + customer.loyalty_tier.slice(1) : "Bronze"} Member

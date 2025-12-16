@@ -97,7 +97,7 @@ We encourage you to review these terms periodically to stay informed of any upda
       title: "12. Contact Information",
       content: `If you have any questions about these Terms and Conditions, please contact us at:
 
-Email: hello@brightbuttons.com
+Email: support@brightbuttons.in
 Phone: +91 99526 55555
 Address: [Your Business Address]
 

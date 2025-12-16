@@ -449,7 +449,7 @@ export const ConstructionPopup = () => {
                   <span className="text-xs text-muted-foreground">
                     Built with{' '}
                     <a
-                      href="https://tech.cuephoria.in"
+                      href="https://cuephoriatech.in"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-block hover:scale-110 transition-transform"

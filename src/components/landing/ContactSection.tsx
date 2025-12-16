@@ -114,7 +114,7 @@ export const ContactSection = () => {
               </a>
 
               <a
-                href="mailto:hello@brightbuttons.com"
+                href="mailto:support@brightbuttons.in"
                 className="flex items-center gap-4 p-4 glass-card hover-lift"
               >
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
@@ -122,7 +122,7 @@ export const ContactSection = () => {
                 </div>
                 <div>
                   <p className="font-medium text-foreground">Email</p>
-                  <p className="text-sm text-muted-foreground">hello@brightbuttons.com</p>
+                  <p className="text-sm text-muted-foreground">support@brightbuttons.in</p>
                 </div>
               </a>
             </div>

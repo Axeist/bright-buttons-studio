@@ -38,7 +38,7 @@ Please contact us immediately if you encounter any issues with your order. Late 
       content: `To initiate a return and refund:
 
 Step 1: Contact Us
-- Email: hello@brightbuttons.com
+- Email: support@brightbuttons.in
 - Phone: +91 99526 55555
 - WhatsApp: +91 99526 55555
 
@@ -191,7 +191,7 @@ We are committed to fair resolution of all disputes in accordance with Indian co
       title: "13. Contact for Refunds",
       content: `For refund inquiries and requests, please contact:
 
-Email: hello@brightbuttons.com
+Email: support@brightbuttons.in
 Phone: +91 99526 55555
 WhatsApp: +91 99526 55555
 Business Hours: Monday to Saturday, 10 AM - 6 PM IST

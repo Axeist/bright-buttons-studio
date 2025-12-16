@@ -256,7 +256,7 @@ export const AdminLayout = ({ children, title }: AdminLayoutProps) => {
                   {user?.email?.split("@")[0] || "User"}
                 </p>
                 <p className="text-xs text-muted-foreground truncate mb-1">
-                  {user?.email || "admin@brightbuttons.com"}
+                  {user?.email || "support@brightbuttons.in"}
                 </p>
                 <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
                   isAdmin 

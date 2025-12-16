@@ -112,7 +112,7 @@ Objection: Object to processing of your information
 Portability: Request transfer of your information
 Withdrawal: Withdraw consent for data processing
 
-To exercise these rights, please contact us at hello@brightbuttons.com. We will respond to your request within 30 days.`,
+To exercise these rights, please contact us at support@brightbuttons.in. We will respond to your request within 30 days.`,
     },
     {
       icon: Database,
@@ -152,7 +152,7 @@ Your continued use of our services after changes are posted constitutes acceptan
       title: "13. Contact Us",
       content: `If you have questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us:
 
-Email: hello@brightbuttons.com
+Email: support@brightbuttons.in
 Phone: +91 99526 55555
 Address: [Your Business Address]
 

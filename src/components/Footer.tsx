@@ -124,11 +124,11 @@ export const Footer = () => {
               </li>
               <li>
                 <a
-                  href="mailto:hello@brightbuttons.com"
+                  href="mailto:support@brightbuttons.in"
                   className="flex items-center gap-3 text-muted-foreground hover:text-primary transition-colors py-0.5 touch-target"
                 >
                   <Mail className="w-5 h-5" />
-                  <span className="break-all">hello@brightbuttons.com</span>
+                  <span className="break-all">support@brightbuttons.in</span>
                 </a>
               </li>
             </ul>

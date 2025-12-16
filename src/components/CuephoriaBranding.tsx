@@ -12,7 +12,7 @@ export const CuephoriaBranding = ({ variant = "footer", className = "" }: Cuepho
   if (variant === "tag") {
     return (
       <motion.a
-        href="https://tech.cuephoria.in"
+        href="https://cuephoriatech.in"
         target="_blank"
         rel="noopener noreferrer"
         className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 dark:from-primary-900/30 dark:via-primary-900/20 dark:to-primary-900/30 border border-primary/30 dark:border-primary-800/50 backdrop-blur-sm shadow-md hover:shadow-lg transition-all duration-300 group ${className}`}
@@ -49,7 +49,7 @@ export const CuephoriaBranding = ({ variant = "footer", className = "" }: Cuepho
   if (variant === "subtle") {
     return (
       <motion.a
-        href="https://tech.cuephoria.in"
+        href="https://cuephoriatech.in"
         target="_blank"
         rel="noopener noreferrer"
         className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 dark:from-primary-900/30 dark:via-primary-900/20 dark:to-primary-900/30 border border-primary/20 dark:border-primary-800/40 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-300 group ${className}`}
@@ -82,7 +82,7 @@ export const CuephoriaBranding = ({ variant = "footer", className = "" }: Cuepho
   if (variant === "inline") {
     return (
       <motion.a
-        href="https://tech.cuephoria.in"
+        href="https://cuephoriatech.in"
         target="_blank"
         rel="noopener noreferrer"
         className={`${baseClasses} ${className}`}
@@ -100,7 +100,7 @@ export const CuephoriaBranding = ({ variant = "footer", className = "" }: Cuepho
   // Footer variant (default)
   return (
     <motion.a
-      href="https://tech.cuephoria.in"
+      href="https://cuephoriatech.in"
       target="_blank"
       rel="noopener noreferrer"
       className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 dark:from-primary-900/30 dark:via-primary-900/20 dark:to-primary-900/30 border border-primary/20 dark:border-primary-800/40 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-300 group ${className}`}

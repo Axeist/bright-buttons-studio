@@ -275,7 +275,7 @@ Prevention:
       title: "14. Contact for Shipping Inquiries",
       content: `For shipping-related questions and support:
 
-Email: hello@brightbuttons.com
+Email: support@brightbuttons.in
 Phone: +91 99526 55555
 WhatsApp: +91 99526 55555
 Business Hours: Monday to Saturday, 10 AM - 6 PM IST
