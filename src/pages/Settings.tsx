@@ -76,6 +76,8 @@ const Settings = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const PRODUCTS_PER_PAGE = 12;
   const MAX_FEATURED_PRODUCTS = 12;
+  const [currentPincodePage, setCurrentPincodePage] = useState(1);
+  const PINCODES_PER_PAGE = 10;
   const [couponForm, setCouponForm] = useState({
     code: "",
     name: "",
@@ -426,6 +428,7 @@ const Settings = () => {
       setIsPincodeModalOpen(false);
       resetPincodeForm();
       fetchServiceablePincodes();
+      setCurrentPincodePage(1);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -450,6 +453,13 @@ const Settings = () => {
         description: "Serviceable pincode deleted successfully",
       });
       fetchServiceablePincodes();
+      // Reset to page 1 if current page becomes empty
+      const newTotalPages = Math.ceil((serviceablePincodes.length - 1) / PINCODES_PER_PAGE);
+      if (currentPincodePage > newTotalPages && newTotalPages > 0) {
+        setCurrentPincodePage(newTotalPages);
+      } else if (newTotalPages === 0) {
+        setCurrentPincodePage(1);
+      }
     } catch (error: any) {
       toast({
         title: "Error",
@@ -611,12 +621,18 @@ const Settings = () => {
     }
   };
 
-  // Calculate pagination
+  // Calculate pagination for products
   const totalPages = Math.ceil(products.length / PRODUCTS_PER_PAGE);
   const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
   const endIndex = startIndex + PRODUCTS_PER_PAGE;
   const currentProducts = products.slice(startIndex, endIndex);
   const featuredCount = products.filter(p => p.is_featured).length;
+
+  // Calculate pagination for pincodes
+  const totalPincodePages = Math.ceil(serviceablePincodes.length / PINCODES_PER_PAGE);
+  const pincodeStartIndex = (currentPincodePage - 1) * PINCODES_PER_PAGE;
+  const pincodeEndIndex = pincodeStartIndex + PINCODES_PER_PAGE;
+  const currentPincodes = serviceablePincodes.slice(pincodeStartIndex, pincodeEndIndex);
 
   const handleImportPincodes = async () => {
     if (!csvFile) return;
@@ -665,6 +681,7 @@ const Settings = () => {
       setCsvFile(null);
       setImportErrors([]);
       fetchServiceablePincodes();
+      setCurrentPincodePage(1);
     } catch (error: any) {
       console.error("Error importing pincodes:", error);
       toast({
@@ -1134,46 +1151,79 @@ const Settings = () => {
               <p className="text-sm mt-1">Click "Add Pincode" to add your first serviceable pincode</p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {serviceablePincodes.map((pincode) => (
-                <div
-                  key={pincode.id}
-                  className="flex items-center justify-between p-4 bg-accent rounded-lg border border-border"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-foreground">{pincode.pincode}</span>
-                      {!pincode.is_active && (
-                        <span className="px-2 py-0.5 text-xs rounded-full bg-muted text-muted-foreground">
-                          Inactive
-                        </span>
-                      )}
+            <>
+              <div className="space-y-3">
+                {currentPincodes.map((pincode) => (
+                  <div
+                    key={pincode.id}
+                    className="flex items-center justify-between p-4 bg-accent rounded-lg border border-border"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-foreground">{pincode.pincode}</span>
+                        {!pincode.is_active && (
+                          <span className="px-2 py-0.5 text-xs rounded-full bg-muted text-muted-foreground">
+                            Inactive
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-0.5">
+                        {pincode.city}, {pincode.state}
+                      </p>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                      {pincode.city}, {pincode.state}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openEditPincode(pincode)}
+                        className="rounded-xl"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeletePincode(pincode.id)}
+                        className="rounded-xl text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openEditPincode(pincode)}
-                      className="rounded-xl"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeletePincode(pincode.id)}
-                      className="rounded-xl text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
+                ))}
+              </div>
+
+              {/* Pagination Controls */}
+              {totalPincodePages > 1 && (
+                <div className="flex items-center justify-between pt-4 border-t mt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPincodePage((prev) => Math.max(1, prev - 1))}
+                    disabled={currentPincodePage === 1}
+                    className="rounded-xl"
+                  >
+                    <ChevronLeft className="w-4 h-4 mr-2" />
+                    Previous
+                  </Button>
+                  
+                  <span className="text-sm text-muted-foreground">
+                    Page {currentPincodePage} of {totalPincodePages}
+                  </span>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPincodePage((prev) => Math.min(totalPincodePages, prev + 1))}
+                    disabled={currentPincodePage === totalPincodePages}
+                    className="rounded-xl"
+                  >
+                    Next
+                    <ChevronRight className="w-4 h-4 ml-2" />
+                  </Button>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
             </section>
           </TabsContent>
