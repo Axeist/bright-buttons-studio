@@ -13,8 +13,7 @@ import {
   X,
   LogOut,
   Sparkles,
-  Leaf,
-  Wallet
+  Leaf
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -31,9 +30,8 @@ const sidebarItems = [
   { name: "My Profile", icon: User, href: "/customer/profile" },
   { name: "My Orders", icon: Package, href: "/customer/orders" },
   { name: "My Wishlist", icon: Heart, href: "/customer/wishlist" },
-  { name: "My Wallet", icon: Wallet, href: "/customer/wallet" },
+  { name: "Redeem & Rewards", icon: Gift, href: "/customer/redeem-rewards" },
   { name: "Custom Orders", icon: SparklesIcon, href: "/customer/custom-orders" },
-  { name: "Rewards & Points", icon: Gift, href: "/customer/rewards" },
 ];
 
 export const CustomerLayout = ({ children, title }: CustomerLayoutProps) => {

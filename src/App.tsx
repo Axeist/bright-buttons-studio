@@ -35,9 +35,8 @@ const OrderConfirmation = lazy(() => import("./pages/OrderConfirmation"));
 const CustomerDashboard = lazy(() => import("./pages/customer/Dashboard"));
 const CustomerOrders = lazy(() => import("./pages/customer/Orders"));
 const CustomerProfile = lazy(() => import("./pages/customer/Profile"));
-const CustomerRewards = lazy(() => import("./pages/customer/Rewards"));
+const CustomerRedeemRewards = lazy(() => import("./pages/customer/RedeemRewards"));
 const CustomerWishlist = lazy(() => import("./pages/customer/Wishlist"));
-const CustomerWallet = lazy(() => import("./pages/customer/Wallet"));
 const CustomOrders = lazy(() => import("./pages/customer/CustomOrders"));
 const CustomOrderForm = lazy(() => import("./pages/customer/CustomOrderForm"));
 const CustomOrderDetail = lazy(() => import("./pages/customer/CustomOrderDetail"));
@@ -55,6 +54,7 @@ const Customers = lazy(() => import("./pages/Customers"));
 const Reports = lazy(() => import("./pages/Reports"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Staff = lazy(() => import("./pages/Staff"));
+const Manage = lazy(() => import("./pages/Manage"));
 const Scanner = lazy(() => import("./pages/Scanner"));
 
 // Optimized QueryClient configuration
@@ -128,19 +128,14 @@ const App = () => (
                       <CustomerProfile />
                     </CustomerProtectedRoute>
                   } />
-                  <Route path="/customer/rewards" element={
+                  <Route path="/customer/redeem-rewards" element={
                     <CustomerProtectedRoute>
-                      <CustomerRewards />
+                      <CustomerRedeemRewards />
                     </CustomerProtectedRoute>
                   } />
                   <Route path="/customer/wishlist" element={
                     <CustomerProtectedRoute>
                       <CustomerWishlist />
-                    </CustomerProtectedRoute>
-                  } />
-                  <Route path="/customer/wallet" element={
-                    <CustomerProtectedRoute>
-                      <CustomerWallet />
                     </CustomerProtectedRoute>
                   } />
                   <Route path="/customer/custom-orders" element={
@@ -218,6 +213,11 @@ const App = () => (
                   <Route path="/staff" element={
                     <StaffProtectedRoute requireAdmin>
                       <Staff />
+                    </StaffProtectedRoute>
+                  } />
+                  <Route path="/manage" element={
+                    <StaffProtectedRoute>
+                      <Manage />
                     </StaffProtectedRoute>
                   } />
                   <Route path="/scanner" element={
