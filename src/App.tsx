@@ -37,6 +37,7 @@ const CustomerOrders = lazy(() => import("./pages/customer/Orders"));
 const CustomerProfile = lazy(() => import("./pages/customer/Profile"));
 const CustomerRewards = lazy(() => import("./pages/customer/Rewards"));
 const CustomerWishlist = lazy(() => import("./pages/customer/Wishlist"));
+const CustomerWallet = lazy(() => import("./pages/customer/Wallet"));
 const CustomOrders = lazy(() => import("./pages/customer/CustomOrders"));
 const CustomOrderForm = lazy(() => import("./pages/customer/CustomOrderForm"));
 const CustomOrderDetail = lazy(() => import("./pages/customer/CustomOrderDetail"));
@@ -135,6 +136,11 @@ const App = () => (
                   <Route path="/customer/wishlist" element={
                     <CustomerProtectedRoute>
                       <CustomerWishlist />
+                    </CustomerProtectedRoute>
+                  } />
+                  <Route path="/customer/wallet" element={
+                    <CustomerProtectedRoute>
+                      <CustomerWallet />
                     </CustomerProtectedRoute>
                   } />
                   <Route path="/customer/custom-orders" element={

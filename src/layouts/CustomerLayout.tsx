@@ -13,7 +13,8 @@ import {
   X,
   LogOut,
   Sparkles,
-  Leaf
+  Leaf,
+  Wallet
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ const sidebarItems = [
   { name: "My Profile", icon: User, href: "/customer/profile" },
   { name: "My Orders", icon: Package, href: "/customer/orders" },
   { name: "My Wishlist", icon: Heart, href: "/customer/wishlist" },
+  { name: "My Wallet", icon: Wallet, href: "/customer/wallet" },
   { name: "Custom Orders", icon: SparklesIcon, href: "/customer/custom-orders" },
   { name: "Rewards & Points", icon: Gift, href: "/customer/rewards" },
 ];
