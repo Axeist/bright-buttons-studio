@@ -27,7 +27,7 @@ interface CustomerLayoutProps {
 }
 
 const sidebarItems = [
-  { name: "Dashboard", icon: LayoutDashboard, href: "/customer/dashboard" },
+  { name: "Home", icon: LayoutDashboard, href: "/customer/dashboard" },
   { name: "My Profile", icon: User, href: "/customer/profile" },
   { name: "My Orders", icon: Package, href: "/customer/orders" },
   { name: "My Wishlist", icon: Heart, href: "/customer/wishlist" },
@@ -66,7 +66,7 @@ export const CustomerLayout = ({ children, title }: CustomerLayoutProps) => {
   const currentPage = sidebarItems.find(
     (item) => item.href === location.pathname
   );
-  const pageTitle = title || currentPage?.name || "Dashboard";
+  const pageTitle = title || currentPage?.name || "Home";
 
   return (
     <div className="min-h-screen gradient-hero relative overflow-hidden">
