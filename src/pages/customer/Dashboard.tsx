@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CustomerLayout } from "@/layouts/CustomerLayout";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -385,23 +386,17 @@ const CustomerDashboard = () => {
             Welcome back, {customer?.email?.split("@")[0] || customer?.name || "Customer"}!
           </p>
           {/* Date Range Selector */}
-          <div className="flex gap-2">
-            {[
-              { key: "today", label: "Today" },
-              { key: "month", label: "Month" },
-              { key: "3months", label: "3 Months" },
-              { key: "year", label: "Year" }
-            ].map((range) => (
-              <Button
-                key={range.key}
-                variant={dateRange === range.key ? "default" : "outline"}
-                size="sm"
-                onClick={() => setDateRange(range.key as typeof dateRange)}
-              >
-                {range.label}
-              </Button>
-            ))}
-          </div>
+          <Select value={dateRange} onValueChange={(value) => setDateRange(value as typeof dateRange)}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select date range" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="today">Today</SelectItem>
+              <SelectItem value="month">Month</SelectItem>
+              <SelectItem value="3months">3 Months</SelectItem>
+              <SelectItem value="year">Year</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Enhanced Stats Grid */}
