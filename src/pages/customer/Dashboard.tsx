@@ -48,6 +48,7 @@ const CustomerDashboard = () => {
   const { customer, loading: customerLoading } = useCustomerAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [dateRange, setDateRange] = useState<"today" | "month" | "3months" | "year">("month");
   const [stats, setStats] = useState<CustomerStats>({
     totalOrders: 0,
     totalSpent: 0,
@@ -74,18 +75,49 @@ const CustomerDashboard = () => {
     if (customer) {
       fetchData();
     }
-  }, [customer, customerLoading]);
+  }, [customer, customerLoading, dateRange]);
+
+  const getDateRange = () => {
+    const now = new Date();
+    switch (dateRange) {
+      case "today": {
+        const todayStart = new Date(now);
+        todayStart.setHours(0, 0, 0, 0);
+        return { start: todayStart.toISOString(), end: new Date().toISOString() };
+      }
+      case "month": {
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        return { start: monthStart.toISOString(), end: new Date().toISOString() };
+      }
+      case "3months": {
+        const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+        return { start: threeMonthsAgo.toISOString(), end: new Date().toISOString() };
+      }
+      case "year": {
+        const yearStart = new Date(now.getFullYear(), 0, 1);
+        return { start: yearStart.toISOString(), end: new Date().toISOString() };
+      }
+      default: {
+        const defaultStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        return { start: defaultStart.toISOString(), end: new Date().toISOString() };
+      }
+    }
+  };
 
   const fetchData = async () => {
     if (!customer) return;
 
     setLoading(true);
     try {
-      // Fetch all orders for analytics
+      const { start, end } = getDateRange();
+      
+      // Fetch orders filtered by date range
       const { data: orders } = await supabase
         .from("orders")
         .select("id, order_number, status, total_amount, created_at, discount_amount")
         .eq("customer_id", customer.id)
+        .gte("created_at", start)
+        .lte("created_at", end)
         .order("created_at", { ascending: false });
 
       // Fetch order items
@@ -118,22 +150,58 @@ const CustomerDashboard = () => {
         productCategoryMap.set(p.id, p.category);
       });
 
-      // Calculate monthly spending (last 6 months)
+      // Calculate monthly spending based on date range
       const monthlyData = new Map<string, number>();
       const now = new Date();
-      for (let i = 5; i >= 0; i--) {
+      const { start: rangeStart } = getDateRange();
+      const startDate = new Date(rangeStart);
+      
+      // Determine number of months to show based on date range
+      let monthsToShow = 6;
+      if (dateRange === "today") {
+        monthsToShow = 1; // Show just today
+      } else if (dateRange === "month") {
+        monthsToShow = 1;
+      } else if (dateRange === "3months") {
+        monthsToShow = 3;
+      } else if (dateRange === "year") {
+        monthsToShow = 12;
+      }
+
+      // Generate month keys
+      for (let i = monthsToShow - 1; i >= 0; i--) {
         const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
         const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
         monthlyData.set(monthKey, 0);
       }
 
-      orders?.forEach(order => {
-        const date = new Date(order.created_at);
-        const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-        if (monthlyData.has(monthKey)) {
-          monthlyData.set(monthKey, (monthlyData.get(monthKey) || 0) + order.total_amount);
+      // For "today", show hourly data instead
+      if (dateRange === "today") {
+        monthlyData.clear(); // Clear month data
+        const todayStart = new Date(now);
+        todayStart.setHours(0, 0, 0, 0);
+        for (let i = 0; i < 24; i++) {
+          const hour = new Date(todayStart.getTime() + i * 60 * 60 * 1000);
+          const hourKey = hour.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true });
+          monthlyData.set(hourKey, 0);
         }
-      });
+        
+        orders?.forEach(order => {
+          const orderDate = new Date(order.created_at);
+          const hourKey = orderDate.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true });
+          if (monthlyData.has(hourKey)) {
+            monthlyData.set(hourKey, (monthlyData.get(hourKey) || 0) + order.total_amount);
+          }
+        });
+      } else {
+        orders?.forEach(order => {
+          const date = new Date(order.created_at);
+          const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+          if (monthlyData.has(monthKey)) {
+            monthlyData.set(monthKey, (monthlyData.get(monthKey) || 0) + order.total_amount);
+          }
+        });
+      }
 
       const monthlySpending = Array.from(monthlyData.entries()).map(([month, amount]) => ({
         month,
@@ -181,18 +249,41 @@ const CustomerDashboard = () => {
         count
       }));
 
-      // This month vs last month
-      const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+      // Calculate current period vs previous period for comparison
+      const { start: currentStart } = getDateRange();
+      const currentPeriodStart = new Date(currentStart);
+      let previousPeriodStart: Date;
+      let previousPeriodEnd: Date;
 
-      const thisMonthSpent = orders?.filter(o => new Date(o.created_at) >= thisMonthStart)
-        .reduce((sum, o) => sum + o.total_amount, 0) || 0;
+      if (dateRange === "today") {
+        const yesterday = new Date(now);
+        yesterday.setDate(yesterday.getDate() - 1);
+        yesterday.setHours(0, 0, 0, 0);
+        previousPeriodStart = yesterday;
+        previousPeriodEnd = new Date(yesterday);
+        previousPeriodEnd.setHours(23, 59, 59, 999);
+      } else if (dateRange === "month") {
+        previousPeriodStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        previousPeriodEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+      } else if (dateRange === "3months") {
+        previousPeriodStart = new Date(now.getFullYear(), now.getMonth() - 6, 1);
+        previousPeriodEnd = new Date(now.getFullYear(), now.getMonth() - 3, 0, 23, 59, 59, 999);
+      } else { // year
+        previousPeriodStart = new Date(now.getFullYear() - 1, 0, 1);
+        previousPeriodEnd = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59, 999);
+      }
+
+      const thisMonthSpent = orders?.reduce((sum, o) => sum + o.total_amount, 0) || 0;
       
-      const lastMonthSpent = orders?.filter(o => {
-        const date = new Date(o.created_at);
-        return date >= lastMonthStart && date <= lastMonthEnd;
-      }).reduce((sum, o) => sum + o.total_amount, 0) || 0;
+      // Fetch previous period data for comparison
+      const { data: previousOrders } = await supabase
+        .from("orders")
+        .select("total_amount")
+        .eq("customer_id", customer.id)
+        .gte("created_at", previousPeriodStart.toISOString())
+        .lte("created_at", previousPeriodEnd.toISOString());
+
+      const lastMonthSpent = previousOrders?.reduce((sum, o) => sum + o.total_amount, 0) || 0;
 
       // Average order value
       const avgOrderValue = orders && orders.length > 0 
@@ -217,9 +308,13 @@ const CustomerDashboard = () => {
       // Total discounts
       const totalDiscounts = orders?.reduce((sum, o) => sum + (o.discount_amount || 0), 0) || 0;
 
+      // Calculate stats for the filtered period
+      const totalOrdersInPeriod = orders?.length || 0;
+      const totalSpentInPeriod = orders?.reduce((sum, o) => sum + o.total_amount, 0) || 0;
+
       setStats({
-        totalOrders: customer.total_orders || 0,
-        totalSpent: customer.total_spent || 0,
+        totalOrders: totalOrdersInPeriod,
+        totalSpent: totalSpentInPeriod,
         loyaltyPoints: customer.loyalty_points || 0,
         loyaltyTier: customer.loyalty_tier || "bronze",
         recentOrders: orders?.slice(0, 5) || [],
@@ -284,11 +379,28 @@ const CustomerDashboard = () => {
   return (
     <CustomerLayout>
       <div className="space-y-6">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
+        <div className="mb-6 flex items-center justify-between">
           <p className="text-muted-foreground">
             Welcome back, {customer?.email?.split("@")[0] || customer?.name || "Customer"}!
           </p>
+          {/* Date Range Selector */}
+          <div className="flex gap-2">
+            {[
+              { key: "today", label: "Today" },
+              { key: "month", label: "Month" },
+              { key: "3months", label: "3 Months" },
+              { key: "year", label: "Year" }
+            ].map((range) => (
+              <Button
+                key={range.key}
+                variant={dateRange === range.key ? "default" : "outline"}
+                size="sm"
+                onClick={() => setDateRange(range.key as typeof dateRange)}
+              >
+                {range.label}
+              </Button>
+            ))}
+          </div>
         </div>
 
         {/* Enhanced Stats Grid */}
@@ -351,7 +463,15 @@ const CustomerDashboard = () => {
                 <Activity className="h-5 w-5" />
                 Spending Trend
               </CardTitle>
-              <CardDescription>Your spending over the last 6 months</CardDescription>
+              <CardDescription>
+                {dateRange === "today" 
+                  ? "Your spending today by hour" 
+                  : dateRange === "month"
+                  ? "Your spending this month"
+                  : dateRange === "3months"
+                  ? "Your spending over the last 3 months"
+                  : "Your spending this year"}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {stats.monthlySpending.length > 0 && stats.monthlySpending.some(m => m.amount > 0) ? (
