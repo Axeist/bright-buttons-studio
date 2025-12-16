@@ -11,10 +11,23 @@ import {
   ArrowDownRight,
   Sparkles,
   ClipboardList,
-  Loader2
+  Loader2,
+  Calendar,
+  Users,
+  CreditCard,
+  BarChart3,
+  PieChart,
+  Activity,
+  Award
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+  AreaChart, Area, BarChart, Bar, PieChart as RechartsPieChart, 
+  Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  LineChart, Line
+} from "recharts";
 
 interface DashboardStats {
   todayRevenue: number;
@@ -32,10 +45,23 @@ interface DashboardStats {
     status: string;
     created_at: string;
   }>;
+  // New analytics
+  monthlyRevenue: Array<{ period: string; revenue: number; orders: number }>;
+  orderStatusDistribution: Array<{ status: string; count: number }>;
+  paymentMethodDistribution: Array<{ method: string; count: number; revenue: number }>;
+  categoryPerformance: Array<{ category: string; revenue: number; orders: number }>;
+  newVsReturningCustomers: { new: number; returning: number };
+  thisPeriodRevenue: number;
+  lastPeriodRevenue: number;
+  thisPeriodOrders: number;
+  lastPeriodOrders: number;
 }
+
+const COLORS = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#06b6d4', '#ec4899'];
 
 const Dashboard = () => {
   const [loading, setLoading] = useState(true);
+  const [dateRange, setDateRange] = useState<"today" | "month" | "3months" | "year">("month");
   const [stats, setStats] = useState<DashboardStats>({
     todayRevenue: 0,
     todayOrders: 0,
@@ -45,30 +71,67 @@ const Dashboard = () => {
     lowStockItems: [],
     topProducts: [],
     recentOrders: [],
+    monthlyRevenue: [],
+    orderStatusDistribution: [],
+    paymentMethodDistribution: [],
+    categoryPerformance: [],
+    newVsReturningCustomers: { new: 0, returning: 0 },
+    thisPeriodRevenue: 0,
+    lastPeriodRevenue: 0,
+    thisPeriodOrders: 0,
+    lastPeriodOrders: 0,
   });
 
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+  }, [dateRange]);
+
+  const getDateRange = () => {
+    const now = new Date();
+    switch (dateRange) {
+      case "today": {
+        const todayStart = new Date(now);
+        todayStart.setHours(0, 0, 0, 0);
+        return { start: todayStart.toISOString(), end: new Date().toISOString() };
+      }
+      case "month": {
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        return { start: monthStart.toISOString(), end: new Date().toISOString() };
+      }
+      case "3months": {
+        const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+        return { start: threeMonthsAgo.toISOString(), end: new Date().toISOString() };
+      }
+      case "year": {
+        const yearStart = new Date(now.getFullYear(), 0, 1);
+        return { start: yearStart.toISOString(), end: new Date().toISOString() };
+      }
+      default: {
+        const defaultStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        return { start: defaultStart.toISOString(), end: new Date().toISOString() };
+      }
+    }
+  };
 
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const todayStart = today.toISOString();
-
-      // Today's orders
-      const { data: todayOrdersData, error: todayOrdersError } = await supabase
+      const { start, end } = getDateRange();
+      const now = new Date();
+      
+      // Fetch all orders in date range
+      const { data: ordersData } = await supabase
         .from("orders")
-        .select("total_amount, status, source")
-        .gte("created_at", todayStart);
+        .select("id, total_amount, status, source, payment_method, created_at, customer_id, discount_amount")
+        .gte("created_at", start)
+        .lte("created_at", end)
+        .order("created_at", { ascending: false });
 
-      const todayOrders = todayOrdersData || [];
-      const todayRevenue = todayOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
-      const todayOrdersCount = todayOrders.length;
+      const orders = ordersData || [];
+      const todayRevenue = orders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
+      const todayOrdersCount = orders.length;
       const avgOrderValue = todayOrdersCount > 0 ? todayRevenue / todayOrdersCount : 0;
-      const onlineOrdersCount = todayOrders.filter(o => o.source === "online").length;
+      const onlineOrdersCount = orders.filter(o => o.source === "online").length;
 
       // Low stock items
       const { data: lowStockData } = await supabase
@@ -84,25 +147,181 @@ const Dashboard = () => {
         }))
         .slice(0, 3);
 
-      // Top products (from order items)
+      // Calculate monthly/daily revenue based on date range
+      const revenueData = new Map<string, { revenue: number; orders: number }>();
+      let periodsToShow = 6;
+      let periodType: "day" | "month" = "month";
+      
+      if (dateRange === "today") {
+        periodsToShow = 24; // Hours
+        periodType = "day";
+        for (let i = 23; i >= 0; i--) {
+          const hour = new Date(now);
+          hour.setHours(now.getHours() - i, 0, 0, 0);
+          const hourKey = hour.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true });
+          revenueData.set(hourKey, { revenue: 0, orders: 0 });
+        }
+      } else if (dateRange === "month") {
+        periodsToShow = 30; // Days
+        periodType = "day";
+        for (let i = 29; i >= 0; i--) {
+          const date = new Date(now);
+          date.setDate(date.getDate() - i);
+          const dateKey = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          revenueData.set(dateKey, { revenue: 0, orders: 0 });
+        }
+      } else if (dateRange === "3months") {
+        periodsToShow = 3; // Months
+        periodType = "month";
+        for (let i = 2; i >= 0; i--) {
+          const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+          revenueData.set(monthKey, { revenue: 0, orders: 0 });
+        }
+      } else { // year
+        periodsToShow = 12; // Months
+        periodType = "month";
+        for (let i = 11; i >= 0; i--) {
+          const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+          revenueData.set(monthKey, { revenue: 0, orders: 0 });
+        }
+      }
+
+      orders.forEach(order => {
+        const orderDate = new Date(order.created_at);
+        let periodKey: string;
+        
+        if (dateRange === "today") {
+          periodKey = orderDate.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true });
+        } else if (dateRange === "month") {
+          periodKey = orderDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        } else {
+          periodKey = orderDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        }
+        
+        if (revenueData.has(periodKey)) {
+          const existing = revenueData.get(periodKey)!;
+          revenueData.set(periodKey, {
+            revenue: existing.revenue + order.total_amount,
+            orders: existing.orders + 1,
+          });
+        }
+      });
+
+      const monthlyRevenue = Array.from(revenueData.entries()).map(([period, data]) => ({
+        period,
+        revenue: Math.round(data.revenue),
+        orders: data.orders,
+      }));
+
+      // Order status distribution
+      const statusMap = new Map<string, number>();
+      orders.forEach(order => {
+        statusMap.set(order.status, (statusMap.get(order.status) || 0) + 1);
+      });
+      const orderStatusDistribution = Array.from(statusMap.entries()).map(([status, count]) => ({
+        status,
+        count,
+      }));
+
+      // Payment method distribution
+      const paymentMap = new Map<string, { count: number; revenue: number }>();
+      orders.forEach(order => {
+        const method = order.payment_method || "unknown";
+        const existing = paymentMap.get(method) || { count: 0, revenue: 0 };
+        paymentMap.set(method, {
+          count: existing.count + 1,
+          revenue: existing.revenue + order.total_amount,
+        });
+      });
+      const paymentMethodDistribution = Array.from(paymentMap.entries()).map(([method, data]) => ({
+        method: method === "cash" ? "Cash" : method === "wallet" ? "Wallet" : method === "online" ? "Online" : method.charAt(0).toUpperCase() + method.slice(1),
+        ...data,
+      }));
+
+      // Category performance
+      const orderIds = orders.map(o => o.id);
       const { data: orderItems } = await supabase
         .from("order_items")
-        .select("product_name, quantity, unit_price, order_id, orders(created_at)")
-        .gte("orders.created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+        .select("product_id, quantity, unit_price, order_id, products(category)")
+        .in("order_id", orderIds);
 
+      const categoryMap = new Map<string, { revenue: number; orders: Set<string> }>();
+      orderItems?.forEach((item: any) => {
+        const category = item.products?.category || "Uncategorized";
+        const existing = categoryMap.get(category) || { revenue: 0, orders: new Set() };
+        categoryMap.set(category, {
+          revenue: existing.revenue + (item.unit_price * item.quantity),
+          orders: existing.orders.add(item.order_id),
+        });
+      });
+      const categoryPerformance = Array.from(categoryMap.entries())
+        .map(([category, data]) => ({
+          category,
+          revenue: Math.round(data.revenue),
+          orders: data.orders.size,
+        }))
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 5);
+
+      // New vs Returning customers
+      const customerIds = orders.map(o => o.customer_id).filter(Boolean) as string[];
+      const { data: customersData } = await supabase
+        .from("customers")
+        .select("id, total_orders")
+        .in("id", customerIds);
+
+      const newCustomers = customersData?.filter(c => (c.total_orders || 0) <= 1).length || 0;
+      const returningCustomers = (customersData?.length || 0) - newCustomers;
+
+      // Top products
       const productSales = new Map<string, { sales: number; revenue: number }>();
-      orderItems?.forEach(item => {
-        const existing = productSales.get(item.product_name) || { sales: 0, revenue: 0 };
-        productSales.set(item.product_name, {
+      orderItems?.forEach((item: any) => {
+        const productName = item.products?.name || "Unknown Product";
+        const existing = productSales.get(productName) || { sales: 0, revenue: 0 };
+        productSales.set(productName, {
           sales: existing.sales + item.quantity,
           revenue: existing.revenue + (item.unit_price * item.quantity),
         });
       });
-
       const topProducts = Array.from(productSales.entries())
         .map(([name, data]) => ({ name, ...data }))
         .sort((a, b) => b.revenue - a.revenue)
-        .slice(0, 3);
+        .slice(0, 5);
+
+      // Comparison with previous period
+      const { start: currentStart } = getDateRange();
+      const currentPeriodStart = new Date(currentStart);
+      let previousPeriodStart: Date;
+      let previousPeriodEnd: Date;
+
+      if (dateRange === "today") {
+        const yesterday = new Date(now);
+        yesterday.setDate(yesterday.getDate() - 1);
+        yesterday.setHours(0, 0, 0, 0);
+        previousPeriodStart = yesterday;
+        previousPeriodEnd = new Date(yesterday);
+        previousPeriodEnd.setHours(23, 59, 59, 999);
+      } else if (dateRange === "month") {
+        previousPeriodStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        previousPeriodEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+      } else if (dateRange === "3months") {
+        previousPeriodStart = new Date(now.getFullYear(), now.getMonth() - 6, 1);
+        previousPeriodEnd = new Date(now.getFullYear(), now.getMonth() - 3, 0, 23, 59, 59, 999);
+      } else {
+        previousPeriodStart = new Date(now.getFullYear() - 1, 0, 1);
+        previousPeriodEnd = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59, 999);
+      }
+
+      const { data: previousOrders } = await supabase
+        .from("orders")
+        .select("total_amount")
+        .gte("created_at", previousPeriodStart.toISOString())
+        .lte("created_at", previousPeriodEnd.toISOString());
+
+      const lastPeriodRevenue = previousOrders?.reduce((sum, o) => sum + o.total_amount, 0) || 0;
+      const lastPeriodOrders = previousOrders?.length || 0;
 
       // Recent orders
       const { data: recentOrdersData } = await supabase
@@ -115,11 +334,20 @@ const Dashboard = () => {
         todayRevenue,
         todayOrders: todayOrdersCount,
         avgOrderValue,
-        whatsappOrders: 0, // Deprecated, kept for compatibility
+        whatsappOrders: 0,
         onlineOrders: onlineOrdersCount,
         lowStockItems,
         topProducts,
         recentOrders: recentOrdersData || [],
+        monthlyRevenue,
+        orderStatusDistribution,
+        paymentMethodDistribution,
+        categoryPerformance,
+        newVsReturningCustomers: { new: newCustomers, returning: returningCustomers },
+        thisPeriodRevenue: todayRevenue,
+        lastPeriodRevenue,
+        thisPeriodOrders: todayOrdersCount,
+        lastPeriodOrders,
       });
     } catch (error: any) {
       toast({
@@ -134,18 +362,18 @@ const Dashboard = () => {
 
   const displayStats = [
     { 
-      title: "Today's Revenue", 
-      value: `₹${stats.todayRevenue.toLocaleString()}`, 
-      change: "+12%",
+      title: dateRange === "today" ? "Today's Revenue" : dateRange === "month" ? "This Month Revenue" : dateRange === "3months" ? "Last 3 Months Revenue" : "This Year Revenue", 
+      value: `₹${stats.thisPeriodRevenue.toLocaleString()}`, 
+      change: `${parseFloat(revenueChange) >= 0 ? '+' : ''}${revenueChange}%`,
       icon: DollarSign,
       color: "from-primary to-primary-700",
       iconBg: "bg-primary/20",
       iconColor: "text-primary"
     },
     { 
-      title: "Orders Today", 
-      value: stats.todayOrders.toString(), 
-      change: "+3",
+      title: dateRange === "today" ? "Orders Today" : dateRange === "month" ? "Orders This Month" : dateRange === "3months" ? "Orders (3M)" : "Orders This Year", 
+      value: stats.thisPeriodOrders.toString(), 
+      change: `${parseFloat(ordersChange) >= 0 ? '+' : ''}${ordersChange}%`,
       icon: ShoppingBag,
       color: "from-earth-400 to-earth-600",
       iconBg: "bg-earth-100 dark:bg-earth-900/40",
@@ -154,17 +382,17 @@ const Dashboard = () => {
     { 
       title: "Avg Order Value", 
       value: `₹${Math.round(stats.avgOrderValue).toLocaleString()}`, 
-      change: "+5%",
+      change: `${stats.onlineOrders} online`,
       icon: TrendingUp,
       color: "from-primary-500 to-primary-700",
       iconBg: "bg-primary/20",
       iconColor: "text-primary"
     },
     { 
-      title: "Online Orders", 
-      value: stats.onlineOrders.toString(), 
-      change: "Today",
-      icon: Package,
+      title: "Total Customers", 
+      value: (stats.newVsReturningCustomers.new + stats.newVsReturningCustomers.returning).toString(), 
+      change: `${stats.newVsReturningCustomers.new} new`,
+      icon: Users,
       color: "from-blue-500 to-blue-700",
       iconBg: "bg-blue-100 dark:bg-blue-900/40",
       iconColor: "text-blue-600 dark:text-blue-400"
@@ -192,8 +420,34 @@ const Dashboard = () => {
     );
   }
 
+  const revenueChange = stats.lastPeriodRevenue > 0 
+    ? ((stats.thisPeriodRevenue - stats.lastPeriodRevenue) / stats.lastPeriodRevenue * 100).toFixed(1)
+    : "0";
+  const ordersChange = stats.lastPeriodOrders > 0
+    ? ((stats.thisPeriodOrders - stats.lastPeriodOrders) / stats.lastPeriodOrders * 100).toFixed(1)
+    : "0";
+
   return (
     <AdminLayout title="Dashboard">
+      {/* Header with Date Range Selector */}
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
+          <p className="text-muted-foreground">Key insights and analytics at a glance</p>
+        </div>
+        <Select value={dateRange} onValueChange={(value) => setDateRange(value as typeof dateRange)}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Select date range" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="today">Today</SelectItem>
+            <SelectItem value="month">Month</SelectItem>
+            <SelectItem value="3months">3 Months</SelectItem>
+            <SelectItem value="year">Year</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {displayStats.map((stat, index) => (
@@ -248,8 +502,162 @@ const Dashboard = () => {
         ))}
       </div>
 
+      {/* Charts Row */}
+      <div className="grid lg:grid-cols-2 gap-6 mb-8">
+        {/* Revenue Trend Chart */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.4, duration: 0.5 }}
+          className="glass-card rounded-2xl p-6 shadow-xl"
+        >
+          <div className="flex items-center gap-2 mb-6">
+            <Activity className="w-5 h-5 text-primary" />
+            <h2 className="text-xl font-semibold">Revenue Trend</h2>
+          </div>
+          {stats.monthlyRevenue.length > 0 && stats.monthlyRevenue.some(m => m.revenue > 0) ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={stats.monthlyRevenue}>
+                <defs>
+                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="period" />
+                <YAxis />
+                <Tooltip 
+                  formatter={(value: number) => [`₹${value.toLocaleString()}`, 'Revenue']}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="revenue" 
+                  stroke="#10b981" 
+                  fillOpacity={1}
+                  fill="url(#colorRevenue)" 
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+              No revenue data available
+            </div>
+          )}
+        </motion.div>
+
+        {/* Order Status Distribution */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.5, duration: 0.5 }}
+          className="glass-card rounded-2xl p-6 shadow-xl"
+        >
+          <div className="flex items-center gap-2 mb-6">
+            <PieChart className="w-5 h-5 text-primary" />
+            <h2 className="text-xl font-semibold">Order Status</h2>
+          </div>
+          {stats.orderStatusDistribution.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <RechartsPieChart>
+                <Pie
+                  data={stats.orderStatusDistribution}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ status, percent }) => `${status}: ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="count"
+                >
+                  {stats.orderStatusDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </RechartsPieChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+              No order data available
+            </div>
+          )}
+        </motion.div>
+      </div>
+
+      {/* Payment Methods & Category Performance */}
+      <div className="grid lg:grid-cols-2 gap-6 mb-8">
+        {/* Payment Method Distribution */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6, duration: 0.5 }}
+          className="glass-card rounded-2xl p-6 shadow-xl"
+        >
+          <div className="flex items-center gap-2 mb-6">
+            <CreditCard className="w-5 h-5 text-primary" />
+            <h2 className="text-xl font-semibold">Payment Methods</h2>
+          </div>
+          {stats.paymentMethodDistribution.length > 0 ? (
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={stats.paymentMethodDistribution}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="method" />
+                <YAxis />
+                <Tooltip 
+                  formatter={(value: number) => [`₹${value.toLocaleString()}`, 'Revenue']}
+                />
+                <Bar dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-[250px] flex items-center justify-center text-muted-foreground">
+              No payment data available
+            </div>
+          )}
+        </motion.div>
+
+        {/* Category Performance */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7, duration: 0.5 }}
+          className="glass-card rounded-2xl p-6 shadow-xl"
+        >
+          <div className="flex items-center gap-2 mb-6">
+            <BarChart3 className="w-5 h-5 text-primary" />
+            <h2 className="text-xl font-semibold">Top Categories</h2>
+          </div>
+          {stats.categoryPerformance.length > 0 ? (
+            <div className="space-y-4">
+              {stats.categoryPerformance.map((cat, index) => (
+                <div key={cat.category} className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="font-medium">{cat.category}</span>
+                    <span className="text-muted-foreground">₹{cat.revenue.toLocaleString()}</span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-2">
+                    <div 
+                      className="h-2 rounded-full transition-all"
+                      style={{ 
+                        width: `${(cat.revenue / stats.categoryPerformance[0].revenue) * 100}%`,
+                        backgroundColor: COLORS[index % COLORS.length]
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="h-[250px] flex items-center justify-center text-muted-foreground">
+              No category data available
+            </div>
+          )}
+        </motion.div>
+      </div>
+
       <div className="grid lg:grid-cols-3 gap-6 mb-6">
-        {/* Sales Chart Placeholder */}
+        {/* Top Products Chart */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -257,42 +665,78 @@ const Dashboard = () => {
           className="lg:col-span-2 glass-card rounded-2xl p-6 shadow-xl"
         >
           <div className="flex items-center gap-2 mb-6">
-            <Sparkles className="w-5 h-5 text-primary" />
-            <h2 className="text-xl font-script text-gradient">Sales Overview</h2>
+            <Award className="w-5 h-5 text-primary" />
+            <h2 className="text-xl font-semibold">Top Products</h2>
           </div>
-          <div className="h-64 bg-gradient-to-br from-primary-50 via-earth-50 to-blush-50 dark:from-primary-900/20 dark:via-earth-900/20 dark:to-blush-900/20 rounded-xl flex items-center justify-center border-2 border-dashed border-primary/20 dark:border-primary-800/30 relative overflow-hidden">
-            <motion.div
-              animate={{
-                scale: [1, 1.05, 1],
-                opacity: [0.3, 0.5, 0.3]
-              }}
-              transition={{
-                duration: 3,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-              className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent"
-            />
-            <div className="text-center relative z-10">
-              <motion.div
-                animate={{ rotate: [0, 10, -10, 0] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              >
-                <TrendingUp className="w-16 h-16 text-primary/40 mx-auto mb-4" />
-              </motion.div>
-              <p className="text-muted-foreground font-medium">Sales chart will be displayed here</p>
-              <p className="text-sm text-muted-foreground/70 mt-2">Integration with charting library pending</p>
+          {stats.topProducts.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={stats.topProducts} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" />
+                <YAxis dataKey="name" type="category" width={120} />
+                <Tooltip 
+                  formatter={(value: number) => `₹${value.toLocaleString()}`}
+                />
+                <Bar dataKey="revenue" fill="#10b981" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+              No product data available
             </div>
-          </div>
+          )}
         </motion.div>
 
         {/* Sidebar Cards */}
         <div className="space-y-6">
-          {/* Low Stock */}
+          {/* Customer Insights */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.5, duration: 0.5 }}
+            className="glass-card rounded-2xl p-6 shadow-xl"
+          >
+            <div className="flex items-center gap-2 mb-5">
+              <Users className="w-5 h-5 text-primary" />
+              <h3 className="font-semibold text-foreground text-lg">Customer Insights</h3>
+            </div>
+            <div className="space-y-4">
+              <div className="p-4 rounded-xl bg-primary-50/50 dark:bg-primary-900/20 border border-primary-200/50 dark:border-primary-800/30">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-foreground">New Customers</span>
+                  <span className="text-lg font-bold text-primary">{stats.newVsReturningCustomers.new}</span>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2">
+                  <div 
+                    className="bg-primary h-2 rounded-full transition-all"
+                    style={{ 
+                      width: `${((stats.newVsReturningCustomers.new / (stats.newVsReturningCustomers.new + stats.newVsReturningCustomers.returning || 1)) * 100)}%` 
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="p-4 rounded-xl bg-green-50/50 dark:bg-green-900/20 border border-green-200/50 dark:border-green-800/30">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-foreground">Returning Customers</span>
+                  <span className="text-lg font-bold text-green-600 dark:text-green-400">{stats.newVsReturningCustomers.returning}</span>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2">
+                  <div 
+                    className="bg-green-500 h-2 rounded-full transition-all"
+                    style={{ 
+                      width: `${((stats.newVsReturningCustomers.returning / (stats.newVsReturningCustomers.new + stats.newVsReturningCustomers.returning || 1)) * 100)}%` 
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Low Stock */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.6, duration: 0.5 }}
             className="glass-card rounded-2xl p-6 shadow-xl"
           >
             <div className="flex items-center gap-2 mb-5">
