@@ -238,14 +238,14 @@ export const ProductGrid = ({
                 </h3>
 
                 {/* Rating */}
-                {product.rating && (
-                  <div className="flex items-center gap-1 mb-3">
-                    <div className="flex items-center">
+                {product.rating !== undefined && (
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="flex items-center gap-0.5">
                       {[...Array(5)].map((_, i) => (
                         <Star
                           key={i}
                           className={cn(
-                            "w-3.5 h-3.5",
+                            "w-4 h-4",
                             i < Math.floor(product.rating!)
                               ? "fill-primary text-primary"
                               : "text-muted-foreground"
@@ -253,8 +253,11 @@ export const ProductGrid = ({
                         />
                       ))}
                     </div>
-                    {product.reviewCount && (
-                      <span className="text-xs text-muted-foreground ml-1">
+                    <span className="text-sm font-medium text-foreground">
+                      {product.rating.toFixed(1)}
+                    </span>
+                    {product.reviewCount !== undefined && product.reviewCount > 0 && (
+                      <span className="text-xs text-muted-foreground">
                         ({product.reviewCount})
                       </span>
                     )}

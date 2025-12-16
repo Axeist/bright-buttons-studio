@@ -66,6 +66,7 @@ const Shop = () => {
   const [wishlistIds, setWishlistIds] = useState<Set<string>>(new Set());
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
+  const [productRatings, setProductRatings] = useState<Map<string, { rating: number; reviewCount: number }>>(new Map());
   const { addToCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -105,6 +106,34 @@ const Shop = () => {
 
       if (error) throw error;
       setProducts(data || []);
+
+      // Fetch review ratings for all products
+      if (data && data.length > 0) {
+        const productIds = data.map(p => p.id);
+        const { data: reviewsData } = await supabase
+          .from("product_reviews")
+          .select("product_id, rating")
+          .in("product_id", productIds)
+          .eq("is_approved", true);
+
+        // Calculate average ratings
+        const ratingsMap = new Map<string, { total: number; count: number }>();
+        reviewsData?.forEach(review => {
+          const existing = ratingsMap.get(review.product_id) || { total: 0, count: 0 };
+          ratingsMap.set(review.product_id, {
+            total: existing.total + review.rating,
+            count: existing.count + 1
+          });
+        });
+
+        // Store ratings in a way we can access later
+        setProductRatings(new Map(
+          Array.from(ratingsMap.entries()).map(([id, { total, count }]) => [
+            id,
+            { rating: total / count, reviewCount: count }
+          ])
+        ));
+      }
     } catch (error) {
       console.error("Error fetching products:", error);
     } finally {
@@ -230,15 +259,20 @@ const Shop = () => {
   };
 
   // Convert products to ProductGrid format
-  const productGridItems = sortedProducts.map((product) => ({
-    id: product.id,
-    name: product.name,
-    price: product.price,
-    image: getProductImageUrl(product) || undefined,
-    inStock: getAvailableStock(product) > 0,
-    category: product.category,
-    tags: [product.fabric, product.technique].filter(Boolean) as string[],
-  }));
+  const productGridItems = sortedProducts.map((product) => {
+    const ratingData = productRatings.get(product.id);
+    return {
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: getProductImageUrl(product) || undefined,
+      inStock: getAvailableStock(product) > 0,
+      category: product.category,
+      tags: [product.fabric, product.technique].filter(Boolean) as string[],
+      rating: ratingData?.rating,
+      reviewCount: ratingData?.reviewCount,
+    };
+  });
 
   // Prepare filter options
   const categoryOptions = categories
@@ -307,60 +341,67 @@ const Shop = () => {
     <PublicLayout>
       <div className="min-h-screen bg-background">
         {/* Header */}
-        <div className="bg-gradient-to-br from-primary-50 to-earth-50 dark:from-primary-900/20 dark:to-card border-b border-border">
-          <div className="container-custom py-8 md:py-12">
-            <motion.h1
+        <div className="bg-gradient-to-br from-primary-50 via-earth-50 to-primary-50 dark:from-primary-900/20 dark:via-card dark:to-primary-900/20 border-b border-border">
+          <div className="container-custom py-12 md:py-16">
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-3xl md:text-4xl lg:text-5xl font-script text-gradient mb-4"
+              className="max-w-3xl"
             >
-              Shop Our Collection
-            </motion.h1>
-            <p className="text-muted-foreground max-w-2xl">
-              Discover unique, handcrafted eco-printed clothing. Each piece is one-of-a-kind.
-            </p>
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-script text-gradient mb-4">
+                Shop Our Collection
+              </h1>
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                Discover unique, handcrafted eco-printed clothing. Each piece is one-of-a-kind, 
+                carefully made with sustainable practices and traditional techniques.
+              </p>
+            </motion.div>
           </div>
         </div>
 
-        <div className="container-custom py-6">
+        <div className="container-custom py-8">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             {/* Filters Sidebar */}
-            <div className="lg:col-span-1">
-              <ProductFilters
-                categories={categoryOptions}
-                priceRange={priceRange}
-                onPriceRangeChange={setPriceRange}
-                selectedCategories={selectedCategory !== "All" ? [selectedCategory] : []}
-                onCategoryChange={handleCategoryChange}
-                onClearFilters={handleClearFilters}
-                isMobile={isMobile}
-              />
-            </div>
+            <aside className="lg:col-span-1">
+              <div className="sticky top-24">
+                <ProductFilters
+                  categories={categoryOptions}
+                  priceRange={priceRange}
+                  onPriceRangeChange={setPriceRange}
+                  selectedCategories={selectedCategory !== "All" ? [selectedCategory] : []}
+                  onCategoryChange={handleCategoryChange}
+                  onClearFilters={handleClearFilters}
+                  isMobile={isMobile}
+                />
+              </div>
+            </aside>
 
             {/* Main Content */}
-            <div className="lg:col-span-3 space-y-6">
+            <main className="lg:col-span-3 space-y-6">
               {/* Search and Sort Controls */}
-              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                <div className="relative flex-1 w-full sm:max-w-md">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <Input
-                    type="search"
-                    placeholder="Search products..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 rounded-full"
-                  />
-                </div>
+              <div className="bg-card rounded-2xl p-4 border border-border shadow-sm">
+                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                  <div className="relative flex-1 w-full sm:max-w-md">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <Input
+                      type="search"
+                      placeholder="Search products..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10 rounded-full h-11"
+                    />
+                  </div>
 
-                <div className="flex items-center gap-3">
-                  <ProductSortDropdown
-                    value={sortBy}
-                    onValueChange={setSortBy}
-                  />
-                  <ProductViewToggle
-                    viewMode={viewMode}
-                    onViewChange={setViewMode}
-                  />
+                  <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <ProductSortDropdown
+                      value={sortBy}
+                      onValueChange={setSortBy}
+                    />
+                    <ProductViewToggle
+                      viewMode={viewMode}
+                      onViewChange={setViewMode}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -447,11 +488,14 @@ const Shop = () => {
 
               {/* Results Count */}
               {!loading && sortedProducts.length > 0 && (
-                <div className="text-center text-sm text-muted-foreground">
-                  Showing {sortedProducts.length} of {products.length} products
+                <div className="text-center py-4">
+                  <p className="text-sm text-muted-foreground">
+                    Showing <span className="font-semibold text-foreground">{sortedProducts.length}</span> of{" "}
+                    <span className="font-semibold text-foreground">{products.length}</span> products
+                  </p>
                 </div>
               )}
-            </div>
+            </main>
           </div>
         </div>
       </div>
