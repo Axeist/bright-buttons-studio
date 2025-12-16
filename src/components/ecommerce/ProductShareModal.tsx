@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Share2, Copy, Facebook, Twitter, Linkedin, Mail, MessageCircle } from "lucide-react";
@@ -19,6 +20,7 @@ export const ProductShareModal = ({
   description,
   trigger,
 }: ProductShareModalProps) => {
+  const [isOpen, setIsOpen] = useState(false);
   const handleCopyLink = () => {
     navigator.clipboard.writeText(productUrl);
     toast({
@@ -80,12 +82,26 @@ export const ProductShareModal = ({
     </Button>
   );
 
+  const handleWhatsAppShare = () => {
+    const message = `Check out ${productName} from Bright Buttons: ${productUrl}`;
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://api.whatsapp.com/send?phone=919952655555&text=${encodedMessage}`;
+    
+    // Close the dialog first
+    setIsOpen(false);
+    
+    // Small delay to ensure dialog closes before opening WhatsApp
+    setTimeout(() => {
+      window.open(whatsappUrl, "_blank");
+    }, 100);
+  };
+
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         {trigger || defaultTrigger}
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Share2 className="w-5 h-5 text-primary" />
@@ -97,7 +113,10 @@ export const ProductShareModal = ({
             <Button
               variant="outline"
               className="flex flex-col items-center gap-2 h-auto py-4 rounded-full"
-              onClick={handleCopyLink}
+              onClick={() => {
+                handleCopyLink();
+                setIsOpen(false);
+              }}
             >
               <Copy className="w-5 h-5" />
               <span className="text-xs">Copy Link</span>
@@ -143,14 +162,13 @@ export const ProductShareModal = ({
               <span className="text-xs">Email</span>
             </Button>
           </div>
-          <WhatsAppButton
-            variant="inline"
-            className="w-full rounded-full"
-            message={`Check out ${productName} from Bright Buttons: ${productUrl}`}
+          <Button
+            onClick={handleWhatsAppShare}
+            className="w-full rounded-full bg-gradient-to-r from-[#25D366] to-[#20BD5A] text-white hover:from-[#20BD5A] hover:to-[#1DA851]"
           >
             <MessageCircle className="w-4 h-4 mr-2" />
             Share on WhatsApp
-          </WhatsAppButton>
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
