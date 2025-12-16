@@ -355,7 +355,7 @@ const Products = () => {
 
       // Upload product photos if any
       if (productPhotos.length > 0) {
-        await uploadProductPhotos(product.id, productPhotos);
+        await uploadProductPhotos(product.id, productPhotos, product.name, product.category);
       }
 
       toast({
@@ -478,12 +478,14 @@ const Products = () => {
       for (let i = 0; i < editingProductPhotos.length; i++) {
         const photo = editingProductPhotos[i];
         let imageUrl = photo.url;
+        let isNewUpload = false;
 
         if (photo.file) {
           // Upload new file
           const uploadedUrl = await uploadImageFromFile(photo.file);
           if (uploadedUrl) {
             imageUrl = uploadedUrl;
+            isNewUpload = true; // Mark as newly uploaded (not from gallery)
           }
         }
 
@@ -507,6 +509,11 @@ const Products = () => {
               display_order: i,
               is_primary: photo.isPrimary || false,
             });
+
+          // If this is a newly uploaded photo (not from gallery), add it to gallery
+          if (isNewUpload && !photo.fromGallery) {
+            await addPhotoToGallery(imageUrl, editingProduct.name, editingProduct.category);
+          }
         }
       }
 
@@ -640,15 +647,54 @@ const Products = () => {
     })));
   };
 
-  const uploadProductPhotos = async (productId: string, photos: Array<{ file?: File; url: string; isPrimary?: boolean }>): Promise<void> => {
+  const addPhotoToGallery = async (imageUrl: string, productName?: string, productCategory?: string) => {
+    try {
+      // Get max display order from gallery
+      const { data: existingPhotos } = await supabase
+        .from("gallery_photos")
+        .select("display_order")
+        .order("display_order", { ascending: false })
+        .limit(1);
+
+      const maxOrder = existingPhotos && existingPhotos.length > 0 
+        ? existingPhotos[0].display_order 
+        : 0;
+
+      // Add to gallery_photos table
+      const { error } = await supabase
+        .from("gallery_photos")
+        .insert({
+          image_url: imageUrl,
+          title: productName || null,
+          description: null,
+          category: productCategory || null,
+          tags: null,
+          display_order: maxOrder + 1,
+          is_featured: false,
+          created_by: user?.id || null,
+        });
+
+      if (error) {
+        console.error("Failed to add photo to gallery:", error);
+        // Don't throw - gallery addition is optional
+      }
+    } catch (error) {
+      console.error("Error adding photo to gallery:", error);
+      // Don't throw - gallery addition is optional
+    }
+  };
+
+  const uploadProductPhotos = async (productId: string, photos: Array<{ file?: File; url: string; isPrimary?: boolean; fromGallery?: boolean }>, productName?: string, productCategory?: string): Promise<void> => {
     const uploadPromises = photos.map(async (photo, index) => {
       let imageUrl = photo.url;
+      let isNewUpload = false;
       
       // If it's a file, upload it
       if (photo.file) {
         const uploadedUrl = await uploadImageFromFile(photo.file);
         if (uploadedUrl) {
           imageUrl = uploadedUrl;
+          isNewUpload = true; // Mark as newly uploaded (not from gallery)
         } else {
           return null;
         }
@@ -665,6 +711,12 @@ const Products = () => {
         });
 
       if (error) throw error;
+
+      // If this is a newly uploaded photo (not from gallery), add it to gallery
+      if (isNewUpload && !photo.fromGallery) {
+        await addPhotoToGallery(imageUrl, productName, productCategory);
+      }
+
       return imageUrl;
     });
 
