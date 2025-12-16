@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ChevronDown, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -48,6 +48,14 @@ export const ProductFilters = ({
     brands: true,
     price: true,
   });
+  
+  // Local state for smooth slider dragging
+  const [localPriceRange, setLocalPriceRange] = useState<[number, number]>(priceRange);
+  
+  // Sync local state when prop changes
+  useEffect(() => {
+    setLocalPriceRange(priceRange);
+  }, [priceRange]);
 
   const toggleSection = (section: string) => {
     setOpenSections((prev) => ({ ...prev, [section]: !prev[section] }));
@@ -96,10 +104,15 @@ export const ProductFilters = ({
             >
               <div className="space-y-4 pb-4">
                 <Slider
-                  value={priceRange}
-                  onValueChange={(value) =>
-                    onPriceRangeChange?.([value[0], value[1]])
-                  }
+                  value={localPriceRange}
+                  onValueChange={(value) => {
+                    // Update local state immediately for smooth dragging
+                    setLocalPriceRange([value[0], value[1]]);
+                  }}
+                  onValueCommit={(value) => {
+                    // Only update parent when user finishes dragging
+                    onPriceRangeChange?.([value[0], value[1]]);
+                  }}
                   min={0}
                   max={10000}
                   step={100}
@@ -107,10 +120,10 @@ export const ProductFilters = ({
                 />
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">
-                    ₹{priceRange[0].toLocaleString()}
+                    ₹{localPriceRange[0].toLocaleString()}
                   </span>
                   <span className="text-muted-foreground">
-                    ₹{priceRange[1].toLocaleString()}
+                    ₹{localPriceRange[1].toLocaleString()}
                   </span>
                 </div>
               </div>
