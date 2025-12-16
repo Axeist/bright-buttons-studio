@@ -8,12 +8,14 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { parseCSV } from "@/lib/csvImport";
 import { validatePincodeCSVData, generateSamplePincodeCSV, type CSVPincodeRow } from "@/lib/pincodeCsvImport";
-import { Loader2, Plus, Edit, Trash2, Tag, MapPin, Upload, Download, FileText, Package, Star, ChevronLeft, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Loader2, Plus, Edit, Trash2, Tag, MapPin, Upload, Download, FileText, Package, Star, ChevronLeft, ChevronRight, Search, Filter, X } from "lucide-react";
 
 interface Coupon {
   id: string;
@@ -708,12 +710,13 @@ const Settings = () => {
     <AdminLayout title="Settings">
       <div className="max-w-5xl">
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 mb-6 rounded-xl">
+          <TabsList className="grid w-full grid-cols-6 mb-6 rounded-xl">
             <TabsTrigger value="general" className="rounded-xl">General</TabsTrigger>
             <TabsTrigger value="shipping" className="rounded-xl">Shipping & Payment</TabsTrigger>
             <TabsTrigger value="products" className="rounded-xl">Products</TabsTrigger>
             <TabsTrigger value="delivery" className="rounded-xl">Delivery</TabsTrigger>
             <TabsTrigger value="promotions" className="rounded-xl">Promotions</TabsTrigger>
+            <TabsTrigger value="reviews" className="rounded-xl">Manage Reviews</TabsTrigger>
           </TabsList>
 
           {/* General Tab */}
@@ -1318,6 +1321,11 @@ const Settings = () => {
           )}
             </section>
           </TabsContent>
+
+          {/* Manage Reviews Tab */}
+          <TabsContent value="reviews" className="space-y-6 mt-6">
+            <ManageReviewsSection />
+          </TabsContent>
         </Tabs>
       </div>
 
@@ -1561,6 +1569,257 @@ const Settings = () => {
         </DialogContent>
       </Dialog>
     </AdminLayout>
+  );
+};
+
+// Manage Reviews Section Component
+const ManageReviewsSection = () => {
+  const { user, isAdmin, isStaff } = useAuth();
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [ratingFilter, setRatingFilter] = useState<number | null>(null);
+  const [deletingReview, setDeletingReview] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isAdmin || isStaff) {
+      fetchAllReviews();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin, isStaff, ratingFilter]);
+
+  const fetchAllReviews = async () => {
+    setLoading(true);
+    try {
+      let query = supabase
+        .from("product_reviews")
+        .select(`
+          *,
+          customers (
+            name,
+            email
+          ),
+          products (
+            id,
+            name,
+            image_url
+          )
+        `)
+        .order("created_at", { ascending: false });
+
+      if (ratingFilter !== null) {
+        query = query.eq("rating", ratingFilter);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+      setReviews(data || []);
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load reviews",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteReview = async (reviewId: string) => {
+    if (!isAdmin && !isStaff) return;
+
+    try {
+      const { error } = await supabase
+        .from("product_reviews")
+        .delete()
+        .eq("id", reviewId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Review Deleted",
+        description: "The review has been deleted successfully.",
+      });
+
+      setDeletingReview(null);
+      fetchAllReviews();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete review",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const filteredReviews = reviews.filter((review) => {
+    const matchesSearch = 
+      review.products?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      review.customers?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      review.customers?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      review.review_text?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      review.title?.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch;
+  });
+
+  if (!isAdmin && !isStaff) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-muted-foreground">You don't have permission to manage reviews.</p>
+      </div>
+    );
+  }
+
+  return (
+    <section className="bg-card rounded-xl p-6 shadow-soft">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+          <Star className="w-5 h-5 text-primary" />
+          Manage Reviews
+        </h2>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search by product, customer, or review text..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 rounded-xl"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <Filter className="w-4 h-4 text-muted-foreground" />
+          <Select
+            value={ratingFilter?.toString() || "all"}
+            onValueChange={(value) => setRatingFilter(value === "all" ? null : parseInt(value))}
+          >
+            <SelectTrigger className="w-[150px] rounded-xl">
+              <SelectValue placeholder="Filter by rating" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Ratings</SelectItem>
+              <SelectItem value="5">5 Stars</SelectItem>
+              <SelectItem value="4">4 Stars</SelectItem>
+              <SelectItem value="3">3 Stars</SelectItem>
+              <SelectItem value="2">2 Stars</SelectItem>
+              <SelectItem value="1">1 Star</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Reviews List */}
+      {loading ? (
+        <div className="text-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
+        </div>
+      ) : filteredReviews.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground">
+          <p>No reviews found</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {filteredReviews.map((review) => (
+            <div
+              key={review.id}
+              className="border rounded-lg p-4 hover:bg-accent/50 transition-colors"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex items-start gap-4 mb-3">
+                    {review.products?.image_url && (
+                      <img
+                        src={review.products.image_url}
+                        alt={review.products.name}
+                        className="w-16 h-16 rounded-lg object-cover"
+                      />
+                    )}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold">{review.products?.name || "Unknown Product"}</h3>
+                        <div className="flex items-center gap-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star
+                              key={star}
+                              className={cn(
+                                "w-4 h-4",
+                                star <= review.rating
+                                  ? "fill-primary text-primary"
+                                  : "text-muted-foreground"
+                              )}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        by {review.customers?.name || review.customers?.email || "Anonymous"} •{" "}
+                        {new Date(review.created_at).toLocaleDateString()}
+                      </p>
+                      {review.title && (
+                        <h4 className="font-medium mb-1">{review.title}</h4>
+                      )}
+                      <p className="text-sm text-muted-foreground">{review.review_text}</p>
+                      <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                        <span>Helpful: {review.helpful_count}</span>
+                        {review.is_verified_purchase && (
+                          <span className="text-primary">Verified Purchase</span>
+                        )}
+                        <span className={review.is_approved ? "text-green-600" : "text-yellow-600"}>
+                          {review.is_approved ? "Approved" : "Pending"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => setDeletingReview(review.id)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deletingReview !== null} onOpenChange={(open) => !open && setDeletingReview(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Review</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to delete this review? This action cannot be undone.
+            The customer will not be notified.
+          </p>
+          <div className="flex gap-3 mt-4">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setDeletingReview(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              className="flex-1"
+              onClick={() => deletingReview && handleDeleteReview(deletingReview)}
+            >
+              Delete Review
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </section>
   );
 };
 

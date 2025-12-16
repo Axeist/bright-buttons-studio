@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Star, ThumbsUp, User, CheckCircle2, Filter, ChevronDown } from "lucide-react";
+import { Star, ThumbsUp, User, CheckCircle2, Filter, ChevronDown, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,6 +22,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
@@ -55,6 +65,8 @@ export const ProductReviews = ({ productId }: ProductReviewsProps) => {
   const [sortBy, setSortBy] = useState<SortOption>("recent");
   const [ratingFilter, setRatingFilter] = useState<number | null>(null);
   const [helpfulVotes, setHelpfulVotes] = useState<Set<string>>(new Set());
+  const [editingReview, setEditingReview] = useState<Review | null>(null);
+  const [deletingReview, setDeletingReview] = useState<string | null>(null);
   const [reviewForm, setReviewForm] = useState({
     rating: 5,
     title: "",
@@ -149,12 +161,18 @@ export const ProductReviews = ({ productId }: ProductReviewsProps) => {
 
       if (error) throw error;
 
+      if (editingReview) {
+        await handleUpdateReview();
+        return;
+      }
+
       toast({
         title: "Review Posted",
         description: "Thank you! Your review has been posted successfully.",
       });
 
       setShowReviewForm(false);
+      setEditingReview(null);
       setReviewForm({ rating: 5, title: "", review_text: "" });
       // Refresh reviews to show the new review immediately
       await fetchReviews();
@@ -214,6 +232,91 @@ export const ProductReviews = ({ productId }: ProductReviewsProps) => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleEditReview = (review: Review) => {
+    setEditingReview(review);
+    setReviewForm({
+      rating: review.rating,
+      title: review.title || "",
+      review_text: review.review_text || "",
+    });
+    setShowReviewForm(true);
+  };
+
+  const handleUpdateReview = async () => {
+    if (!user || !editingReview) return;
+
+    if (!reviewForm.review_text.trim()) {
+      toast({
+        title: "Error",
+        description: "Please write a review",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("product_reviews")
+        .update({
+          rating: reviewForm.rating,
+          title: reviewForm.title || null,
+          review_text: reviewForm.review_text,
+        })
+        .eq("id", editingReview.id)
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Review Updated",
+        description: "Your review has been updated successfully.",
+      });
+
+      setShowReviewForm(false);
+      setEditingReview(null);
+      setReviewForm({ rating: 5, title: "", review_text: "" });
+      await fetchReviews();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update review",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteReview = async (reviewId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from("product_reviews")
+        .delete()
+        .eq("id", reviewId)
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Review Deleted",
+        description: "Your review has been deleted successfully.",
+      });
+
+      setDeletingReview(null);
+      await fetchReviews();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete review",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const isUserReview = (review: Review) => {
+    return user && review.user_id === user.id;
   };
 
   const averageRating =
@@ -287,12 +390,12 @@ export const ProductReviews = ({ productId }: ProductReviewsProps) => {
               <Dialog open={showReviewForm} onOpenChange={setShowReviewForm}>
                 <DialogTrigger asChild>
                   <Button className="rounded-full w-full md:w-auto mt-4">
-                    Write a Review
+                    {editingReview ? "Edit Review" : "Write a Review"}
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl">
                   <DialogHeader>
-                    <DialogTitle>Write a Review</DialogTitle>
+                    <DialogTitle>{editingReview ? "Edit Review" : "Write a Review"}</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4 mt-4">
                     <div>
@@ -342,12 +445,16 @@ export const ProductReviews = ({ productId }: ProductReviewsProps) => {
                       <Button
                         variant="outline"
                         className="flex-1"
-                        onClick={() => setShowReviewForm(false)}
+                        onClick={() => {
+                          setShowReviewForm(false);
+                          setEditingReview(null);
+                          setReviewForm({ rating: 5, title: "", review_text: "" });
+                        }}
                       >
                         Cancel
                       </Button>
                       <Button className="flex-1" onClick={handleSubmitReview}>
-                        Submit Review
+                        {editingReview ? "Update Review" : "Submit Review"}
                       </Button>
                     </div>
                   </div>
@@ -488,7 +595,7 @@ export const ProductReviews = ({ productId }: ProductReviewsProps) => {
               <p className="text-muted-foreground leading-relaxed mb-4">
                 {review.review_text}
               </p>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center justify-between">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -506,6 +613,28 @@ export const ProductReviews = ({ productId }: ProductReviewsProps) => {
                   />
                   Helpful ({review.helpful_count})
                 </Button>
+                {isUserReview(review) && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 text-sm"
+                      onClick={() => handleEditReview(review)}
+                    >
+                      <Edit className="w-4 h-4 mr-1" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 text-sm text-destructive hover:text-destructive"
+                      onClick={() => setDeletingReview(review.id)}
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      Delete
+                    </Button>
+                  </div>
+                )}
               </div>
             </motion.div>
           ))}
@@ -524,6 +653,27 @@ export const ProductReviews = ({ productId }: ProductReviewsProps) => {
           )}
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deletingReview !== null} onOpenChange={(open) => !open && setDeletingReview(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Review</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete your review? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deletingReview && handleDeleteReview(deletingReview)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
