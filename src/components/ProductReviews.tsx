@@ -144,19 +144,20 @@ export const ProductReviews = ({ productId }: ProductReviewsProps) => {
         title: reviewForm.title || null,
         review_text: reviewForm.review_text,
         is_verified_purchase: true,
-        is_approved: false, // Requires admin approval
+        is_approved: true, // Auto-approve reviews for immediate posting
       });
 
       if (error) throw error;
 
       toast({
-        title: "Review Submitted",
-        description: "Your review is pending approval",
+        title: "Review Posted",
+        description: "Thank you! Your review has been posted successfully.",
       });
 
       setShowReviewForm(false);
       setReviewForm({ rating: 5, title: "", review_text: "" });
-      fetchReviews();
+      // Refresh reviews to show the new review immediately
+      await fetchReviews();
     } catch (error: any) {
       toast({
         title: "Error",
