@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -688,9 +689,20 @@ const Settings = () => {
 
   return (
     <AdminLayout title="Settings">
-      <div className="space-y-8 max-w-3xl">
-        {/* Shop Information */}
-        <section className="bg-card rounded-xl p-6 shadow-soft">
+      <div className="max-w-5xl">
+        <Tabs defaultValue="general" className="w-full">
+          <TabsList className="grid w-full grid-cols-5 mb-6 rounded-xl">
+            <TabsTrigger value="general" className="rounded-xl">General</TabsTrigger>
+            <TabsTrigger value="shipping" className="rounded-xl">Shipping & Payment</TabsTrigger>
+            <TabsTrigger value="products" className="rounded-xl">Products</TabsTrigger>
+            <TabsTrigger value="delivery" className="rounded-xl">Delivery</TabsTrigger>
+            <TabsTrigger value="promotions" className="rounded-xl">Promotions</TabsTrigger>
+          </TabsList>
+
+          {/* General Tab */}
+          <TabsContent value="general" className="space-y-6 mt-6">
+            {/* Shop Information */}
+            <section className="bg-card rounded-xl p-6 shadow-soft">
           <h2 className="text-lg font-semibold text-foreground mb-4">Shop Information</h2>
           <div className="grid gap-4">
             <div>
@@ -739,98 +751,140 @@ const Settings = () => {
           </div>
         </section>
 
-        {/* WhatsApp Settings */}
-        <section className="bg-card rounded-xl p-6 shadow-soft">
-          <h2 className="text-lg font-semibold text-foreground mb-4">WhatsApp Settings</h2>
-          <p className="text-sm text-muted-foreground mb-4">
-            Configure WhatsApp number for customer enquiries and support
-          </p>
-          <div className="grid gap-4">
-            <div>
-              <Label>Business WhatsApp Number</Label>
-              <Input
-                value={settings.whatsapp_number}
-                onChange={(e) => setSettings({ ...settings, whatsapp_number: e.target.value })}
-                className="rounded-xl mt-1.5"
-                placeholder="+91 99999 99999"
-              />
-              <p className="text-xs text-muted-foreground mt-1.5">
-                This number will be used for WhatsApp enquiry links on the website
+            {/* WhatsApp Settings */}
+            <section className="bg-card rounded-xl p-6 shadow-soft">
+              <h2 className="text-lg font-semibold text-foreground mb-4">WhatsApp Settings</h2>
+              <p className="text-sm text-muted-foreground mb-4">
+                Configure WhatsApp number for customer enquiries and support
               </p>
-            </div>
-          </div>
-        </section>
+              <div className="grid gap-4">
+                <div>
+                  <Label>Business WhatsApp Number</Label>
+                  <Input
+                    value={settings.whatsapp_number}
+                    onChange={(e) => setSettings({ ...settings, whatsapp_number: e.target.value })}
+                    className="rounded-xl mt-1.5"
+                    placeholder="+91 99999 99999"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    This number will be used for WhatsApp enquiry links on the website
+                  </p>
+                </div>
+              </div>
+            </section>
 
-        {/* Shipping Settings */}
-        <section className="bg-card rounded-xl p-6 shadow-soft">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Shipping Settings</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label>Free Shipping Threshold (₹)</Label>
-              <Input
-                type="number"
-                value={settings.free_shipping_threshold}
-                onChange={(e) => setSettings({ ...settings, free_shipping_threshold: e.target.value })}
-                className="rounded-xl mt-1.5"
-                placeholder="2000"
-              />
-              <p className="text-xs text-muted-foreground mt-1.5">
-                Orders above this amount get free shipping
-              </p>
+            {/* Save Button */}
+            <div className="flex justify-end">
+              <Button
+                size="lg"
+                className="rounded-full px-8"
+                onClick={handleSave}
+                disabled={saving}
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Changes"
+                )}
+              </Button>
             </div>
-            <div>
-              <Label>Standard Shipping Charge (₹)</Label>
-              <Input
-                type="number"
-                value={settings.shipping_charge}
-                onChange={(e) => setSettings({ ...settings, shipping_charge: e.target.value })}
-                className="rounded-xl mt-1.5"
-                placeholder="150"
-              />
-              <p className="text-xs text-muted-foreground mt-1.5">
-                Shipping charge for orders below threshold
-              </p>
-            </div>
-          </div>
-        </section>
+          </TabsContent>
 
-        {/* Payment Methods */}
-        <section className="bg-card rounded-xl p-6 shadow-soft">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Payment Methods</h2>
-          <div className="space-y-4">
-            {Object.entries(settings.payment_methods).map(([method, enabled]) => (
-              <div key={method} className="flex items-center justify-between">
-                <span className="text-foreground capitalize">{method}</span>
-                <Switch
-                  checked={enabled}
-                  onCheckedChange={(checked) =>
-                    setSettings({
-                      ...settings,
-                      payment_methods: { ...settings.payment_methods, [method]: checked },
-                    })
-                  }
+          {/* Shipping & Payment Tab */}
+          <TabsContent value="shipping" className="space-y-6 mt-6">
+                <section className="bg-card rounded-xl p-6 shadow-soft">
+              <h2 className="text-lg font-semibold text-foreground mb-4">Shipping Settings</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Free Shipping Threshold (₹)</Label>
+                  <Input
+                    type="number"
+                    value={settings.free_shipping_threshold}
+                    onChange={(e) => setSettings({ ...settings, free_shipping_threshold: e.target.value })}
+                    className="rounded-xl mt-1.5"
+                    placeholder="2000"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    Orders above this amount get free shipping
+                  </p>
+                </div>
+                <div>
+                  <Label>Standard Shipping Charge (₹)</Label>
+                  <Input
+                    type="number"
+                    value={settings.shipping_charge}
+                    onChange={(e) => setSettings({ ...settings, shipping_charge: e.target.value })}
+                    className="rounded-xl mt-1.5"
+                    placeholder="150"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    Shipping charge for orders below threshold
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            {/* Payment Methods */}
+            <section className="bg-card rounded-xl p-6 shadow-soft">
+              <h2 className="text-lg font-semibold text-foreground mb-4">Payment Methods</h2>
+              <div className="space-y-4">
+                {Object.entries(settings.payment_methods).map(([method, enabled]) => (
+                  <div key={method} className="flex items-center justify-between">
+                    <span className="text-foreground capitalize">{method}</span>
+                    <Switch
+                      checked={enabled}
+                      onCheckedChange={(checked) =>
+                        setSettings({
+                          ...settings,
+                          payment_methods: { ...settings.payment_methods, [method]: checked },
+                        })
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Tax Settings */}
+            <section className="bg-card rounded-xl p-6 shadow-soft">
+              <h2 className="text-lg font-semibold text-foreground mb-4">Tax Settings</h2>
+              <div>
+                <Label>Tax Rate (%)</Label>
+                <Input
+                  type="number"
+                  value={settings.tax_rate}
+                  onChange={(e) => setSettings({ ...settings, tax_rate: e.target.value })}
+                  className="rounded-xl mt-1.5"
                 />
               </div>
-            ))}
-          </div>
-        </section>
+            </section>
 
-        {/* Tax Settings */}
-        <section className="bg-card rounded-xl p-6 shadow-soft">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Tax Settings</h2>
-          <div>
-            <Label>Tax Rate (%)</Label>
-            <Input
-              type="number"
-              value={settings.tax_rate}
-              onChange={(e) => setSettings({ ...settings, tax_rate: e.target.value })}
-              className="rounded-xl mt-1.5"
-            />
-          </div>
-        </section>
+            {/* Save Button */}
+            <div className="flex justify-end">
+              <Button
+                size="lg"
+                className="rounded-full px-8"
+                onClick={handleSave}
+                disabled={saving}
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Changes"
+                )}
+              </Button>
+            </div>
+          </TabsContent>
 
-        {/* Featured Products Management */}
-        <section className="bg-card rounded-xl p-6 shadow-soft">
+          {/* Products Tab */}
+          <TabsContent value="products" className="space-y-6 mt-6">
+                <section className="bg-card rounded-xl p-6 shadow-soft">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
@@ -965,10 +1019,13 @@ const Settings = () => {
               )}
             </>
           )}
-        </section>
+            </section>
+          </TabsContent>
 
-        {/* Serviceable Pincodes Management */}
-        <section className="bg-card rounded-xl p-6 shadow-soft">
+          {/* Delivery Tab */}
+          <TabsContent value="delivery" className="space-y-6 mt-6">
+            {/* Serviceable Pincodes Management */}
+            <section className="bg-card rounded-xl p-6 shadow-soft">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
               <MapPin className="w-5 h-5 text-primary" />
@@ -1118,10 +1175,13 @@ const Settings = () => {
               ))}
             </div>
           )}
-        </section>
+            </section>
+          </TabsContent>
 
-        {/* Coupon Management */}
-        <section className="bg-card rounded-xl p-6 shadow-soft">
+          {/* Promotions Tab */}
+          <TabsContent value="promotions" className="space-y-6 mt-6">
+            {/* Coupon Management */}
+            <section className="bg-card rounded-xl p-6 shadow-soft">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
               <Tag className="w-5 h-5 text-primary" />
@@ -1206,26 +1266,9 @@ const Settings = () => {
               ))}
             </div>
           )}
-        </section>
-
-        {/* Save Button */}
-        <div className="flex justify-end">
-          <Button
-            size="lg"
-            className="rounded-full px-8"
-            onClick={handleSave}
-            disabled={saving}
-          >
-            {saving ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              "Save Changes"
-            )}
-          </Button>
-        </div>
+            </section>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Coupon Modal */}
