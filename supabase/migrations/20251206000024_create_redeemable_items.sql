@@ -6,10 +6,10 @@ CREATE TABLE IF NOT EXISTS public.redeemable_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   description TEXT,
-  category TEXT NOT NULL CHECK (category IN ('discount', 'coupon', 'product', 'wallet_credit', 'other')),
+  category TEXT NOT NULL CHECK (category IN ('discount', 'coupon', 'product', 'other')),
   points_required INTEGER NOT NULL CHECK (points_required > 0),
   value DECIMAL(10, 2), -- Value of the item (discount amount, wallet credit, etc.)
-  value_type TEXT CHECK (value_type IN ('percentage', 'fixed', 'wallet_credit')),
+  value_type TEXT CHECK (value_type IN ('percentage', 'fixed')),
   max_redemptions INTEGER, -- Maximum number of times this item can be redeemed (null = unlimited)
   current_redemptions INTEGER DEFAULT 0,
   is_active BOOLEAN DEFAULT true,

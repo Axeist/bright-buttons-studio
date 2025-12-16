@@ -236,7 +236,7 @@ const Dashboard = () => {
         });
       });
       const paymentMethodDistribution = Array.from(paymentMap.entries()).map(([method, data]) => ({
-        method: method === "cash" ? "Cash" : method === "wallet" ? "Wallet" : method === "online" ? "Online" : method.charAt(0).toUpperCase() + method.slice(1),
+        method: method === "cash" ? "Cash" : method === "online" ? "Online" : method.charAt(0).toUpperCase() + method.slice(1),
         ...data,
       }));
 

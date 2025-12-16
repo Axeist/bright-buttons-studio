@@ -2,12 +2,11 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { CustomerLayout } from "@/layouts/CustomerLayout";
 import { motion } from "framer-motion";
-import { Gift, Star, TrendingUp, Award, Clock, Wallet, Sparkles, ArrowRight, Check } from "lucide-react";
+import { Gift, Star, TrendingUp, Award, Clock, Sparkles, ArrowRight, Check } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -22,25 +21,15 @@ interface LoyaltyTransaction {
   expires_at: string | null;
 }
 
-interface WalletTransaction {
-  id: string;
-  transaction_type: "credit" | "debit";
-  amount: number;
-  balance_before: number;
-  balance_after: number;
-  description: string | null;
-  created_at: string;
-  order_id: string | null;
-}
 
 interface RedeemableItem {
   id: string;
   name: string;
   description: string | null;
-  category: 'discount' | 'coupon' | 'product' | 'wallet_credit' | 'other';
+  category: 'discount' | 'coupon' | 'product' | 'other';
   points_required: number;
   value: number | null;
-  value_type: 'percentage' | 'fixed' | 'wallet_credit' | null;
+  value_type: 'percentage' | 'fixed' | null;
   image_url: string | null;
 }
 
@@ -50,9 +39,7 @@ const CustomerRedeemRewards = () => {
   const [loading, setLoading] = useState(true);
   const [loyaltyPoints, setLoyaltyPoints] = useState(0);
   const [loyaltyTier, setLoyaltyTier] = useState("bronze");
-  const [walletBalance, setWalletBalance] = useState(0);
   const [loyaltyTransactions, setLoyaltyTransactions] = useState<LoyaltyTransaction[]>([]);
-  const [walletTransactions, setWalletTransactions] = useState<WalletTransaction[]>([]);
   const [redeemableItems, setRedeemableItems] = useState<RedeemableItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<RedeemableItem | null>(null);
   const [isRedeemDialogOpen, setIsRedeemDialogOpen] = useState(false);
@@ -76,14 +63,13 @@ const CustomerRedeemRewards = () => {
       // Fetch customer data
       const { data: customerData } = await supabase
         .from("customers")
-        .select("loyalty_points, loyalty_tier, wallet_balance")
+        .select("loyalty_points, loyalty_tier")
         .eq("id", customer.id)
         .single();
 
       if (customerData) {
         setLoyaltyPoints(customerData.loyalty_points || 0);
         setLoyaltyTier(customerData.loyalty_tier || "bronze");
-        setWalletBalance(customerData.wallet_balance || 0);
       }
 
       // Fetch loyalty transactions
@@ -95,16 +81,6 @@ const CustomerRedeemRewards = () => {
         .limit(20);
 
       setLoyaltyTransactions(loyaltyData || []);
-
-      // Fetch wallet transactions
-      const { data: walletData } = await supabase
-        .from("wallet_transactions")
-        .select("*")
-        .eq("customer_id", customer.id)
-        .order("created_at", { ascending: false })
-        .limit(20);
-
-      setWalletTransactions(walletData || []);
 
       // Fetch redeemable items
       const { data: itemsData } = await supabase
@@ -224,16 +200,6 @@ const CustomerRedeemRewards = () => {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString("en-IN", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
   const getCategoryBadgeColor = (category: string) => {
     switch (category) {
       case 'discount':
@@ -242,8 +208,6 @@ const CustomerRedeemRewards = () => {
         return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
       case 'product':
         return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'wallet_credit':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
     }
@@ -274,57 +238,35 @@ const CustomerRedeemRewards = () => {
           </p>
         </div>
 
-        {/* Points and Wallet Overview */}
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Loyalty Points Card */}
-          <Card className={`bg-gradient-to-br ${getTierColor(loyaltyTier)} text-white`}>
-            <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <Star className="w-5 h-5" />
-                {loyaltyTier.charAt(0).toUpperCase() + loyaltyTier.slice(1)} Member
-              </CardTitle>
-              <CardDescription className="text-white/80">
-                You have {loyaltyPoints.toLocaleString()} loyalty points
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-4xl font-bold mb-4">{loyaltyPoints.toLocaleString()}</div>
-              {nextTier && (
-                <div>
-                  <div className="flex justify-between text-sm mb-2">
-                    <span className="text-white/80">Progress to {nextTier.name}</span>
-                    <span className="text-white">{nextTier.current} / {nextTier.required}</span>
-                  </div>
-                  <div className="w-full bg-white/20 rounded-full h-2">
-                    <div
-                      className="bg-white rounded-full h-2 transition-all"
-                      style={{ width: `${Math.min(100, nextTier.progress)}%` }}
-                    />
-                  </div>
+        {/* Loyalty Points Overview */}
+        <Card className={`bg-gradient-to-br ${getTierColor(loyaltyTier)} text-white`}>
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <Star className="w-5 h-5" />
+              {loyaltyTier.charAt(0).toUpperCase() + loyaltyTier.slice(1)} Member
+            </CardTitle>
+            <CardDescription className="text-white/80">
+              You have {loyaltyPoints.toLocaleString()} loyalty points
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-4xl font-bold mb-4">{loyaltyPoints.toLocaleString()}</div>
+            {nextTier && (
+              <div>
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="text-white/80">Progress to {nextTier.name}</span>
+                  <span className="text-white">{nextTier.current} / {nextTier.required}</span>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Wallet Balance Card */}
-          <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Wallet className="h-5 w-5" />
-                Wallet Balance
-              </CardTitle>
-              <CardDescription>Available balance</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-4xl font-bold text-primary mb-2">
-                ₹{walletBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <div className="w-full bg-white/20 rounded-full h-2">
+                  <div
+                    className="bg-white rounded-full h-2 transition-all"
+                    style={{ width: `${Math.min(100, nextTier.progress)}%` }}
+                  />
+                </div>
               </div>
-              <p className="text-sm text-muted-foreground">
-                Get 10% discount when you pay with wallet!
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Redeemable Items */}
         <Card>
@@ -403,127 +345,62 @@ const CustomerRedeemRewards = () => {
         {/* Transaction History */}
         <Card>
           <CardHeader>
-            <CardTitle>Transaction History</CardTitle>
-            <CardDescription>Your points and wallet transactions</CardDescription>
+            <CardTitle>Points History</CardTitle>
+            <CardDescription>Your loyalty points transactions</CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="points" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="points">Loyalty Points</TabsTrigger>
-                <TabsTrigger value="wallet">Wallet</TabsTrigger>
-              </TabsList>
-              <TabsContent value="points" className="space-y-4 mt-4">
-                {loyaltyTransactions.length > 0 ? (
-                  loyaltyTransactions.map((transaction) => (
-                    <div
-                      key={transaction.id}
-                      className="flex items-center justify-between p-4 border rounded-lg"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div
-                          className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                            transaction.transaction_type === "earned"
-                              ? "bg-green-100 dark:bg-green-900/40"
-                              : "bg-red-100 dark:bg-red-900/40"
-                          }`}
-                        >
-                          {transaction.transaction_type === "earned" ? (
-                            <TrendingUp className="w-5 h-5 text-green-600 dark:text-green-400" />
-                          ) : (
-                            <Gift className="w-5 h-5 text-red-600 dark:text-red-400" />
-                          )}
-                        </div>
-                        <div>
-                          <p className="font-medium capitalize">{transaction.transaction_type}</p>
-                          <p className="text-sm text-muted-foreground">{transaction.description}</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {new Date(transaction.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
+            {loyaltyTransactions.length > 0 ? (
+              <div className="space-y-4">
+                {loyaltyTransactions.map((transaction) => (
+                  <div
+                    key={transaction.id}
+                    className="flex items-center justify-between p-4 border rounded-lg"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div
+                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          transaction.transaction_type === "earned"
+                            ? "bg-green-100 dark:bg-green-900/40"
+                            : "bg-red-100 dark:bg-red-900/40"
+                        }`}
+                      >
+                        {transaction.transaction_type === "earned" ? (
+                          <TrendingUp className="w-5 h-5 text-green-600 dark:text-green-400" />
+                        ) : (
+                          <Gift className="w-5 h-5 text-red-600 dark:text-red-400" />
+                        )}
                       </div>
-                      <div className="text-right">
-                        <p
-                          className={`font-bold ${
-                            transaction.transaction_type === "earned"
-                              ? "text-green-600 dark:text-green-400"
-                              : "text-red-600 dark:text-red-400"
-                          }`}
-                        >
-                          {transaction.transaction_type === "earned" ? "+" : "-"}
-                          {transaction.points}
-                        </p>
-                        <p className="text-xs text-muted-foreground">points</p>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-8">
-                    <Gift className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">No transactions yet</p>
-                    <p className="text-sm text-muted-foreground mt-2">Start shopping to earn points!</p>
-                  </div>
-                )}
-              </TabsContent>
-              <TabsContent value="wallet" className="space-y-4 mt-4">
-                {walletTransactions.length > 0 ? (
-                  walletTransactions.map((transaction) => (
-                    <div
-                      key={transaction.id}
-                      className="flex items-center justify-between p-4 border rounded-lg"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div
-                          className={`p-3 rounded-full ${
-                            transaction.transaction_type === "credit"
-                              ? "bg-green-100 dark:bg-green-900/30"
-                              : "bg-red-100 dark:bg-red-900/30"
-                          }`}
-                        >
-                          {transaction.transaction_type === "credit" ? (
-                            <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
-                          ) : (
-                            <Wallet className="h-5 w-5 text-red-600 dark:text-red-400" />
-                          )}
-                        </div>
-                        <div>
-                          <p className="font-semibold">
-                            {transaction.description || "Wallet transaction"}
-                          </p>
-                          <p className="text-sm text-muted-foreground">{formatDate(transaction.created_at)}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p
-                          className={`font-bold ${
-                            transaction.transaction_type === "credit"
-                              ? "text-green-600 dark:text-green-400"
-                              : "text-red-600 dark:text-red-400"
-                          }`}
-                        >
-                          {transaction.transaction_type === "credit" ? "+" : "-"}₹
-                          {transaction.amount.toLocaleString("en-IN", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Balance: ₹
-                          {transaction.balance_after.toLocaleString("en-IN", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
+                      <div>
+                        <p className="font-medium capitalize">{transaction.transaction_type}</p>
+                        <p className="text-sm text-muted-foreground">{transaction.description}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {new Date(transaction.created_at).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
-                  ))
-                ) : (
-                  <div className="text-center py-8">
-                    <Wallet className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">No wallet transactions yet</p>
+                    <div className="text-right">
+                      <p
+                        className={`font-bold ${
+                          transaction.transaction_type === "earned"
+                            ? "text-green-600 dark:text-green-400"
+                            : "text-red-600 dark:text-red-400"
+                        }`}
+                      >
+                        {transaction.transaction_type === "earned" ? "+" : "-"}
+                        {transaction.points}
+                      </p>
+                      <p className="text-xs text-muted-foreground">points</p>
+                    </div>
                   </div>
-                )}
-              </TabsContent>
-            </Tabs>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Gift className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No transactions yet</p>
+                <p className="text-sm text-muted-foreground mt-2">Start shopping to earn points!</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 

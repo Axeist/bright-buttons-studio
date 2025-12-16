@@ -18,10 +18,10 @@ interface RedeemableItem {
   id: string;
   name: string;
   description: string | null;
-  category: 'discount' | 'coupon' | 'product' | 'wallet_credit' | 'other';
+  category: 'discount' | 'coupon' | 'product' | 'other';
   points_required: number;
   value: number | null;
-  value_type: 'percentage' | 'fixed' | 'wallet_credit' | null;
+  value_type: 'percentage' | 'fixed' | null;
   max_redemptions: number | null;
   current_redemptions: number;
   is_active: boolean;
@@ -267,8 +267,6 @@ const Manage = () => {
         return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
       case 'product':
         return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'wallet_credit':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
     }
@@ -322,7 +320,6 @@ const Manage = () => {
                   <SelectItem value="discount">Discount</SelectItem>
                   <SelectItem value="coupon">Coupon</SelectItem>
                   <SelectItem value="product">Product</SelectItem>
-                  <SelectItem value="wallet_credit">Wallet Credit</SelectItem>
                   <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
@@ -396,8 +393,6 @@ const Manage = () => {
                         <p className="font-semibold">
                           {item.value_type === 'percentage' 
                             ? `${item.value}%`
-                            : item.value_type === 'wallet_credit'
-                            ? `₹${item.value}`
                             : `₹${item.value}`}
                         </p>
                       </div>
@@ -472,7 +467,6 @@ const Manage = () => {
                       <SelectItem value="discount">Discount</SelectItem>
                       <SelectItem value="coupon">Coupon</SelectItem>
                       <SelectItem value="product">Product</SelectItem>
-                      <SelectItem value="wallet_credit">Wallet Credit</SelectItem>
                       <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
@@ -502,7 +496,6 @@ const Manage = () => {
                     <SelectContent>
                       <SelectItem value="fixed">Fixed Amount</SelectItem>
                       <SelectItem value="percentage">Percentage</SelectItem>
-                      <SelectItem value="wallet_credit">Wallet Credit</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

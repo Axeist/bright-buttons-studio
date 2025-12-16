@@ -42,8 +42,7 @@ const Checkout = () => {
   const [selectedAddress, setSelectedAddress] = useState<string>("");
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<"online" | "cod" | "wallet">("online");
-  const [walletBalance, setWalletBalance] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState<"online" | "cod">("online");
   const [isProcessing, setIsProcessing] = useState(false);
   const [addressForm, setAddressForm] = useState({
     type: "home" as "home" | "work" | "other",
@@ -67,26 +66,9 @@ const Checkout = () => {
     // Only fetch addresses if customer is logged in
     if (customer) {
       fetchAddresses();
-      fetchWalletBalance();
     }
   }, [customer, customerLoading, items, cartLoading]);
 
-  const fetchWalletBalance = async () => {
-    if (!customer) return;
-
-    try {
-      const { data, error } = await supabase
-        .from("customers")
-        .select("wallet_balance")
-        .eq("id", customer.id)
-        .single();
-
-      if (error) throw error;
-      setWalletBalance(data?.wallet_balance || 0);
-    } catch (error: any) {
-      console.error("Error fetching wallet balance:", error);
-    }
-  };
 
   const fetchAddresses = async (skipAutoSelect = false) => {
     if (!customer) return;
@@ -379,32 +361,10 @@ const Checkout = () => {
       const orderNumber = orderNumberData || `ORD-${Date.now()}`;
 
       const subtotal = getTotalPrice();
-      const walletDiscount = paymentMethod === "wallet" && customerId ? subtotal * 0.1 : 0;
-      const discountedSubtotal = subtotal - walletDiscount;
       const taxRate = 0.18; // 18% GST
-      const taxAmount = discountedSubtotal * taxRate;
-      const shippingAmount = discountedSubtotal >= 2000 ? 0 : 150;
-      const totalAmount = discountedSubtotal + taxAmount + shippingAmount;
-
-      // Check wallet balance if paying with wallet
-      if (paymentMethod === "wallet" && customerId) {
-        // Fetch current wallet balance
-        const { data: customerData } = await supabase
-          .from("customers")
-          .select("wallet_balance")
-          .eq("id", customerId)
-          .single();
-
-        if (!customerData || (customerData.wallet_balance || 0) < totalAmount) {
-          toast({
-            title: "Insufficient Wallet Balance",
-            description: `Your wallet balance is ₹${(customerData?.wallet_balance || 0).toLocaleString()}. Please add more money or choose a different payment method.`,
-            variant: "destructive",
-          });
-          setIsProcessing(false);
-          return;
-        }
-      }
+      const taxAmount = subtotal * taxRate;
+      const shippingAmount = subtotal >= 2000 ? 0 : 150;
+      const totalAmount = subtotal + taxAmount + shippingAmount;
 
       // Create order
       const { data: order, error: orderError } = await supabase
@@ -419,10 +379,10 @@ const Checkout = () => {
           shipping_address_id: selectedAddr.id,
           status: paymentMethod === "cod" ? "pending" : "confirmed",
           payment_status: paymentMethod === "cod" ? "pending" : "paid",
-          payment_method: paymentMethod === "cod" ? "cash" : paymentMethod === "wallet" ? "wallet" : "online",
+          payment_method: paymentMethod === "cod" ? "cash" : "online",
           source: "online",
           subtotal,
-          discount_amount: walletDiscount,
+          discount_amount: 0,
           tax_amount: taxAmount,
           shipping_amount: shippingAmount,
           total_amount: totalAmount,
@@ -450,22 +410,12 @@ const Checkout = () => {
 
       if (itemsError) throw itemsError;
 
-      // Deduct from wallet if paying with wallet
-      if (paymentMethod === "wallet" && customerId) {
-        const { error: walletError } = await supabase.rpc("deduct_from_wallet", {
-          _customer_id: customerId,
-          _amount: totalAmount,
-          _order_id: order.id,
-          _description: `Payment for order ${orderNumber}`,
-        });
-
-        if (walletError) throw walletError;
-
-        // Create payment record
+      // Create payment record for online payments
+      if (paymentMethod === "online") {
         await supabase.from("payments").insert({
           order_id: order.id,
           amount: totalAmount,
-          payment_method: "wallet",
+          payment_method: "online",
           status: "paid",
           transaction_id: `WALLET-${Date.now()}`,
         });
@@ -533,11 +483,9 @@ const Checkout = () => {
   };
 
   const subtotal = getTotalPrice();
-  const walletDiscount = paymentMethod === "wallet" && customer ? subtotal * 0.1 : 0;
-  const discountedSubtotal = subtotal - walletDiscount;
-  const taxAmount = discountedSubtotal * 0.18;
-  const shippingAmount = discountedSubtotal >= 2000 ? 0 : 150;
-  const totalAmount = discountedSubtotal + taxAmount + shippingAmount;
+  const taxAmount = subtotal * 0.18;
+  const shippingAmount = subtotal >= 2000 ? 0 : 150;
+  const totalAmount = subtotal + taxAmount + shippingAmount;
 
   // Validation functions
   const validateCartStep = () => {
@@ -1007,29 +955,8 @@ const Checkout = () => {
                     <CreditCard className="w-5 h-5 text-primary" />
                     Payment Method
                   </h2>
-                  <RadioGroup value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as "online" | "cod" | "wallet")}>
+                  <RadioGroup value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as "online" | "cod")}>
                     <div className="space-y-3">
-                      {customer && walletBalance > 0 && (
-                        <div className="border-2 border-primary rounded-lg p-4 cursor-pointer transition-colors bg-primary/5">
-                          <div className="flex items-center gap-3">
-                            <RadioGroupItem value="wallet" id="wallet" />
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <Label htmlFor="wallet" className="font-semibold cursor-pointer">
-                                  Pay with Wallet
-                                </Label>
-                                <Badge className="bg-green-500 text-white">10% OFF</Badge>
-                              </div>
-                              <p className="text-sm text-muted-foreground">
-                                Balance: ₹{walletBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                              </p>
-                              <p className="text-xs text-green-600 dark:text-green-400 mt-1 font-medium">
-                                Get 10% discount when paying with wallet!
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
                       <div className="border rounded-lg p-4 cursor-pointer transition-colors hover:border-primary/50">
                         <div className="flex items-center gap-3">
                           <RadioGroupItem value="online" id="online" />
@@ -1222,7 +1149,7 @@ const Checkout = () => {
                   subtotal={subtotal}
                   shipping={shippingAmount}
                   tax={taxAmount}
-                  discount={walletDiscount}
+                  discount={0}
                   total={totalAmount}
                   showCouponInput={false}
                 />
