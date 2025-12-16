@@ -248,6 +248,17 @@ const ProductDetail = () => {
   const handleAddToCart = async (qty: number, size?: string) => {
     if (!product) return;
 
+    // Check stock availability first
+    const availableStock = getAvailableStock();
+    if (availableStock <= 0) {
+      toast({
+        title: "Out of Stock",
+        description: "This product is currently out of stock",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!user) {
       toast({
         title: "Please login",
@@ -267,7 +278,6 @@ const ProductDetail = () => {
       return;
     }
 
-    const availableStock = getAvailableStock();
     if (qty > availableStock) {
       toast({
         title: "Insufficient stock",

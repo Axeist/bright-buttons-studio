@@ -257,15 +257,35 @@ export const ProductOverview = ({
 
         {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-3">
-          <Button
-            size="lg"
-            className="flex-1 rounded-full h-12"
-            onClick={() => onAddToCart?.(quantity, selectedSize || undefined)}
-            disabled={!product.inStock || (requireSize && sizeOptions.length > 0 && !selectedSize)}
-          >
-            <ShoppingCart className="w-5 h-5 mr-2" />
-            Add to Cart
-          </Button>
+          {!product.inStock ? (
+            <Button
+              size="lg"
+              variant="destructive"
+              className="flex-1 rounded-full h-12"
+              disabled
+            >
+              Out of Stock
+            </Button>
+          ) : (
+            <Button
+              size="lg"
+              className="flex-1 rounded-full h-12"
+              onClick={() => {
+                if (requireSize && sizeOptions.length > 0 && !selectedSize) {
+                  return;
+                }
+                if (onAddToCart) {
+                  onAddToCart(quantity, selectedSize || undefined);
+                }
+              }}
+              disabled={requireSize && sizeOptions.length > 0 && !selectedSize}
+            >
+              <ShoppingCart className="w-5 h-5 mr-2" />
+              {requireSize && sizeOptions.length > 0 && !selectedSize 
+                ? "Select Size" 
+                : "Add to Cart"}
+            </Button>
+          )}
           <Button
             variant="outline"
             size="lg"
