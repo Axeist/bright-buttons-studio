@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { PublicLayout } from "@/layouts/PublicLayout";
 import { motion } from "framer-motion";
-import { ArrowLeft, GitCompare } from "lucide-react";
+import { ArrowLeft, GitCompare, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
