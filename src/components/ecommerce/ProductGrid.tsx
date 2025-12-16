@@ -122,103 +122,102 @@ export const ProductGrid = ({
                   </motion.button>
                 )}
 
-                {/* Hover Overlay with Actions */}
-                <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/10 transition-colors duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                  <div className="flex flex-col gap-2">
-                    {onQuickView && (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="rounded-full"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onQuickView(product);
-                        }}
-                      >
-                        <Eye className="w-4 h-4 mr-1" />
-                        Quick View
-                      </Button>
-                    )}
-                    {!onQuickView && onProductClick && (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="rounded-full"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onProductClick(product);
-                        }}
-                      >
-                        <Eye className="w-4 h-4 mr-1" />
-                        View Details
-                      </Button>
-                    )}
-                    {onAddToCart && product.inStock && (() => {
-                      const cartItem = items.find(item => item.product_id === product.id);
-                      if (cartItem) {
-                        return (
-                          <div className="flex items-center border rounded-full overflow-hidden bg-background">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 rounded-none"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (cartItem.quantity > 1) {
-                                  updateQuantity(cartItem.id, cartItem.quantity - 1);
-                                }
-                              }}
-                              disabled={cartItem.quantity <= 1}
-                            >
-                              <Minus className="w-3 h-3" />
-                            </Button>
-                            <span className="w-8 text-center text-sm font-medium">
-                              {cartItem.quantity}
-                            </span>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 rounded-none"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                updateQuantity(cartItem.id, cartItem.quantity + 1);
-                              }}
-                            >
-                              <Plus className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        );
-                      }
-                      return (
+              </div>
+
+              {/* Action Buttons - Below Image */}
+              <div className="px-5 pt-3 pb-2 flex flex-wrap gap-2">
+                {onQuickView && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="rounded-full flex-1 min-w-[100px]"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onQuickView(product);
+                    }}
+                  >
+                    <Eye className="w-4 h-4 mr-1" />
+                    Quick View
+                  </Button>
+                )}
+                {!onQuickView && onProductClick && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="rounded-full flex-1 min-w-[100px]"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onProductClick(product);
+                    }}
+                  >
+                    <Eye className="w-4 h-4 mr-1" />
+                    View Details
+                  </Button>
+                )}
+                {onAddToCart && product.inStock && (() => {
+                  const cartItem = items.find(item => item.product_id === product.id);
+                  if (cartItem) {
+                    return (
+                      <div className="flex items-center border rounded-full overflow-hidden bg-background flex-1 min-w-[100px]">
                         <Button
-                          size="sm"
-                          className="rounded-full"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-none"
                           onClick={(e) => {
                             e.stopPropagation();
-                            onAddToCart(product);
+                            if (cartItem.quantity > 1) {
+                              updateQuantity(cartItem.id, cartItem.quantity - 1);
+                            }
+                          }}
+                          disabled={cartItem.quantity <= 1}
+                        >
+                          <Minus className="w-3 h-3" />
+                        </Button>
+                        <span className="w-8 text-center text-sm font-medium">
+                          {cartItem.quantity}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-none"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            updateQuantity(cartItem.id, cartItem.quantity + 1);
                           }}
                         >
-                          <ShoppingCart className="w-4 h-4 mr-1" />
-                          Add to Cart
+                          <Plus className="w-3 h-3" />
                         </Button>
-                      );
-                    })()}
-                    {onCompare && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="rounded-full bg-background/90"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onCompare(product);
-                        }}
-                      >
-                        <GitCompare className="w-4 h-4 mr-1" />
-                        Compare
-                      </Button>
-                    )}
-                  </div>
-                </div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <Button
+                      size="sm"
+                      className="rounded-full flex-1 min-w-[100px]"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAddToCart(product);
+                      }}
+                    >
+                      <ShoppingCart className="w-4 h-4 mr-1" />
+                      Add to Cart
+                    </Button>
+                  );
+                })()}
+                {onCompare && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-full flex-1 min-w-[100px]"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onCompare(product);
+                    }}
+                  >
+                    <GitCompare className="w-4 h-4 mr-1" />
+                    Compare
+                  </Button>
+                )}
               </div>
 
               {/* Content */}
