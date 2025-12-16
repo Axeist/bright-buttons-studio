@@ -63,6 +63,7 @@ export const CollectionsSection = () => {
           )
         `)
         .eq("status", "active")
+        .eq("is_featured", true)
         .order("created_at", { ascending: false });
 
       if (error) throw error;

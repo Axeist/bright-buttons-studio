@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { parseCSV } from "@/lib/csvImport";
 import { validatePincodeCSVData, generateSamplePincodeCSV, type CSVPincodeRow } from "@/lib/pincodeCsvImport";
-import { Loader2, Plus, Edit, Trash2, Tag, MapPin, Upload, Download, FileText } from "lucide-react";
+import { Loader2, Plus, Edit, Trash2, Tag, MapPin, Upload, Download, FileText, Package, Star } from "lucide-react";
 
 interface Coupon {
   id: string;
@@ -39,6 +39,16 @@ interface ServiceablePincode {
   is_active: boolean;
 }
 
+interface FeaturedProduct {
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  image_url: string | null;
+  is_featured: boolean;
+  status: string;
+}
+
 const Settings = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -58,6 +68,9 @@ const Settings = () => {
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [importErrors, setImportErrors] = useState<any[]>([]);
   const [isImporting, setIsImporting] = useState(false);
+  const [products, setProducts] = useState<FeaturedProduct[]>([]);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [updatingFeatured, setUpdatingFeatured] = useState<string | null>(null);
   const [couponForm, setCouponForm] = useState({
     code: "",
     name: "",
@@ -90,6 +103,7 @@ const Settings = () => {
     fetchSettings();
     fetchCoupons();
     fetchServiceablePincodes();
+    fetchProducts();
   }, []);
 
   const fetchSettings = async () => {
@@ -523,6 +537,62 @@ const Settings = () => {
     }
   };
 
+  const fetchProducts = async () => {
+    setProductsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("products")
+        .select("id, name, category, price, image_url, is_featured, status")
+        .eq("status", "active")
+        .order("name", { ascending: true });
+
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to load products",
+        variant: "destructive",
+      });
+    } finally {
+      setProductsLoading(false);
+    }
+  };
+
+  const handleToggleFeatured = async (productId: string, currentFeatured: boolean) => {
+    setUpdatingFeatured(productId);
+    try {
+      const { error } = await supabase
+        .from("products")
+        .update({ is_featured: !currentFeatured })
+        .eq("id", productId);
+
+      if (error) throw error;
+
+      // Update local state
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.id === productId ? { ...p, is_featured: !currentFeatured } : p
+        )
+      );
+
+      toast({
+        title: "Success",
+        description: currentFeatured
+          ? "Product removed from featured"
+          : "Product added to featured",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update product",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdatingFeatured(null);
+    }
+  };
+
   const handleImportPincodes = async () => {
     if (!csvFile) return;
 
@@ -733,6 +803,73 @@ const Settings = () => {
               className="rounded-xl mt-1.5"
             />
           </div>
+        </section>
+
+        {/* Featured Products Management */}
+        <section className="bg-card rounded-xl p-6 shadow-soft">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+              <Star className="w-5 h-5 text-primary" />
+              Featured Products
+            </h2>
+          </div>
+          
+          <p className="text-sm text-muted-foreground mb-4">
+            Select which products should be displayed on the landing page. Only featured products will appear in the "Handcrafted Collections" section.
+          </p>
+
+          {productsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            </div>
+          ) : products.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No active products found</p>
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {products.map((product) => (
+                <div
+                  key={product.id}
+                  className="flex items-center justify-between p-4 bg-accent rounded-lg border border-border"
+                >
+                  <div className="flex items-center gap-3 flex-1">
+                    {product.image_url ? (
+                      <img
+                        src={product.image_url}
+                        alt={product.name}
+                        className="w-12 h-12 object-cover rounded-lg"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
+                        <Package className="w-5 h-5 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-foreground truncate">{product.name}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs text-muted-foreground">{product.category}</span>
+                        <span className="text-xs text-muted-foreground">•</span>
+                        <span className="text-xs text-muted-foreground">₹{product.price.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {product.is_featured && (
+                      <span className="px-2 py-1 text-xs rounded-full bg-primary/20 text-primary">
+                        Featured
+                      </span>
+                    )}
+                    <Switch
+                      checked={product.is_featured}
+                      onCheckedChange={() => handleToggleFeatured(product.id, product.is_featured)}
+                      disabled={updatingFeatured === product.id}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
 
         {/* Serviceable Pincodes Management */}
