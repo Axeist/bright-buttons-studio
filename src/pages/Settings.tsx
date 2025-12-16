@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { parseCSV } from "@/lib/csvImport";
 import { validatePincodeCSVData, generateSamplePincodeCSV, type CSVPincodeRow } from "@/lib/pincodeCsvImport";
-import { cn } from "@/lib/utils";
+import { cn, getProductImageUrl } from "@/lib/utils";
 import { Loader2, Plus, Edit, Trash2, Tag, MapPin, Upload, Download, FileText, Package, Star, ChevronLeft, ChevronRight, Search, Filter, X } from "lucide-react";
 
 interface Coupon {
@@ -51,6 +51,13 @@ interface FeaturedProduct {
   image_url: string | null;
   is_featured: boolean;
   status: string;
+  product_photos?: Array<{
+    id: string;
+    product_id: string;
+    image_url: string;
+    display_order: number;
+    is_primary: boolean;
+  }>;
 }
 
 const Settings = () => {
@@ -559,7 +566,22 @@ const Settings = () => {
     try {
       const { data, error } = await supabase
         .from("products")
-        .select("id, name, category, price, image_url, is_featured, status")
+        .select(`
+          id,
+          name,
+          category,
+          price,
+          image_url,
+          is_featured,
+          status,
+          product_photos (
+            id,
+            product_id,
+            image_url,
+            display_order,
+            is_primary
+          )
+        `)
         .eq("status", "active")
         .order("name", { ascending: true });
 
@@ -968,17 +990,20 @@ const Settings = () => {
 
                       {/* Product Image */}
                       <div className="aspect-square w-full overflow-hidden rounded-t-lg bg-muted">
-                        {product.image_url ? (
-                          <img
-                            src={product.image_url}
-                            alt={product.name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Package className="w-8 h-8 text-muted-foreground" />
-                          </div>
-                        )}
+                        {(() => {
+                          const imageUrl = getProductImageUrl(product);
+                          return imageUrl ? (
+                            <img
+                              src={imageUrl}
+                              alt={product.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Package className="w-8 h-8 text-muted-foreground" />
+                            </div>
+                          );
+                        })()}
                       </div>
 
                       {/* Product Info */}
