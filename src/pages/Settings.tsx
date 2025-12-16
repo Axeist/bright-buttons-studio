@@ -732,13 +732,10 @@ const Settings = () => {
     <AdminLayout title="Settings">
       <div className="max-w-5xl">
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full grid-cols-6 mb-6 rounded-xl">
+          <TabsList className="grid w-full grid-cols-3 mb-6 rounded-xl">
             <TabsTrigger value="general" className="rounded-xl">General</TabsTrigger>
             <TabsTrigger value="shipping" className="rounded-xl">Shipping & Payment</TabsTrigger>
             <TabsTrigger value="products" className="rounded-xl">Products</TabsTrigger>
-            <TabsTrigger value="delivery" className="rounded-xl">Delivery</TabsTrigger>
-            <TabsTrigger value="promotions" className="rounded-xl">Promotions</TabsTrigger>
-            <TabsTrigger value="reviews" className="rounded-xl">Manage Reviews</TabsTrigger>
           </TabsList>
 
           {/* General Tab */}
