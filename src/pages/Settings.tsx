@@ -5,13 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { parseCSV } from "@/lib/csvImport";
 import { validatePincodeCSVData, generateSamplePincodeCSV, type CSVPincodeRow } from "@/lib/pincodeCsvImport";
-import { Loader2, Plus, Edit, Trash2, Tag, MapPin, Upload, Download, FileText, Package, Star } from "lucide-react";
+import { Loader2, Plus, Edit, Trash2, Tag, MapPin, Upload, Download, FileText, Package, Star, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Coupon {
   id: string;
@@ -71,6 +72,9 @@ const Settings = () => {
   const [products, setProducts] = useState<FeaturedProduct[]>([]);
   const [productsLoading, setProductsLoading] = useState(false);
   const [updatingFeatured, setUpdatingFeatured] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PRODUCTS_PER_PAGE = 12;
+  const MAX_FEATURED_PRODUCTS = 12;
   const [couponForm, setCouponForm] = useState({
     code: "",
     name: "",
@@ -560,6 +564,19 @@ const Settings = () => {
   };
 
   const handleToggleFeatured = async (productId: string, currentFeatured: boolean) => {
+    // Check if we're trying to add a featured product and we're at the limit
+    if (!currentFeatured) {
+      const featuredCount = products.filter(p => p.is_featured).length;
+      if (featuredCount >= MAX_FEATURED_PRODUCTS) {
+        toast({
+          title: "Limit Reached",
+          description: `You can only feature ${MAX_FEATURED_PRODUCTS} products. Please unfeature another product first.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     setUpdatingFeatured(productId);
     try {
       const { error } = await supabase
@@ -592,6 +609,13 @@ const Settings = () => {
       setUpdatingFeatured(null);
     }
   };
+
+  // Calculate pagination
+  const totalPages = Math.ceil(products.length / PRODUCTS_PER_PAGE);
+  const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
+  const endIndex = startIndex + PRODUCTS_PER_PAGE;
+  const currentProducts = products.slice(startIndex, endIndex);
+  const featuredCount = products.filter(p => p.is_featured).length;
 
   const handleImportPincodes = async () => {
     if (!csvFile) return;
@@ -808,67 +832,138 @@ const Settings = () => {
         {/* Featured Products Management */}
         <section className="bg-card rounded-xl p-6 shadow-soft">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-              <Star className="w-5 h-5 text-primary" />
-              Featured Products
-            </h2>
+            <div>
+              <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                <Star className="w-5 h-5 text-primary" />
+                Featured Products
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Select up to {MAX_FEATURED_PRODUCTS} products to feature on the landing page ({featuredCount}/{MAX_FEATURED_PRODUCTS} selected)
+              </p>
+            </div>
           </div>
           
-          <p className="text-sm text-muted-foreground mb-4">
-            Select which products should be displayed on the landing page. Only featured products will appear in the "Handcrafted Collections" section.
+          <p className="text-sm text-muted-foreground mb-6">
+            Only featured products will appear in the "Handcrafted Collections" section on the landing page.
           </p>
 
           {productsLoading ? (
-            <div className="flex items-center justify-center py-8">
+            <div className="flex items-center justify-center py-12">
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
           ) : products.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-12 text-muted-foreground">
               <p>No active products found</p>
             </div>
           ) : (
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-              {products.map((product) => (
-                <div
-                  key={product.id}
-                  className="flex items-center justify-between p-4 bg-accent rounded-lg border border-border"
-                >
-                  <div className="flex items-center gap-3 flex-1">
-                    {product.image_url ? (
-                      <img
-                        src={product.image_url}
-                        alt={product.name}
-                        className="w-12 h-12 object-cover rounded-lg"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
-                        <Package className="w-5 h-5 text-muted-foreground" />
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-6">
+                {currentProducts.map((product) => {
+                  const isUpdating = updatingFeatured === product.id;
+                  const canSelect = !product.is_featured && featuredCount >= MAX_FEATURED_PRODUCTS;
+                  
+                  return (
+                    <div
+                      key={product.id}
+                      className={`relative group cursor-pointer rounded-lg border-2 transition-all ${
+                        product.is_featured
+                          ? "border-primary bg-primary/5"
+                          : canSelect
+                          ? "border-border bg-muted/50 opacity-60"
+                          : "border-border bg-accent hover:border-primary/50"
+                      } ${isUpdating ? "opacity-50 pointer-events-none" : ""}`}
+                      onClick={() => {
+                        if (!isUpdating && !canSelect) {
+                          handleToggleFeatured(product.id, product.is_featured);
+                        }
+                      }}
+                    >
+                      {/* Checkbox overlay */}
+                      <div className="absolute top-2 right-2 z-10">
+                        <Checkbox
+                          checked={product.is_featured}
+                          onCheckedChange={() => {
+                            if (!isUpdating && !canSelect) {
+                              handleToggleFeatured(product.id, product.is_featured);
+                            }
+                          }}
+                          disabled={isUpdating || canSelect}
+                          className="h-5 w-5"
+                        />
                       </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-foreground truncate">{product.name}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs text-muted-foreground">{product.category}</span>
-                        <span className="text-xs text-muted-foreground">•</span>
-                        <span className="text-xs text-muted-foreground">₹{product.price.toLocaleString()}</span>
+
+                      {/* Product Image */}
+                      <div className="aspect-square w-full overflow-hidden rounded-t-lg bg-muted">
+                        {product.image_url ? (
+                          <img
+                            src={product.image_url}
+                            alt={product.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Package className="w-8 h-8 text-muted-foreground" />
+                          </div>
+                        )}
                       </div>
+
+                      {/* Product Info */}
+                      <div className="p-3">
+                        <p className="font-semibold text-sm text-foreground line-clamp-2 mb-1">
+                          {product.name}
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">{product.category}</span>
+                          <span className="text-sm font-semibold text-primary">
+                            ₹{product.price.toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Featured Badge */}
+                      {product.is_featured && (
+                        <div className="absolute top-2 left-2">
+                          <span className="px-2 py-0.5 text-xs rounded-full bg-primary text-primary-foreground">
+                            Featured
+                          </span>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    {product.is_featured && (
-                      <span className="px-2 py-1 text-xs rounded-full bg-primary/20 text-primary">
-                        Featured
-                      </span>
-                    )}
-                    <Switch
-                      checked={product.is_featured}
-                      onCheckedChange={() => handleToggleFeatured(product.id, product.is_featured)}
-                      disabled={updatingFeatured === product.id}
-                    />
-                  </div>
+                  );
+                })}
+              </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between pt-4 border-t">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className="rounded-xl"
+                  >
+                    <ChevronLeft className="w-4 h-4 mr-2" />
+                    Previous
+                  </Button>
+                  
+                  <span className="text-sm text-muted-foreground">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    className="rounded-xl"
+                  >
+                    Next
+                    <ChevronRight className="w-4 h-4 ml-2" />
+                  </Button>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </section>
 
