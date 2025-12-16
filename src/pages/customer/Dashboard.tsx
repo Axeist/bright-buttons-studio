@@ -175,7 +175,7 @@ const CustomerDashboard = () => {
         monthlyData.set(monthKey, 0);
       }
 
-      // For "today", show hourly data instead
+      // For "today", show order count by hour instead of spending
       if (dateRange === "today") {
         monthlyData.clear(); // Clear month data
         const todayStart = new Date(now);
@@ -186,11 +186,12 @@ const CustomerDashboard = () => {
           monthlyData.set(hourKey, 0);
         }
         
+        // Count orders by hour instead of spending
         orders?.forEach(order => {
           const orderDate = new Date(order.created_at);
           const hourKey = orderDate.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true });
           if (monthlyData.has(hourKey)) {
-            monthlyData.set(hourKey, (monthlyData.get(hourKey) || 0) + order.total_amount);
+            monthlyData.set(hourKey, (monthlyData.get(hourKey) || 0) + 1);
           }
         });
       } else {
@@ -461,11 +462,11 @@ const CustomerDashboard = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Activity className="h-5 w-5" />
-                Spending Trend
+                {dateRange === "today" ? "Order Activity" : "Spending Trend"}
               </CardTitle>
               <CardDescription>
                 {dateRange === "today" 
-                  ? "Your spending today by hour" 
+                  ? "Orders placed today by hour" 
                   : dateRange === "month"
                   ? "Your spending this month"
                   : dateRange === "3months"
@@ -487,7 +488,9 @@ const CustomerDashboard = () => {
                     <XAxis dataKey="month" />
                     <YAxis />
                     <Tooltip 
-                      formatter={(value: number) => [`₹${value.toLocaleString()}`, 'Spending']}
+                      formatter={(value: number) => dateRange === "today" 
+                        ? [`${value} order${value !== 1 ? 's' : ''}`, 'Orders']
+                        : [`₹${value.toLocaleString()}`, 'Spending']}
                     />
                     <Area 
                       type="monotone" 
@@ -500,7 +503,7 @@ const CustomerDashboard = () => {
                 </ResponsiveContainer>
               ) : (
                 <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                  No spending data available
+                  {dateRange === "today" ? "No orders today" : "No spending data available"}
                 </div>
               )}
             </CardContent>
