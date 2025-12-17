@@ -1773,16 +1773,16 @@ const Manage = () => {
         </TabsList>
 
         <TabsContent value="redeem" className="space-y-6">
-          <RedeemTab />
+          {RedeemTab()}
         </TabsContent>
         <TabsContent value="delivery" className="space-y-6">
-          <DeliveriesTab />
+          {DeliveriesTab()}
         </TabsContent>
         <TabsContent value="promotions" className="space-y-6">
-          <PromotionsTab />
+          {PromotionsTab()}
         </TabsContent>
         <TabsContent value="reviews" className="space-y-6">
-          <ReviewsTab />
+          {ReviewsTab()}
         </TabsContent>
       </Tabs>
     </AdminLayout>
