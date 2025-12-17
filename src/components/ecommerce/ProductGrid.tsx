@@ -65,14 +65,23 @@ export const ProductGrid = ({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: index * 0.05 }}
           >
-            <Card className="group h-full flex flex-col overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+            <Card
+              className="group h-full flex flex-col overflow-hidden border border-transparent bg-white/80 dark:bg-card/70 backdrop-blur-md shadow-md hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_18px_50px_rgba(16,185,129,0.18)] transition-all duration-500"
+            >
               {/* Image Container */}
-              <div className="relative aspect-[4/5] overflow-hidden bg-gradient-to-br from-primary-50 dark:from-primary-900/20 to-earth-50 dark:to-card">
+              <div
+                className="relative aspect-[4/5] overflow-hidden bg-gradient-to-br from-primary-50/70 via-emerald-50/60 to-earth-50/60 dark:from-primary-900/30 dark:via-card dark:to-primary-900/20 cursor-pointer"
+                onClick={() => onProductClick?.(product)}
+                role={onProductClick ? "button" : undefined}
+                aria-label={onProductClick ? `View ${product.name}` : undefined}
+              >
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-primary/10 via-transparent to-emerald-100/20 pointer-events-none" />
+                <div className="absolute inset-3 rounded-3xl border border-white/40 dark:border-white/5 shadow-inner" />
                 {product.image ? (
                   <img
                     src={product.image}
                     alt={product.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">

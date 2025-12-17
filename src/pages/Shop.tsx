@@ -339,9 +339,9 @@ const Shop = () => {
 
   return (
     <PublicLayout>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-gradient-to-b from-primary-50/60 via-white to-emerald-50/40 dark:from-background dark:via-background dark:to-background">
         {/* Header */}
-        <div className="bg-gradient-to-br from-primary-50 via-earth-50 to-primary-50 dark:from-primary-900/20 dark:via-card dark:to-primary-900/20 border-b border-border">
+        <div className="bg-gradient-to-br from-primary-50/80 via-emerald-50/60 to-earth-50/60 dark:from-primary-900/25 dark:via-card dark:to-primary-900/25 border-b border-border/60">
           <div className="container-custom py-12 md:py-16">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -355,6 +355,14 @@ const Shop = () => {
                 Discover unique, handcrafted eco-printed clothing. Each piece is one-of-a-kind, 
                 carefully made with sustainable practices and traditional techniques.
               </p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <span className="px-4 py-2 rounded-full bg-white/70 dark:bg-card/60 border border-primary/10 shadow-sm text-sm">
+                  Slow fashion • Earth-friendly inks
+                </span>
+                <span className="px-4 py-2 rounded-full bg-white/70 dark:bg-card/60 border border-primary/10 shadow-sm text-sm">
+                  Curated drops weekly
+                </span>
+              </div>
             </motion.div>
           </div>
         </div>
@@ -379,16 +387,17 @@ const Shop = () => {
             {/* Main Content */}
             <main className="lg:col-span-3 space-y-6">
               {/* Search and Sort Controls */}
-              <div className="bg-card rounded-2xl p-4 border border-border shadow-sm">
+              <div className="bg-white/80 dark:bg-card/80 backdrop-blur-xl rounded-2xl p-4 border border-primary/10 shadow-lg shadow-primary/5">
                 <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
                   <div className="relative flex-1 w-full sm:max-w-md">
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-emerald/5 rounded-full pointer-events-none" />
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                     <Input
                       type="search"
                       placeholder="Search products..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 rounded-full h-11"
+                      className="pl-10 rounded-full h-11 border-primary/20 bg-white/90 dark:bg-card/80"
                     />
                   </div>
 
