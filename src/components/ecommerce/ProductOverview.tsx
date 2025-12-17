@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, MouseEvent, TouchEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, Share2, ShoppingCart, Minus, Plus, Star, Check, Leaf, Package, Truck, Shield } from "lucide-react";
+import { Heart, Share2, ShoppingCart, Minus, Plus, Star, Check, Leaf, Package, Truck, Shield, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 interface ProductOverviewProps {
@@ -43,10 +44,34 @@ export const ProductOverview = ({
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [internalSelectedSize, setInternalSelectedSize] = useState<string>("");
+  const [isZoomOpen, setIsZoomOpen] = useState(false);
+  const [zoomPosition, setZoomPosition] = useState({ x: 50, y: 50 });
   const selectedSize = externalSelectedSize !== undefined ? externalSelectedSize : internalSelectedSize;
 
   const handleQuantityChange = (delta: number) => {
     setQuantity((prev) => Math.max(1, prev + delta));
+  };
+
+  const updateZoomPosition = (clientX: number, clientY: number, target: HTMLDivElement) => {
+    const rect = target.getBoundingClientRect();
+    const x = ((clientX - rect.left) / rect.width) * 100;
+    const y = ((clientY - rect.top) / rect.height) * 100;
+    setZoomPosition({
+      x: Math.min(100, Math.max(0, x)),
+      y: Math.min(100, Math.max(0, y)),
+    });
+  };
+
+  const handleZoomMove = (event: MouseEvent<HTMLDivElement> | TouchEvent<HTMLDivElement>) => {
+    const target = event.currentTarget;
+    if ("touches" in event) {
+      const touch = event.touches[0];
+      if (touch) {
+        updateZoomPosition(touch.clientX, touch.clientY, target);
+      }
+      return;
+    }
+    updateZoomPosition(event.clientX, event.clientY, target);
   };
 
   return (
@@ -99,6 +124,20 @@ export const ProductOverview = ({
               <Heart className={cn("w-5 h-5", isWishlisted && "fill-current")} />
             </motion.button>
           )}
+
+          {/* Zoom Button */}
+          <Button
+            size="icon"
+            variant="secondary"
+            className="absolute bottom-4 right-4 z-10 h-12 w-12 rounded-full shadow-lg"
+            onClick={() => {
+              setZoomPosition({ x: 50, y: 50 });
+              setIsZoomOpen(true);
+            }}
+            aria-label="Zoom product image"
+          >
+            <Search className="w-5 h-5" />
+          </Button>
         </div>
 
         {/* Thumbnail Gallery */}
@@ -124,6 +163,33 @@ export const ProductOverview = ({
             ))}
           </div>
         )}
+
+        {/* Zoom Dialog */}
+        <Dialog open={isZoomOpen} onOpenChange={setIsZoomOpen}>
+          <DialogContent className="max-w-5xl w-[92vw] border-none bg-black/95 p-4 sm:p-6 text-white">
+            <div
+              className="relative w-full overflow-hidden rounded-xl shadow-2xl border border-white/10 aspect-[4/5] cursor-zoom-out"
+              onMouseMove={handleZoomMove}
+              onTouchMove={handleZoomMove}
+              onClick={() => setIsZoomOpen(false)}
+              role="presentation"
+            >
+              <div
+                className="absolute inset-0"
+                style={{
+                  backgroundImage: `url(${product.images[selectedImage] || "/placeholder.svg"})`,
+                  backgroundSize: "225%",
+                  backgroundRepeat: "no-repeat",
+                  backgroundPosition: `${zoomPosition.x}% ${zoomPosition.y}%`,
+                  transition: "background-position 60ms ease-out",
+                }}
+              />
+            </div>
+            <p className="text-sm text-white/70 mt-3 text-center">
+              Move your cursor or finger to explore details. Tap/click to close.
+            </p>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Product Info */}
