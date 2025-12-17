@@ -144,6 +144,7 @@ const Manage = () => {
   const [reviewToDelete, setReviewToDelete] = useState<ReviewItem | null>(null);
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [replySaving, setReplySaving] = useState<Record<string, boolean>>({});
+  const [replyOpen, setReplyOpen] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     fetchItems();
@@ -511,6 +512,15 @@ const Manage = () => {
         (filtered as ReviewItem[]).forEach((review) => {
           if (review.admin_reply && !next[review.id]) {
             next[review.id] = review.admin_reply;
+          }
+        });
+        return next;
+      });
+      setReplyOpen((prev) => {
+        const next = { ...prev };
+        (filtered as ReviewItem[]).forEach((review) => {
+          if (review.admin_reply && next[review.id] === undefined) {
+            next[review.id] = true;
           }
         });
         return next;
@@ -1340,18 +1350,15 @@ const Manage = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleApproveReview(review.id)}
+                        onClick={() =>
+                          setReplyOpen((prev) => ({
+                            ...prev,
+                            [review.id]: !(prev[review.id] ?? false),
+                          }))
+                        }
                         className="rounded-xl"
                       >
-                        Approve
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleRejectReview(review.id)}
-                        className="rounded-xl"
-                      >
-                        Reject
+                        {replyOpen[review.id] ? "Hide reply" : "Reply"}
                       </Button>
                       <Button
                         variant="outline"
@@ -1364,55 +1371,57 @@ const Manage = () => {
                     </div>
                   </div>
 
-                  <div className="mt-4 space-y-3">
-                    {review.admin_reply && (
-                      <div className="rounded-lg border bg-background/70 px-3 py-2">
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>Reply</span>
-                          {review.admin_reply_at && (
-                            <span>{new Date(review.admin_reply_at).toLocaleString()}</span>
-                          )}
+                  {(replyOpen[review.id] ?? false) && (
+                    <div className="mt-4 space-y-3">
+                      {review.admin_reply && (
+                        <div className="rounded-lg border bg-background/70 px-3 py-2">
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>Reply</span>
+                            {review.admin_reply_at && (
+                              <span>{new Date(review.admin_reply_at).toLocaleString()}</span>
+                            )}
+                          </div>
+                          <p className="text-sm text-foreground mt-1 whitespace-pre-line">
+                            {review.admin_reply}
+                          </p>
                         </div>
-                        <p className="text-sm text-foreground mt-1 whitespace-pre-line">
-                          {review.admin_reply}
-                        </p>
-                      </div>
-                    )}
+                      )}
 
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Add / edit reply</Label>
-                      <Textarea
-                        placeholder="Write a response to this review..."
-                        value={replyDrafts[review.id] ?? review.admin_reply ?? ""}
-                        onChange={(e) =>
-                          setReplyDrafts((prev) => ({ ...prev, [review.id]: e.target.value }))
-                        }
-                        rows={3}
-                      />
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          size="sm"
-                          onClick={() => handleSaveReply(review)}
-                          disabled={replySaving[review.id]}
-                          className="rounded-xl"
-                        >
-                          {replySaving[review.id] && (
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          )}
-                          Save reply
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => handleClearReply(review)}
-                          disabled={replySaving[review.id] || (!review.admin_reply && !(replyDrafts[review.id]?.trim()))}
-                          className="rounded-xl"
-                        >
-                          Clear reply
-                        </Button>
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Add / edit reply</Label>
+                        <Textarea
+                          placeholder="Write a response to this review..."
+                          value={replyDrafts[review.id] ?? review.admin_reply ?? ""}
+                          onChange={(e) =>
+                            setReplyDrafts((prev) => ({ ...prev, [review.id]: e.target.value }))
+                          }
+                          rows={3}
+                        />
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => handleSaveReply(review)}
+                            disabled={replySaving[review.id]}
+                            className="rounded-xl"
+                          >
+                            {replySaving[review.id] && (
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            )}
+                            Save reply
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => handleClearReply(review)}
+                            disabled={replySaving[review.id] || (!review.admin_reply && !(replyDrafts[review.id]?.trim()))}
+                            className="rounded-xl"
+                          >
+                            Clear reply
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               ))}
             </div>
