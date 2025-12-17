@@ -14,6 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { generateBarcode, generateBarcodeImage } from "@/lib/barcode";
 import { parseCSV, validateCSVData, generateSampleCSV, CSVProductRow, CSVValidationError } from "@/lib/csvImport";
 import { getProductImageUrl } from "@/lib/utils";
+import logoImage from "@/assets/logo.jpg";
 
 const categories = [
   'Kurthas & Co-ords',
@@ -83,6 +84,9 @@ const Products = () => {
   const [isBarcodeModalOpen, setIsBarcodeModalOpen] = useState(false);
   const [barcodeImageUrl, setBarcodeImageUrl] = useState<string | null>(null);
   const [currentBarcodeValue, setCurrentBarcodeValue] = useState<string>("");
+  const [barcodeProductName, setBarcodeProductName] = useState<string>("");
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [exportProductId, setExportProductId] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -152,7 +156,7 @@ const Products = () => {
     }
   };
 
-  const handleViewBarcode = (barcodeValue: string) => {
+  const handleViewBarcode = (barcodeValue: string, productName?: string) => {
     if (!barcodeValue) {
       toast({
         title: "No Barcode",
@@ -164,25 +168,28 @@ const Products = () => {
     const imageUrl = generateBarcodeImage(barcodeValue);
     setBarcodeImageUrl(imageUrl);
     setCurrentBarcodeValue(barcodeValue);
+    setBarcodeProductName(productName || "");
     setIsBarcodeModalOpen(true);
   };
 
-  const handlePrintBarcode = () => {
-    if (!barcodeImageUrl) return;
-    
-    const printWindow = window.open('', '_blank');
+  const printBarcodeLabel = (args: { barcodeImage: string; barcodeValue: string; productName?: string }) => {
+    const printWindow = window.open("", "_blank");
     if (!printWindow) return;
+
+    const safeName = (args.productName || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+    const safeValue = (args.barcodeValue || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Barcode - ${currentBarcodeValue}</title>
+          <title>Barcode - ${safeValue}</title>
           <style>
             @media print {
               @page {
-                margin: 20mm;
-                size: A4;
+                /* Small label-ish default; browsers may clamp this, but it prints nicely on A4 too */
+                margin: 6mm;
+                size: auto;
               }
               body {
                 margin: 0;
@@ -204,6 +211,25 @@ const Products = () => {
               border: 1px solid #ddd;
               border-radius: 8px;
               background: white;
+              width: 320px;
+            }
+            .brand {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 10px;
+              margin-bottom: 12px;
+            }
+            .brand img {
+              width: 34px;
+              height: 34px;
+              object-fit: contain;
+              border-radius: 6px;
+            }
+            .brand .brand-name {
+              font-size: 16px;
+              font-weight: 700;
+              letter-spacing: 0.2px;
             }
             .barcode-image {
               max-width: 100%;
@@ -216,16 +242,21 @@ const Products = () => {
             }
             .product-name {
               margin-top: 5px;
-              font-size: 14px;
-              color: #666;
+              font-size: 15px;
+              font-weight: 600;
+              color: #111;
             }
           </style>
         </head>
         <body>
           <div class="barcode-container">
-            <img src="${barcodeImageUrl}" alt="Barcode ${currentBarcodeValue}" class="barcode-image" />
-            <div class="barcode-value">${currentBarcodeValue}</div>
-            ${editingProduct ? `<div class="product-name">${editingProduct.name}</div>` : ''}
+            <div class="brand">
+              <img src="${logoImage}" alt="Bright Buttons" />
+              <div class="brand-name">Bright Buttons</div>
+            </div>
+            <img src="${args.barcodeImage}" alt="Barcode ${safeValue}" class="barcode-image" />
+            <div class="barcode-value">${safeValue}</div>
+            ${safeName ? `<div class="product-name">${safeName}</div>` : ""}
           </div>
           <script>
             window.onload = function() {
@@ -236,6 +267,31 @@ const Products = () => {
       </html>
     `);
     printWindow.document.close();
+  };
+
+  const handlePrintBarcode = () => {
+    if (!barcodeImageUrl) return;
+    printBarcodeLabel({
+      barcodeImage: barcodeImageUrl,
+      barcodeValue: currentBarcodeValue,
+      productName: barcodeProductName,
+    });
+  };
+
+  const handleOpenExport = () => {
+    const first = filteredProducts?.[0];
+    setExportProductId(first?.id || "");
+    if (first) {
+      const value = first.barcode || generateBarcode(first.id);
+      setBarcodeImageUrl(generateBarcodeImage(value));
+      setCurrentBarcodeValue(value);
+      setBarcodeProductName(first.name);
+    } else {
+      setBarcodeImageUrl(null);
+      setCurrentBarcodeValue("");
+      setBarcodeProductName("");
+    }
+    setIsExportModalOpen(true);
   };
 
   const handleBarcodeScan = async (barcode: string) => {
@@ -1121,12 +1177,12 @@ const Products = () => {
         </motion.select>
         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
           <Button
-            onClick={() => setIsScannerOpen(true)}
+            onClick={handleOpenExport}
             variant="outline"
             className="rounded-full h-12"
           >
-            <Scan className="w-5 h-5 mr-2" />
-            Scan
+            <Download className="w-5 h-5 mr-2" />
+            Export
           </Button>
         </motion.div>
         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -1265,7 +1321,7 @@ const Products = () => {
                               whileTap={{ scale: 0.9 }}
                               onClick={() => {
                                 setEditingProduct(product);
-                                handleViewBarcode(product.barcode!);
+                                handleViewBarcode(product.barcode || generateBarcode(product.id), product.name);
                               }}
                               className="p-2 text-muted-foreground hover:text-primary rounded-lg hover:bg-primary/10 transition-colors"
                               title="View/Print barcode"
@@ -1463,7 +1519,7 @@ const Products = () => {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => handleViewBarcode(formData.barcode)}
+                      onClick={() => handleViewBarcode(formData.barcode, formData.name)}
                       className="rounded-xl h-12"
                       title="View/Print barcode"
                     >
@@ -1802,7 +1858,7 @@ const Products = () => {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => handleViewBarcode(formData.barcode)}
+                      onClick={() => handleViewBarcode(formData.barcode, formData.name)}
                       className="rounded-xl h-12"
                       title="View/Print barcode"
                     >
@@ -1998,6 +2054,94 @@ const Products = () => {
         onClose={() => setIsScannerOpen(false)}
       />
 
+      {/* Export Barcode Modal */}
+      <Dialog open={isExportModalOpen} onOpenChange={setIsExportModalOpen}>
+        <DialogContent className="sm:max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-script text-gradient flex items-center gap-2">
+              <Download className="w-6 h-6 text-primary" />
+              Export Barcode
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground pt-2">
+              Print a branded barcode label (Bright Buttons + product name)
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Select Product</Label>
+              <select
+                value={exportProductId}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  setExportProductId(id);
+                  const p = filteredProducts.find((fp) => fp.id === id) || products.find((pp) => pp.id === id);
+                  if (!p) {
+                    setBarcodeImageUrl(null);
+                    setCurrentBarcodeValue("");
+                    setBarcodeProductName("");
+                    return;
+                  }
+                  const value = p.barcode || generateBarcode(p.id);
+                  setBarcodeImageUrl(generateBarcodeImage(value));
+                  setCurrentBarcodeValue(value);
+                  setBarcodeProductName(p.name);
+                }}
+                className="w-full px-4 py-2 h-12 rounded-xl border border-primary-200/50 dark:border-primary-800/30 bg-background text-foreground focus:ring-2 focus:ring-primary transition-all"
+              >
+                <option value="" disabled>
+                  {filteredProducts.length ? "Choose a product..." : "No products available"}
+                </option>
+                {filteredProducts.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+              {filteredProducts.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Tip: use the search box / category filter first, then export from the filtered list.
+                </p>
+              )}
+            </div>
+
+            {barcodeImageUrl && (
+              <div className="flex flex-col items-center justify-center p-6 bg-white dark:bg-gray-900 rounded-xl border border-primary-200 dark:border-primary-800">
+                <div className="flex items-center gap-3 mb-4">
+                  <img src={logoImage} alt="Bright Buttons" className="h-10 w-10 rounded-lg object-contain" />
+                  <div className="font-semibold text-foreground">Bright Buttons</div>
+                </div>
+                <img src={barcodeImageUrl} alt={`Barcode ${currentBarcodeValue}`} className="max-w-full h-auto" />
+                <div className="mt-4 text-center">
+                  <p className="text-lg font-semibold">{currentBarcodeValue}</p>
+                  {barcodeProductName && (
+                    <p className="text-sm text-muted-foreground mt-1">{barcodeProductName}</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1 rounded-xl"
+                onClick={() => setIsExportModalOpen(false)}
+              >
+                Close
+              </Button>
+              <Button
+                className="flex-1 rounded-xl bg-gradient-to-r from-primary to-primary-700 dark:from-primary-600 dark:to-primary-800"
+                onClick={handlePrintBarcode}
+                disabled={!barcodeImageUrl || !currentBarcodeValue}
+              >
+                <Printer className="w-4 h-4 mr-2" />
+                Print
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Barcode Preview/Print Modal */}
       <Dialog open={isBarcodeModalOpen} onOpenChange={setIsBarcodeModalOpen}>
         <DialogContent className="sm:max-w-md rounded-2xl">
@@ -2007,13 +2151,17 @@ const Products = () => {
               Barcode
             </DialogTitle>
             <DialogDescription className="text-muted-foreground pt-2">
-              {editingProduct ? `Barcode for ${editingProduct.name}` : "Product barcode"}
+              {barcodeProductName ? `Barcode for ${barcodeProductName}` : "Product barcode"}
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
             {barcodeImageUrl && (
               <div className="flex flex-col items-center justify-center p-6 bg-white dark:bg-gray-900 rounded-xl border border-primary-200 dark:border-primary-800">
+                <div className="flex items-center gap-3 mb-4">
+                  <img src={logoImage} alt="Bright Buttons" className="h-10 w-10 rounded-lg object-contain" />
+                  <div className="font-semibold text-foreground">Bright Buttons</div>
+                </div>
                 <img
                   src={barcodeImageUrl}
                   alt={`Barcode ${currentBarcodeValue}`}
@@ -2021,8 +2169,8 @@ const Products = () => {
                 />
                 <div className="mt-4 text-center">
                   <p className="text-lg font-semibold">{currentBarcodeValue}</p>
-                  {editingProduct && (
-                    <p className="text-sm text-muted-foreground mt-1">{editingProduct.name}</p>
+                  {barcodeProductName && (
+                    <p className="text-sm text-muted-foreground mt-1">{barcodeProductName}</p>
                   )}
                 </div>
               </div>
