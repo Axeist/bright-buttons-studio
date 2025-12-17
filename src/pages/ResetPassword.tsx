@@ -31,8 +31,14 @@ const ResetPassword = () => {
   useEffect(() => {
     // Check if we have the necessary tokens from Supabase
     // Supabase will add hash and type to the URL when redirecting from email
-    const hash = searchParams.get("#access_token");
-    if (!hash) {
+    const hashString = window.location.hash?.replace(/^#/, "") || "";
+    const hashParams = new URLSearchParams(hashString);
+
+    // Supabase commonly sends tokens in the URL hash (not the querystring).
+    const accessToken = hashParams.get("access_token") || searchParams.get("access_token");
+    const type = hashParams.get("type") || searchParams.get("type");
+
+    if (!accessToken && type !== "recovery") {
       // If no token, redirect to appropriate login
       const isCustomer = window.location.pathname.includes("/customer");
       navigate(isCustomer ? "/customer/login" : "/login", { replace: true });

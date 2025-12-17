@@ -109,6 +109,25 @@ const CustomOrderForm = () => {
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
 
+  const resetForm = () => {
+    setIsSubmitting(false);
+    setShowSuccess(false);
+    setOrderNumber("");
+
+    setProductType("");
+    setPreferredFabrics([]);
+    setIntendedOccasion("");
+    setColorPreferences("");
+    setSizeRequirements("");
+    setDesignInstructions("");
+    setSpecialRequirements("");
+    setBudgetRange("");
+    setExpectedDeliveryTimeline("");
+
+    setImages([]);
+    setUploadingImages(false);
+  };
+
   const handleFabricToggle = (fabric: string) => {
     setPreferredFabrics((prev) =>
       prev.includes(fabric)
@@ -394,9 +413,8 @@ const CustomOrderForm = () => {
                 </Button>
                 <Button
                   onClick={() => {
-                    setShowSuccess(false);
-                    navigate("/customer/custom-orders/new");
-                    window.location.reload();
+                    resetForm();
+                    navigate("/customer/custom-orders/new", { replace: true });
                   }}
                   variant="outline"
                   className="flex-1 rounded-full"

@@ -21,25 +21,39 @@ interface CustomerAuthContextType {
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any | null }>;
   resendConfirmationEmail: (email: string) => Promise<{ error: any | null }>;
+  refreshCustomer: () => Promise<void>;
 }
 
 const CustomerAuthContext = createContext<CustomerAuthContextType | undefined>(undefined);
 
 export const CustomerAuthProvider = ({ children }: { children: ReactNode }) => {
-  const { user, role, signOut: authSignOut } = useAuth();
+  const { user, role, loading: authLoading, signOut: authSignOut } = useAuth();
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch customer data when user is authenticated and has customer role
-  useEffect(() => {
-    const fetchCustomer = async () => {
-      if (!user || role !== "customer") {
+  const fetchCustomer = async () => {
+      // If auth is still initializing (including role resolution), don't make a decision yet.
+      if (authLoading) {
+        setLoading(true);
+        return;
+      }
+
+      if (!user) {
+        setCustomer(null);
+        setLoading(false);
+        return;
+      }
+
+      // If we have a user but the role is not customer, customer context should be "not available".
+      // (AuthProvider now resolves role before authLoading becomes false, so this won't flicker on initial load.)
+      if (role !== "customer") {
         setCustomer(null);
         setLoading(false);
         return;
       }
 
       try {
+        setLoading(true);
         // Fetch customer data using user_id
         const { data, error } = await supabase
           .from("customers")
@@ -73,10 +87,12 @@ export const CustomerAuthProvider = ({ children }: { children: ReactNode }) => {
       } finally {
         setLoading(false);
       }
-    };
+  };
 
+  // Fetch customer data when user is authenticated and has customer role
+  useEffect(() => {
     fetchCustomer();
-  }, [user, role]);
+  }, [user, role, authLoading]);
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -233,6 +249,7 @@ export const CustomerAuthProvider = ({ children }: { children: ReactNode }) => {
         signOut,
         resetPassword,
         resendConfirmationEmail,
+        refreshCustomer: fetchCustomer,
       }}
     >
       {children}
