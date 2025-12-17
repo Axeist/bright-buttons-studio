@@ -513,6 +513,9 @@ const Manage = () => {
           if (review.admin_reply && !next[review.id]) {
             next[review.id] = review.admin_reply;
           }
+          if (!next[review.id]) {
+            next[review.id] = "";
+          }
         });
         return next;
       });
@@ -522,6 +525,7 @@ const Manage = () => {
           if (review.admin_reply && next[review.id] === undefined) {
             next[review.id] = true;
           }
+          if (next[review.id] === undefined) next[review.id] = false;
         });
         return next;
       });
@@ -560,7 +564,7 @@ const Manage = () => {
   };
 
   const handleSaveReply = async (review: ReviewItem) => {
-    const draft = replyDrafts[review.id] ?? review.admin_reply ?? "";
+    const draft = replyDrafts[review.id] ?? "";
     const text = draft.trim();
 
     if (!text) {
@@ -612,7 +616,7 @@ const Manage = () => {
       if (error) throw error;
       setReplyDrafts((prev) => {
         const next = { ...prev };
-        delete next[review.id];
+        next[review.id] = "";
         return next;
       });
       fetchReviews();
@@ -1391,7 +1395,7 @@ const Manage = () => {
                         <Label className="text-sm font-medium">Add / edit reply</Label>
                         <Textarea
                           placeholder="Write a response to this review..."
-                          value={replyDrafts[review.id] ?? review.admin_reply ?? ""}
+                          value={replyDrafts[review.id] ?? ""}
                           onChange={(e) =>
                             setReplyDrafts((prev) => ({ ...prev, [review.id]: e.target.value }))
                           }
