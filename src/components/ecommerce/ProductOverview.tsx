@@ -46,6 +46,7 @@ export const ProductOverview = ({
   const [internalSelectedSize, setInternalSelectedSize] = useState<string>("");
   const [isZoomOpen, setIsZoomOpen] = useState(false);
   const [zoomPosition, setZoomPosition] = useState({ x: 50, y: 50 });
+  const [zoomScale, setZoomScale] = useState(225); // percentage
   const selectedSize = externalSelectedSize !== undefined ? externalSelectedSize : internalSelectedSize;
 
   const handleQuantityChange = (delta: number) => {
@@ -72,6 +73,12 @@ export const ProductOverview = ({
       return;
     }
     updateZoomPosition(event.clientX, event.clientY, target);
+  };
+
+  const handleZoomScroll = (event: React.WheelEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const delta = event.deltaY > 0 ? -15 : 15;
+    setZoomScale((prev) => Math.min(350, Math.max(125, prev + delta)));
   };
 
   return (
@@ -171,6 +178,7 @@ export const ProductOverview = ({
               className="relative w-full overflow-hidden rounded-xl shadow-2xl border border-white/10 aspect-[4/5] cursor-zoom-out"
               onMouseMove={handleZoomMove}
               onTouchMove={handleZoomMove}
+              onWheel={handleZoomScroll}
               onClick={() => setIsZoomOpen(false)}
               role="presentation"
             >
@@ -178,7 +186,7 @@ export const ProductOverview = ({
                 className="absolute inset-0"
                 style={{
                   backgroundImage: `url(${product.images[selectedImage] || "/placeholder.svg"})`,
-                  backgroundSize: "225%",
+                  backgroundSize: `${zoomScale}%`,
                   backgroundRepeat: "no-repeat",
                   backgroundPosition: `${zoomPosition.x}% ${zoomPosition.y}%`,
                   transition: "background-position 60ms ease-out",
