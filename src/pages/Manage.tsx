@@ -70,6 +70,9 @@ interface ReviewItem {
   rating: number;
   created_at: string;
   is_approved: boolean | null;
+  admin_reply?: string | null;
+  admin_reply_at?: string | null;
+  admin_reply_by?: string | null;
 }
 
 const Manage = () => {
@@ -139,6 +142,8 @@ const Manage = () => {
   const [reviewSearch, setReviewSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "approved" | "rejected">("all");
   const [reviewToDelete, setReviewToDelete] = useState<ReviewItem | null>(null);
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
+  const [replySaving, setReplySaving] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     fetchItems();
@@ -501,6 +506,15 @@ const Manage = () => {
       });
 
       setReviews(filtered as ReviewItem[]);
+      setReplyDrafts((prev) => {
+        const next = { ...prev };
+        (filtered as ReviewItem[]).forEach((review) => {
+          if (review.admin_reply && !next[review.id]) {
+            next[review.id] = review.admin_reply;
+          }
+        });
+        return next;
+      });
     } catch (error: any) {
       toast({ title: "Error", description: error.message || "Failed to load reviews", variant: "destructive" });
     } finally {
@@ -533,6 +547,74 @@ const Manage = () => {
       return;
     }
     fetchReviews();
+  };
+
+  const handleSaveReply = async (review: ReviewItem) => {
+    const draft = replyDrafts[review.id] ?? review.admin_reply ?? "";
+    const text = draft.trim();
+
+    if (!text) {
+      toast({
+        title: "Reply required",
+        description: "Please enter a reply before saving.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setReplySaving((prev) => ({ ...prev, [review.id]: true }));
+    try {
+      const { error } = await supabase
+        .from("product_reviews")
+        .update({
+          admin_reply: text,
+          admin_reply_at: new Date().toISOString(),
+          admin_reply_by: user?.id || null,
+        })
+        .eq("id", review.id);
+
+      if (error) throw error;
+      toast({ title: "Reply saved", description: "Your reply has been added." });
+      fetchReviews();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save reply",
+        variant: "destructive",
+      });
+    } finally {
+      setReplySaving((prev) => ({ ...prev, [review.id]: false }));
+    }
+  };
+
+  const handleClearReply = async (review: ReviewItem) => {
+    setReplySaving((prev) => ({ ...prev, [review.id]: true }));
+    try {
+      const { error } = await supabase
+        .from("product_reviews")
+        .update({
+          admin_reply: null,
+          admin_reply_at: null,
+          admin_reply_by: null,
+        })
+        .eq("id", review.id);
+
+      if (error) throw error;
+      setReplyDrafts((prev) => {
+        const next = { ...prev };
+        delete next[review.id];
+        return next;
+      });
+      fetchReviews();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to clear reply",
+        variant: "destructive",
+      });
+    } finally {
+      setReplySaving((prev) => ({ ...prev, [review.id]: false }));
+    }
   };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1279,6 +1361,56 @@ const Manage = () => {
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 space-y-3">
+                    {review.admin_reply && (
+                      <div className="rounded-lg border bg-background/70 px-3 py-2">
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>Reply</span>
+                          {review.admin_reply_at && (
+                            <span>{new Date(review.admin_reply_at).toLocaleString()}</span>
+                          )}
+                        </div>
+                        <p className="text-sm text-foreground mt-1 whitespace-pre-line">
+                          {review.admin_reply}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Add / edit reply</Label>
+                      <Textarea
+                        placeholder="Write a response to this review..."
+                        value={replyDrafts[review.id] ?? review.admin_reply ?? ""}
+                        onChange={(e) =>
+                          setReplyDrafts((prev) => ({ ...prev, [review.id]: e.target.value }))
+                        }
+                        rows={3}
+                      />
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => handleSaveReply(review)}
+                          disabled={replySaving[review.id]}
+                          className="rounded-xl"
+                        >
+                          {replySaving[review.id] && (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          )}
+                          Save reply
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => handleClearReply(review)}
+                          disabled={replySaving[review.id] || (!review.admin_reply && !(replyDrafts[review.id]?.trim()))}
+                          className="rounded-xl"
+                        >
+                          Clear reply
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
