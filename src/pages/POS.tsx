@@ -808,9 +808,9 @@ const POS = () => {
         </DialogContent>
       </Dialog>
 
-      <div className="grid lg:grid-cols-[1fr,400px] gap-6">
+      <div className="grid lg:grid-cols-[1fr,400px] gap-6 h-[calc(100vh-6rem)] lg:h-[calc(100vh-7rem)]">
         {/* Product Selection */}
-        <div className="bg-card rounded-xl p-5 shadow-soft">
+        <div className="bg-card rounded-xl p-5 shadow-soft flex flex-col min-h-0">
           {/* Search */}
           <div className="relative mb-4 flex gap-2">
             <div className="relative flex-1">
@@ -850,7 +850,7 @@ const POS = () => {
           </div>
 
           {/* Products Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[calc(100vh-400px)] overflow-y-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 flex-1 min-h-0 overflow-y-auto">
             {filteredProducts.map((product) => {
               // Handle both array and object formats from Supabase
               const inventory = Array.isArray(product.inventory) 
@@ -884,7 +884,7 @@ const POS = () => {
         </div>
 
         {/* Cart */}
-        <div className="bg-card rounded-xl p-5 shadow-soft flex flex-col">
+        <div className="bg-card rounded-xl p-5 shadow-soft flex flex-col min-h-0">
           <div className="flex items-center justify-between gap-3 mb-3">
             <h2 className="text-lg font-semibold text-foreground">Current Sale</h2>
             {customer ? (
@@ -969,7 +969,7 @@ const POS = () => {
           </div>
 
           {/* Cart Items */}
-          <div className="flex-1 overflow-y-auto space-y-3 mb-4 max-h-[300px] lg:max-h-[calc(100vh-520px)]">
+          <div className="flex-1 overflow-y-auto space-y-3 mb-4 min-h-0">
             {cart.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <p>No items in cart</p>
