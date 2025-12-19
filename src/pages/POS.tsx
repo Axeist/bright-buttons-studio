@@ -807,59 +807,6 @@ const POS = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Customer Selection */}
-      <div className="mb-6">
-        {customer ? (
-          <div className="p-4 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 dark:from-primary-900/30 dark:via-primary-900/20 dark:to-primary-900/30 rounded-xl border border-primary/20 dark:border-primary-800/40 shadow-sm">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 dark:from-primary-900/40 dark:to-primary-900/20 flex items-center justify-center flex-shrink-0">
-                <User className="w-5 h-5 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-foreground truncate">{customer.name}</p>
-                <p className="text-xs text-muted-foreground">{customer.phone}</p>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setCustomer(null);
-                  setCustomerPhone("");
-                  setCustomerName("");
-                  setCustomerEmail("");
-                }}
-                className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-            <Button
-              onClick={async () => {
-                setIsCustomerSelectModalOpen(true);
-                await fetchAllCustomers();
-              }}
-              variant="outline"
-              size="sm"
-              className="w-full rounded-lg border-primary/30 hover:border-primary hover:bg-primary/5"
-            >
-              Change Customer
-            </Button>
-          </div>
-        ) : (
-          <Button
-            onClick={async () => {
-              setIsCustomerSelectModalOpen(true);
-              await fetchAllCustomers();
-            }}
-            variant="outline"
-            className="w-full h-12 rounded-xl border-2 border-dashed border-primary/30 hover:border-primary hover:bg-primary/5 transition-all duration-200 font-medium"
-          >
-            <User className="w-4 h-4 mr-2" />
-            Select Customer
-          </Button>
-        )}
-      </div>
-
       <div className="grid lg:grid-cols-[1fr,400px] gap-6">
         {/* Product Selection */}
         <div className="bg-card rounded-xl p-5 shadow-soft">
@@ -937,7 +884,88 @@ const POS = () => {
 
         {/* Cart */}
         <div className="bg-card rounded-xl p-5 shadow-soft flex flex-col">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Current Sale</h2>
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <h2 className="text-lg font-semibold text-foreground">Current Sale</h2>
+            {customer ? (
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/15 transition-colors"
+                onClick={async () => {
+                  setIsCustomerSelectModalOpen(true);
+                  await fetchAllCustomers();
+                }}
+                title="Change customer"
+              >
+                <User className="w-3.5 h-3.5" />
+                <span className="max-w-[160px] truncate">{customer.name}</span>
+              </button>
+            ) : null}
+          </div>
+
+          {/* Customer Selection (moved into Current Sale panel) */}
+          <div className="mb-4">
+            {customer ? (
+              <div className="p-3 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 dark:from-primary-900/30 dark:via-primary-900/20 dark:to-primary-900/30 rounded-xl border border-primary/20 dark:border-primary-800/40">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 dark:from-primary-900/40 dark:to-primary-900/20 flex items-center justify-center flex-shrink-0">
+                    <User className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground truncate">{customer.name}</p>
+                    <p className="text-xs text-muted-foreground">{customer.phone}</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setCustomer(null);
+                      setCustomerPhone("");
+                      setCustomerName("");
+                      setCustomerEmail("");
+                    }}
+                    className="h-9 w-9 p-0 text-muted-foreground hover:text-destructive"
+                    title="Clear customer"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div className="mt-3 flex gap-2">
+                  <Button
+                    onClick={async () => {
+                      setIsCustomerSelectModalOpen(true);
+                      await fetchAllCustomers();
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 rounded-lg border-primary/30 hover:border-primary hover:bg-primary/5"
+                  >
+                    Change Customer
+                  </Button>
+                  <Button
+                    onClick={() => setIsCustomerModalOpen(true)}
+                    variant="outline"
+                    size="sm"
+                    className="rounded-lg"
+                    title="Edit customer info"
+                  >
+                    Edit
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button
+                onClick={async () => {
+                  setIsCustomerSelectModalOpen(true);
+                  await fetchAllCustomers();
+                }}
+                variant="outline"
+                className="w-full h-12 rounded-xl border-2 border-dashed border-primary/30 hover:border-primary hover:bg-primary/5 transition-all duration-200 font-medium"
+              >
+                <User className="w-4 h-4 mr-2" />
+                Select Customer
+              </Button>
+            )}
+          </div>
 
           {/* Cart Items */}
           <div className="flex-1 overflow-y-auto space-y-3 mb-4 max-h-[300px] lg:max-h-[calc(100vh-520px)]">
