@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { AdminLayout } from "@/layouts/AdminLayout";
-import { Search, Plus, Minus, CreditCard, Banknote, Smartphone, Shuffle, WifiOff, Leaf, Scan, Loader2, X, User, Wifi, Phone, ShoppingCart, LayoutGrid, List } from "lucide-react";
+import { Search, Plus, Minus, CreditCard, Banknote, Smartphone, Shuffle, WifiOff, Leaf, Scan, Loader2, X, User, Wifi, Phone, ShoppingCart, LayoutGrid, List, Pause, History, Play, Trash2 } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -46,6 +47,26 @@ interface CartItem {
   sku: string | null;
 }
 
+type HeldSale = {
+  id: string;
+  name: string;
+  createdAt: string;
+  data: {
+    cart: CartItem[];
+    customer: { id: string; name: string; phone: string; email?: string | null } | null;
+    discountType: "percentage" | "rupees";
+    discountValue: number;
+    appliedCoupon: { id: string; code: string; discount_type: "percentage" | "rupees"; discount_value: number } | null;
+    selectedPaymentMethod: "cash" | "upi" | "card" | "split" | null;
+    couponCode: string;
+    splitCashAmount: string;
+    splitOtherAmount: string;
+    splitOtherMethod: "upi" | "card";
+  };
+};
+
+const HELD_SALES_KEY = "pos:heldSales";
+
 const POS = () => {
   const { user } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
@@ -78,10 +99,114 @@ const POS = () => {
   const [isScannerConnected, setIsScannerConnected] = useState(false);
   const [showScannerConnectedPopup, setShowScannerConnectedPopup] = useState(false);
   const channelRef = useRef<any>(null);
+  const [heldSales, setHeldSales] = useState<HeldSale[]>([]);
+  const [holdDialogOpen, setHoldDialogOpen] = useState(false);
+  const [resumeDialogOpen, setResumeDialogOpen] = useState(false);
+  const [holdName, setHoldName] = useState("");
 
   useEffect(() => {
     fetchProducts();
   }, []);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(HELD_SALES_KEY);
+      if (raw) setHeldSales(JSON.parse(raw));
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const generateHoldId = () => {
+    // crypto.randomUUID is not available in all environments
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const anyCrypto = globalThis.crypto as any;
+    if (anyCrypto?.randomUUID) return anyCrypto.randomUUID();
+    return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  };
+
+  const persistHeldSales = (next: HeldSale[]) => {
+    setHeldSales(next);
+    try {
+      localStorage.setItem(HELD_SALES_KEY, JSON.stringify(next));
+    } catch {
+      // ignore
+    }
+  };
+
+  const clearCurrentSale = () => {
+    setCart([]);
+    setDiscountValue(0);
+    setDiscountType("percentage");
+    setCustomer(null);
+    setCustomerPhone("");
+    setCustomerName("");
+    setCustomerEmail("");
+    setSelectedPaymentMethod(null);
+    setCouponCode("");
+    setAppliedCoupon(null);
+    setSplitCashAmount("");
+    setSplitOtherAmount("");
+    setSplitOtherMethod("upi");
+  };
+
+  const holdCurrentSale = () => {
+    if (cart.length === 0) {
+      toast({ title: "Nothing to hold", description: "Cart is empty", variant: "destructive" });
+      return;
+    }
+
+    const sale: HeldSale = {
+      id: generateHoldId(),
+      name: holdName.trim() || (customer?.name ? `${customer.name}` : "Walk-in"),
+      createdAt: new Date().toISOString(),
+      data: {
+        cart,
+        customer,
+        discountType,
+        discountValue,
+        appliedCoupon,
+        selectedPaymentMethod,
+        couponCode,
+        splitCashAmount,
+        splitOtherAmount,
+        splitOtherMethod,
+      },
+    };
+
+    persistHeldSales([sale, ...heldSales].slice(0, 20));
+    setHoldName("");
+    setHoldDialogOpen(false);
+    clearCurrentSale();
+    toast({ title: "Sale held", description: `Saved as “${sale.name}”` });
+  };
+
+  const resumeSale = (saleId: string) => {
+    const sale = heldSales.find((s) => s.id === saleId);
+    if (!sale) return;
+
+    setCart(sale.data.cart);
+    setCustomer(sale.data.customer);
+    setCustomerPhone(sale.data.customer?.phone || "");
+    setCustomerName(sale.data.customer?.name || "");
+    setCustomerEmail(sale.data.customer?.email || "");
+    setDiscountType(sale.data.discountType);
+    setDiscountValue(sale.data.discountValue);
+    setAppliedCoupon(sale.data.appliedCoupon);
+    setSelectedPaymentMethod(sale.data.selectedPaymentMethod);
+    setCouponCode(sale.data.couponCode);
+    setSplitCashAmount(sale.data.splitCashAmount);
+    setSplitOtherAmount(sale.data.splitOtherAmount);
+    setSplitOtherMethod(sale.data.splitOtherMethod);
+
+    persistHeldSales(heldSales.filter((s) => s.id !== saleId));
+    setResumeDialogOpen(false);
+    toast({ title: "Sale resumed", description: `Loaded “${sale.name}”` });
+  };
+
+  const deleteHeldSale = (saleId: string) => {
+    persistHeldSales(heldSales.filter((s) => s.id !== saleId));
+  };
 
   // Set up realtime communication with scanner
   useEffect(() => {
@@ -858,11 +983,14 @@ const POS = () => {
                 : product.inventory;
               const stock = (inventory?.quantity || 0) - (inventory?.reserved_quantity || 0);
               return (
-                <button
+                <motion.button
                   key={product.id}
                   onClick={() => addToCart(product)}
                   disabled={stock <= 0}
-                  className="p-3 bg-accent rounded-xl text-left hover:bg-accent/80 transition-colors group disabled:opacity-50 disabled:cursor-not-allowed"
+                  whileHover={stock > 0 ? { y: -2, boxShadow: "0 12px 30px rgba(0,0,0,0.08)" } : undefined}
+                  whileTap={stock > 0 ? { scale: 0.98 } : undefined}
+                  transition={{ type: "spring", stiffness: 450, damping: 30 }}
+                  className="p-3 bg-accent rounded-xl text-left hover:bg-accent/80 transition-colors group disabled:opacity-50 disabled:cursor-not-allowed will-change-transform"
                 >
                   <div className="w-full aspect-square bg-gradient-to-br from-primary-50 to-earth-50 rounded-lg mb-2 flex items-center justify-center">
                     <Leaf className="w-8 h-8 text-primary-400 group-hover:scale-110 transition-transform" />
@@ -877,7 +1005,7 @@ const POS = () => {
                   }`}>
                     {stock > 0 ? `${stock} in stock` : "Out of stock"}
                   </span>
-                </button>
+                </motion.button>
               );
             })}
           </div>
@@ -887,20 +1015,45 @@ const POS = () => {
         <div className="bg-card rounded-xl p-5 shadow-soft flex flex-col min-h-0">
           <div className="flex items-center justify-between gap-3 mb-3">
             <h2 className="text-lg font-semibold text-foreground">Current Sale</h2>
-            {customer ? (
-              <button
+            <div className="flex items-center gap-2">
+              <Button
                 type="button"
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/15 transition-colors"
-                onClick={async () => {
-                  setIsCustomerSelectModalOpen(true);
-                  await fetchAllCustomers();
-                }}
-                title="Change customer"
+                variant="outline"
+                size="sm"
+                onClick={() => setHoldDialogOpen(true)}
+                disabled={cart.length === 0}
+                className="rounded-lg"
               >
-                <User className="w-3.5 h-3.5" />
-                <span className="max-w-[160px] truncate">{customer.name}</span>
-              </button>
-            ) : null}
+                <Pause className="w-4 h-4 mr-2" />
+                Hold
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setResumeDialogOpen(true)}
+                disabled={heldSales.length === 0}
+                className="rounded-lg"
+                title={heldSales.length ? `${heldSales.length} held sale(s)` : "No held sales"}
+              >
+                <History className="w-4 h-4 mr-2" />
+                Resume
+              </Button>
+              {customer ? (
+                <button
+                  type="button"
+                  className="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/15 transition-colors"
+                  onClick={async () => {
+                    setIsCustomerSelectModalOpen(true);
+                    await fetchAllCustomers();
+                  }}
+                  title="Change customer"
+                >
+                  <User className="w-3.5 h-3.5" />
+                  <span className="max-w-[140px] truncate">{customer.name}</span>
+                </button>
+              ) : null}
+            </div>
           </div>
 
           {/* Customer Selection (moved into Current Sale panel) */}
@@ -970,42 +1123,66 @@ const POS = () => {
 
           {/* Cart Items */}
           <div className="flex-1 overflow-y-auto space-y-3 mb-4 min-h-0">
-            {cart.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <p>No items in cart</p>
-                <p className="text-sm">Click products or scan barcode to add</p>
-              </div>
-            ) : (
-              cart.map((item) => (
-                <div key={item.id} className="flex items-center gap-3 p-3 bg-accent rounded-lg">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{item.name}</p>
-                    <p className="text-sm text-muted-foreground">₹{item.price.toLocaleString()} × {item.quantity}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => updateQuantity(item.id, -1)}
-                      className="w-7 h-7 rounded-full bg-background flex items-center justify-center text-foreground hover:bg-muted"
-                    >
-                      <Minus className="w-4 h-4" />
-                    </button>
-                    <span className="w-6 text-center text-sm font-medium">{item.quantity}</span>
-                    <button
-                      onClick={() => updateQuantity(item.id, 1)}
-                      className="w-7 h-7 rounded-full bg-background flex items-center justify-center text-foreground hover:bg-muted"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <button
-                    onClick={() => removeItem(item.id)}
-                    className="text-destructive hover:text-destructive/80 text-sm"
+            <AnimatePresence initial={false}>
+              {cart.length === 0 ? (
+                <motion.div
+                  key="empty"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="text-center py-8 text-muted-foreground"
+                >
+                  <p>No items in cart</p>
+                  <p className="text-sm">Click products or scan barcode to add</p>
+                </motion.div>
+              ) : (
+                cart.map((item) => (
+                  <motion.div
+                    key={item.id}
+                    layout
+                    initial={{ opacity: 0, x: 10, scale: 0.98 }}
+                    animate={{ opacity: 1, x: 0, scale: 1 }}
+                    exit={{ opacity: 0, x: -10, scale: 0.98 }}
+                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                    className="flex items-center gap-3 p-3 bg-accent rounded-lg"
                   >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ))
-            )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{item.name}</p>
+                      <p className="text-sm text-muted-foreground">₹{item.price.toLocaleString()} × {item.quantity}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => updateQuantity(item.id, -1)}
+                        className="w-7 h-7 rounded-full bg-background flex items-center justify-center text-foreground hover:bg-muted"
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+                      <motion.span
+                        key={item.quantity}
+                        initial={{ scale: 1.15 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: "spring", stiffness: 700, damping: 18 }}
+                        className="w-6 text-center text-sm font-medium"
+                      >
+                        {item.quantity}
+                      </motion.span>
+                      <button
+                        onClick={() => updateQuantity(item.id, 1)}
+                        className="w-7 h-7 rounded-full bg-background flex items-center justify-center text-foreground hover:bg-muted"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => removeItem(item.id)}
+                      className="text-destructive hover:text-destructive/80 text-sm"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </motion.div>
+                ))
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Summary */}
@@ -1614,6 +1791,97 @@ const POS = () => {
                 Confirm & Complete Sale
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Hold Sale */}
+      <Dialog open={holdDialogOpen} onOpenChange={setHoldDialogOpen}>
+        <DialogContent className="sm:max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Hold Sale</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="space-y-2">
+              <Label>Hold as</Label>
+              <Input
+                value={holdName}
+                onChange={(e) => setHoldName(e.target.value)}
+                placeholder={customer?.name ? customer.name : "Walk-in"}
+                className="rounded-xl h-12"
+              />
+            </div>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1 rounded-xl"
+                onClick={() => setHoldDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button className="flex-1 rounded-xl" onClick={holdCurrentSale}>
+                Hold Sale
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Resume Sale */}
+      <Dialog open={resumeDialogOpen} onOpenChange={setResumeDialogOpen}>
+        <DialogContent className="sm:max-w-lg rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-foreground flex items-center gap-2">
+              <History className="w-5 h-5 text-primary" />
+              Resume Sale
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="mt-2 space-y-2 max-h-[60vh] overflow-y-auto">
+            {heldSales.length === 0 ? (
+              <div className="text-center py-10 text-muted-foreground">
+                <p className="font-medium">No held sales</p>
+                <p className="text-sm">Use Hold to save the current cart</p>
+              </div>
+            ) : (
+              heldSales.map((s) => {
+                const items = s.data.cart.reduce((sum, it) => sum + (it.quantity || 0), 0);
+                const totalAmount = s.data.cart.reduce((sum, it) => sum + it.price * it.quantity, 0);
+                return (
+                  <div
+                    key={s.id}
+                    className="p-3 rounded-xl border border-border/50 bg-background/60 flex items-center justify-between gap-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-semibold text-sm truncate">{s.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(s.createdAt).toLocaleString("en-IN")} • {items} item{items === 1 ? "" : "s"} • ₹{totalAmount.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => resumeSale(s.id)}
+                        className="rounded-lg"
+                      >
+                        <Play className="w-4 h-4 mr-2" />
+                        Resume
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="destructive"
+                        onClick={() => deleteHeldSale(s.id)}
+                        className="rounded-lg"
+                        title="Delete held sale"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </DialogContent>
       </Dialog>
