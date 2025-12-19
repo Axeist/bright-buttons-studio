@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { AdminLayout } from "@/layouts/AdminLayout";
-import { Search, Plus, Minus, CreditCard, Banknote, Smartphone, Shuffle, WifiOff, Leaf, Scan, Loader2, X, User, Wifi, Phone, ShoppingCart } from "lucide-react";
+import { Search, Plus, Minus, CreditCard, Banknote, Smartphone, Shuffle, WifiOff, Leaf, Scan, Loader2, X, User, Wifi, Phone, ShoppingCart, LayoutGrid, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -57,6 +57,7 @@ const POS = () => {
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [isCustomerSelectModalOpen, setIsCustomerSelectModalOpen] = useState(false);
+  const [customerSelectViewMode, setCustomerSelectViewMode] = useState<"tiles" | "list">("tiles");
   const [allCustomers, setAllCustomers] = useState<{ id: string; name: string; phone: string; email?: string | null; address?: string | null; city?: string | null; total_orders?: number; total_spent?: number; last_purchase_at?: string | null }[]>([]);
   const [loadingCustomers, setLoadingCustomers] = useState(false);
   const [customerSearchQuery, setCustomerSearchQuery] = useState("");
@@ -1205,8 +1206,8 @@ const POS = () => {
           </DialogHeader>
           
           {/* Search Bar */}
-          <div className="mt-4 mb-4">
-            <div className="relative">
+          <div className="mt-4 mb-4 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+            <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
                 value={customerSearchQuery}
@@ -1214,6 +1215,36 @@ const POS = () => {
                 placeholder="Search by name, phone, email, address, or city..."
                 className="pl-12 pr-4 h-12 rounded-xl bg-background/80 dark:bg-background/60 border border-border/50 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200"
               />
+            </div>
+
+            {/* View Toggle */}
+            <div className="inline-flex rounded-xl border border-border/60 bg-background/60 overflow-hidden shrink-0">
+              <Button
+                type="button"
+                size="sm"
+                variant={customerSelectViewMode === "tiles" ? "default" : "ghost"}
+                onClick={() => setCustomerSelectViewMode("tiles")}
+                className="rounded-none h-12 px-4"
+                fancy={false}
+                aria-pressed={customerSelectViewMode === "tiles"}
+                title="Tiles view"
+              >
+                <LayoutGrid className="w-4 h-4 mr-2" />
+                Tiles
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={customerSelectViewMode === "list" ? "default" : "ghost"}
+                onClick={() => setCustomerSelectViewMode("list")}
+                className="rounded-none h-12 px-4"
+                fancy={false}
+                aria-pressed={customerSelectViewMode === "list"}
+                title="List view"
+              >
+                <List className="w-4 h-4 mr-2" />
+                List
+              </Button>
             </div>
           </div>
 
@@ -1234,104 +1265,165 @@ const POS = () => {
                 </p>
               </div>
             ) : (
-              <div className="grid gap-3">
-                {filteredCustomers.map((cust) => (
-                  <button
-                    key={cust.id}
-                    onClick={() => handleSelectCustomer(cust)}
-                    className={`w-full p-5 rounded-xl border-2 transition-all duration-200 text-left group ${
-                      customer?.id === cust.id
-                        ? "bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 dark:from-primary-900/40 dark:via-primary-900/20 dark:to-primary-900/40 border-primary shadow-md shadow-primary/10"
-                        : "bg-gradient-to-r from-accent/50 to-accent/30 dark:from-accent/30 dark:to-accent/20 border-border/30 hover:border-primary/50 hover:shadow-lg hover:scale-[1.01]"
-                    }`}
-                  >
-                    <div className="flex items-start gap-4">
-                      {/* Avatar */}
-                      <div className={`w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 shadow-inner ${
+              customerSelectViewMode === "tiles" ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {filteredCustomers.map((cust) => (
+                    <button
+                      key={cust.id}
+                      onClick={() => handleSelectCustomer(cust)}
+                      className={`p-4 rounded-2xl border transition-all duration-200 text-left group relative overflow-hidden ${
                         customer?.id === cust.id
-                          ? "bg-gradient-to-br from-primary/30 to-primary/20 dark:from-primary-800/50 dark:to-primary-900/30"
-                          : "bg-gradient-to-br from-primary/20 to-primary/10 dark:from-primary-900/40 dark:to-primary-900/20"
-                      }`}>
-                        <User className={`w-7 h-7 ${customer?.id === cust.id ? "text-primary" : "text-primary/70"}`} />
+                          ? "border-primary bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5 dark:from-primary-900/45 dark:via-primary-900/25 dark:to-primary-900/10 shadow-md shadow-primary/10"
+                          : "border-border/40 bg-gradient-to-br from-accent/40 to-accent/20 dark:from-accent/30 dark:to-accent/20 hover:border-primary/50 hover:shadow-lg hover:scale-[1.01]"
+                      }`}
+                    >
+                      <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-primary/10 via-transparent to-purple-500/10 opacity-60" />
+                      <div className="relative flex items-start gap-3">
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          customer?.id === cust.id
+                            ? "bg-primary/20"
+                            : "bg-primary/10"
+                        }`}>
+                          <User className={`w-6 h-6 ${customer?.id === cust.id ? "text-primary" : "text-primary/70"}`} />
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-sm font-semibold text-foreground truncate">{cust.name}</p>
+                            {customer?.id === cust.id && (
+                              <span className="px-2 py-0.5 text-[11px] font-semibold bg-primary text-primary-foreground rounded-full">
+                                Selected
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="mt-2 space-y-1.5">
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <Phone className="w-3.5 h-3.5 flex-shrink-0" />
+                              <span className="truncate">{cust.phone}</span>
+                            </div>
+                            {cust.email && (
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <span className="w-3.5 h-3.5 flex-shrink-0 flex items-center justify-center">@</span>
+                                <span className="truncate">{cust.email}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="mt-3 pt-3 border-t border-border/30 flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <ShoppingCart className="w-3.5 h-3.5" />
+                              <span>{cust.total_orders ?? 0} orders</span>
+                            </div>
+                            <div className="text-xs font-semibold text-primary">
+                              ₹{(cust.total_spent ?? 0).toLocaleString()}
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      
-                      {/* Customer Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2">
-                          <p className="text-base font-bold text-foreground truncate">{cust.name}</p>
-                          {customer?.id === cust.id && (
-                            <span className="px-2.5 py-0.5 text-xs font-semibold bg-primary text-primary-foreground rounded-full">
-                              Selected
-                            </span>
-                          )}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid gap-3">
+                  {filteredCustomers.map((cust) => (
+                    <button
+                      key={cust.id}
+                      onClick={() => handleSelectCustomer(cust)}
+                      className={`w-full p-5 rounded-xl border-2 transition-all duration-200 text-left group ${
+                        customer?.id === cust.id
+                          ? "bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 dark:from-primary-900/40 dark:via-primary-900/20 dark:to-primary-900/40 border-primary shadow-md shadow-primary/10"
+                          : "bg-gradient-to-r from-accent/50 to-accent/30 dark:from-accent/30 dark:to-accent/20 border-border/30 hover:border-primary/50 hover:shadow-lg hover:scale-[1.01]"
+                      }`}
+                    >
+                      <div className="flex items-start gap-4">
+                        {/* Avatar */}
+                        <div className={`w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 shadow-inner ${
+                          customer?.id === cust.id
+                            ? "bg-gradient-to-br from-primary/30 to-primary/20 dark:from-primary-800/50 dark:to-primary-900/30"
+                            : "bg-gradient-to-br from-primary/20 to-primary/10 dark:from-primary-900/40 dark:to-primary-900/20"
+                        }`}>
+                          <User className={`w-7 h-7 ${customer?.id === cust.id ? "text-primary" : "text-primary/70"}`} />
                         </div>
                         
-                        <div className="space-y-1.5">
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Phone className="w-3.5 h-3.5 flex-shrink-0" />
-                            <span className="truncate">{cust.phone}</span>
+                        {/* Customer Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            <p className="text-base font-bold text-foreground truncate">{cust.name}</p>
+                            {customer?.id === cust.id && (
+                              <span className="px-2.5 py-0.5 text-xs font-semibold bg-primary text-primary-foreground rounded-full">
+                                Selected
+                              </span>
+                            )}
                           </div>
                           
-                          {cust.email && (
+                          <div className="space-y-1.5">
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <span className="w-3.5 h-3.5 flex-shrink-0 flex items-center justify-center">@</span>
-                              <span className="truncate">{cust.email}</span>
+                              <Phone className="w-3.5 h-3.5 flex-shrink-0" />
+                              <span className="truncate">{cust.phone}</span>
                             </div>
-                          )}
+                            
+                            {cust.email && (
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <span className="w-3.5 h-3.5 flex-shrink-0 flex items-center justify-center">@</span>
+                                <span className="truncate">{cust.email}</span>
+                              </div>
+                            )}
+                            
+                            {(cust.address || cust.city) && (
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <span className="w-3.5 h-3.5 flex-shrink-0 flex items-center justify-center">📍</span>
+                                <span className="truncate">
+                                  {[cust.address, cust.city].filter(Boolean).join(", ") || "No address"}
+                                </span>
+                              </div>
+                            )}
+                          </div>
                           
-                          {(cust.address || cust.city) && (
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <span className="w-3.5 h-3.5 flex-shrink-0 flex items-center justify-center">📍</span>
-                              <span className="truncate">
-                                {[cust.address, cust.city].filter(Boolean).join(", ") || "No address"}
-                              </span>
+                          {/* Stats */}
+                          {(cust.total_orders !== undefined || cust.total_spent !== undefined) && (
+                            <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border/30">
+                              {cust.total_orders !== undefined && (
+                                <div className="flex items-center gap-1.5">
+                                  <ShoppingCart className="w-3.5 h-3.5 text-muted-foreground" />
+                                  <span className="text-xs text-muted-foreground">
+                                    {cust.total_orders} {cust.total_orders === 1 ? "order" : "orders"}
+                                  </span>
+                                </div>
+                              )}
+                              {cust.total_spent !== undefined && cust.total_spent > 0 && (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-xs font-semibold text-primary">
+                                    ₹{cust.total_spent.toLocaleString()} spent
+                                  </span>
+                                </div>
+                              )}
+                              {cust.last_purchase_at && (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-xs text-muted-foreground">
+                                    Last: {new Date(cust.last_purchase_at).toLocaleDateString("en-IN")}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
                         
-                        {/* Stats */}
-                        {(cust.total_orders !== undefined || cust.total_spent !== undefined) && (
-                          <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border/30">
-                            {cust.total_orders !== undefined && (
-                              <div className="flex items-center gap-1.5">
-                                <ShoppingCart className="w-3.5 h-3.5 text-muted-foreground" />
-                                <span className="text-xs text-muted-foreground">
-                                  {cust.total_orders} {cust.total_orders === 1 ? "order" : "orders"}
-                                </span>
-                              </div>
-                            )}
-                            {cust.total_spent !== undefined && cust.total_spent > 0 && (
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-xs font-semibold text-primary">
-                                  ₹{cust.total_spent.toLocaleString()} spent
-                                </span>
-                              </div>
-                            )}
-                            {cust.last_purchase_at && (
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-xs text-muted-foreground">
-                                  Last: {new Date(cust.last_purchase_at).toLocaleDateString("en-IN")}
-                                </span>
-                              </div>
-                            )}
+                        {/* Selection Indicator */}
+                        {customer?.id === cust.id && (
+                          <div className="flex-shrink-0">
+                            <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                              <svg className="w-4 h-4 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </div>
                           </div>
                         )}
                       </div>
-                      
-                      {/* Selection Indicator */}
-                      {customer?.id === cust.id && (
-                        <div className="flex-shrink-0">
-                          <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                            <svg className="w-4 h-4 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                            </svg>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </button>
-                ))}
-              </div>
+                    </button>
+                  ))}
+                </div>
+              )
             )}
           </div>
 
