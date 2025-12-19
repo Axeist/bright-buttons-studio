@@ -725,16 +725,16 @@ const Dashboard = () => {
           transition={{ delay: 0.4, duration: 0.5 }}
           className="lg:col-span-2 glass-card rounded-2xl p-6 shadow-xl"
         >
-          <div className="flex items-center gap-2 mb-6">
-            <Award className="w-5 h-5 text-primary" />
-            <h2 className="text-xl font-semibold">Top Products</h2>
+          <div className="flex items-center gap-2 mb-4">
+            <Award className="w-4 h-4 text-primary" />
+            <h2 className="text-lg font-semibold">Top Products</h2>
           </div>
           {stats.topProducts.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={stats.topProducts} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis type="number" />
-                <YAxis dataKey="name" type="category" width={120} />
+                <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12 }} />
                 <Tooltip 
                   formatter={(value: number) => `₹${value.toLocaleString()}`}
                 />
