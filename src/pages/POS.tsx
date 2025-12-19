@@ -1049,102 +1049,88 @@ const POS = () => {
 
         {/* Cart */}
         <div className="bg-card rounded-xl p-5 shadow-soft flex flex-col min-h-0">
-          <div className="flex items-center justify-between gap-3 mb-3">
-            <h2 className="text-lg font-semibold text-foreground">Current Sale</h2>
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <div className="min-w-0">
+              <h2 className="text-lg font-semibold text-foreground">Current Sale</h2>
+              <p className="text-xs text-muted-foreground truncate">
+                {customer ? `Customer: ${customer.name}` : "Customer not selected"}
+              </p>
+            </div>
             <div className="flex items-center gap-2">
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
+                size="icon"
+                fancy={false}
                 onClick={() => setHoldDialogOpen(true)}
                 disabled={cart.length === 0}
                 className="rounded-lg"
+                title="Hold sale"
               >
-                <Pause className="w-4 h-4 mr-2" />
-                Hold
+                <Pause className="w-4 h-4" />
               </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setResumeDialogOpen(true)}
-                disabled={heldSales.length === 0}
-                className="rounded-lg"
-                title={heldSales.length ? `${heldSales.length} held sale(s)` : "No held sales"}
-              >
-                <History className="w-4 h-4 mr-2" />
-                Resume
+              <div className="relative">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  fancy={false}
+                  onClick={() => setResumeDialogOpen(true)}
+                  disabled={heldSales.length === 0}
+                  className="rounded-lg"
+                  title={heldSales.length ? `Resume (${heldSales.length})` : "No held sales"}
+                >
+                  <History className="w-4 h-4" />
+                </Button>
                 {heldSales.length > 0 ? (
-                  <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary/15 text-primary text-[11px] font-semibold">
+                  <span className="absolute -top-1.5 -right-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[11px] font-semibold shadow">
                     {heldSales.length}
                   </span>
                 ) : null}
-              </Button>
-              {customer ? (
-                <button
-                  type="button"
-                  className="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/15 transition-colors"
-                  onClick={async () => {
-                    setIsCustomerSelectModalOpen(true);
-                    await fetchAllCustomers();
-                  }}
-                  title="Change customer"
-                >
-                  <User className="w-3.5 h-3.5" />
-                  <span className="max-w-[140px] truncate">{customer.name}</span>
-                </button>
-              ) : null}
+              </div>
             </div>
           </div>
 
-          {/* Customer Selection (moved into Current Sale panel) */}
+          {/* Customer Selection */}
           <div className="mb-4">
             {customer ? (
-              <div className="p-3 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 dark:from-primary-900/30 dark:via-primary-900/20 dark:to-primary-900/30 rounded-xl border border-primary/20 dark:border-primary-800/40">
+              <div className="p-3 rounded-xl border border-border/60 bg-muted/20">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 dark:from-primary-900/40 dark:to-primary-900/20 flex items-center justify-center flex-shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                     <User className="w-5 h-5 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-foreground truncate">{customer.name}</p>
                     <p className="text-xs text-muted-foreground">{customer.phone}</p>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setCustomer(null);
-                      setCustomerPhone("");
-                      setCustomerName("");
-                      setCustomerEmail("");
-                    }}
-                    className="h-9 w-9 p-0 text-muted-foreground hover:text-destructive"
-                    title="Clear customer"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-                <div className="mt-3 flex gap-2">
-                  <Button
-                    onClick={async () => {
-                      setIsCustomerSelectModalOpen(true);
-                      await fetchAllCustomers();
-                    }}
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 rounded-lg border-primary/30 hover:border-primary hover:bg-primary/5"
-                  >
-                    Change Customer
-                  </Button>
-                  <Button
-                    onClick={() => setIsCustomerModalOpen(true)}
-                    variant="outline"
-                    size="sm"
-                    className="rounded-lg"
-                    title="Edit customer info"
-                  >
-                    Edit
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      onClick={async () => {
+                        setIsCustomerSelectModalOpen(true);
+                        await fetchAllCustomers();
+                      }}
+                      variant="outline"
+                      size="sm"
+                      className="rounded-lg"
+                    >
+                      Change
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      fancy={false}
+                      onClick={() => {
+                        setCustomer(null);
+                        setCustomerPhone("");
+                        setCustomerName("");
+                        setCustomerEmail("");
+                      }}
+                      className="rounded-lg text-muted-foreground hover:text-destructive"
+                      title="Clear customer"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -1154,7 +1140,7 @@ const POS = () => {
                   await fetchAllCustomers();
                 }}
                 variant="outline"
-                className="w-full h-12 rounded-xl border-2 border-dashed border-primary/30 hover:border-primary hover:bg-primary/5 transition-all duration-200 font-medium"
+                className="w-full h-11 rounded-xl border-2 border-dashed border-primary/30 hover:border-primary hover:bg-primary/5 transition-all duration-200 font-medium"
               >
                 <User className="w-4 h-4 mr-2" />
                 Select Customer
@@ -1225,46 +1211,6 @@ const POS = () => {
               )}
             </AnimatePresence>
           </div>
-
-          {/* Held Sales (quick resume) */}
-          {heldSales.length > 0 && (
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-medium text-foreground">Held Sales</p>
-                <button
-                  type="button"
-                  onClick={() => setResumeDialogOpen(true)}
-                  className="text-xs text-primary hover:underline"
-                >
-                  View all
-                </button>
-              </div>
-              <div className="space-y-2 max-h-[140px] overflow-y-auto pr-1">
-                {heldSales.slice(0, 5).map((s) => {
-                  const items = s.data.cart.reduce((sum, it) => sum + (it.quantity || 0), 0);
-                  const totalAmount = s.data.cart.reduce((sum, it) => sum + it.price * it.quantity, 0);
-                  const customerName = s.data.customer?.name || s.name;
-                  return (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => resumeSale(s.id)}
-                      className="w-full text-left p-3 rounded-xl border border-border/50 bg-background/60 hover:bg-accent transition-colors flex items-center justify-between gap-3"
-                      title="Click to load this held sale"
-                    >
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-foreground truncate">{customerName}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {items} item{items === 1 ? "" : "s"} • ₹{totalAmount.toLocaleString()}
-                        </p>
-                      </div>
-                      <Play className="w-4 h-4 text-primary flex-shrink-0" />
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
 
           {/* Summary */}
           <div className="border-t border-border pt-4 space-y-2">
