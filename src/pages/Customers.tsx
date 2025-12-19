@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { AdminLayout } from "@/layouts/AdminLayout";
-import { Search, User, Loader2, Plus, Gift, MessageCircle, Pencil, Trash2, Copy, Phone, Mail, CalendarClock, Hash } from "lucide-react";
+import { Search, User, Loader2, Plus, Gift, MessageCircle, Pencil, Trash2, Copy, Phone, Mail, CalendarClock, Hash, LayoutGrid, List } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,6 +40,7 @@ const Customers = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<"all" | "new" | "returning">("all");
+  const [viewMode, setViewMode] = useState<"tiles" | "list">("tiles");
   const [isAddCustomerModalOpen, setIsAddCustomerModalOpen] = useState(false);
   const [isEditCustomerModalOpen, setIsEditCustomerModalOpen] = useState(false);
   const [editingCustomerId, setEditingCustomerId] = useState<string | null>(null);
@@ -276,22 +277,52 @@ const Customers = () => {
             ))}
           </div>
         </div>
-        <Button
-          onClick={() => setIsAddCustomerModalOpen(true)}
-          className="rounded-xl bg-gradient-to-r from-primary to-primary-700 dark:from-primary-600 dark:to-primary-800 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Customer
-        </Button>
+        <div className="flex items-center gap-3">
+          <div className="inline-flex rounded-xl border border-border/60 bg-card shadow-soft overflow-hidden">
+            <Button
+              type="button"
+              variant={viewMode === "tiles" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("tiles")}
+              className="rounded-none"
+              fancy={false}
+              aria-pressed={viewMode === "tiles"}
+              title="Tiles view"
+            >
+              <LayoutGrid className="w-4 h-4 mr-2" />
+              Tiles
+            </Button>
+            <Button
+              type="button"
+              variant={viewMode === "list" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("list")}
+              className="rounded-none"
+              fancy={false}
+              aria-pressed={viewMode === "list"}
+              title="List view"
+            >
+              <List className="w-4 h-4 mr-2" />
+              List
+            </Button>
+          </div>
+
+          <Button
+            onClick={() => setIsAddCustomerModalOpen(true)}
+            className="rounded-xl bg-gradient-to-r from-primary to-primary-700 dark:from-primary-600 dark:to-primary-800 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Customer
+          </Button>
+        </div>
       </div>
 
-      {/* Customers Tiles */}
       {filteredCustomers.length === 0 ? (
         <div className="bg-card rounded-xl shadow-soft p-10 text-center text-muted-foreground">
           <User className="w-16 h-16 mx-auto mb-4 opacity-30" />
           <p>No customers found</p>
         </div>
-      ) : (
+      ) : viewMode === "tiles" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
           {filteredCustomers.map((customer) => {
             const isMember = (customer.total_orders ?? 0) > 0 || (customer.total_spent ?? 0) > 0;
@@ -440,6 +471,105 @@ const Customers = () => {
               </div>
             );
           })}
+        </div>
+      ) : (
+        <div className="bg-card rounded-xl shadow-soft overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border bg-muted/50">
+                  <th className="text-left text-sm font-medium text-muted-foreground p-4">Customer</th>
+                  <th className="text-left text-sm font-medium text-muted-foreground p-4 hidden md:table-cell">Phone</th>
+                  <th className="text-left text-sm font-medium text-muted-foreground p-4 hidden lg:table-cell">Email</th>
+                  <th className="text-left text-sm font-medium text-muted-foreground p-4">Orders</th>
+                  <th className="text-left text-sm font-medium text-muted-foreground p-4">Total Spent</th>
+                  <th className="text-left text-sm font-medium text-muted-foreground p-4 hidden lg:table-cell">Loyalty</th>
+                  <th className="text-left text-sm font-medium text-muted-foreground p-4 hidden sm:table-cell">Last Purchase</th>
+                  <th className="text-right text-sm font-medium text-muted-foreground p-4">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredCustomers.map((customer) => (
+                  <tr key={customer.id} className="border-b border-border/50 hover:bg-muted/30">
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
+                          {getInitials(customer.name)}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium text-foreground truncate max-w-[220px]">{customer.name}</p>
+                          <span
+                            className={`text-xs px-2 py-0.5 rounded-full capitalize ${
+                              customer.customer_type === "new"
+                                ? "bg-earth-100 text-earth-800"
+                                : "bg-primary/10 text-primary"
+                            }`}
+                          >
+                            {customer.customer_type}
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-4 text-sm text-foreground hidden md:table-cell">{customer.phone}</td>
+                    <td className="p-4 text-sm text-muted-foreground hidden lg:table-cell">
+                      {customer.email || "—"}
+                    </td>
+                    <td className="p-4 text-sm text-foreground">{customer.total_orders}</td>
+                    <td className="p-4 text-sm font-semibold text-foreground">₹{customer.total_spent.toLocaleString()}</td>
+                    <td className="p-4 hidden lg:table-cell">
+                      <div className="flex items-center gap-2">
+                        <Gift className="w-4 h-4 text-primary" />
+                        <span className="text-sm font-medium">{customer.loyalty_points || 0}</span>
+                        <Badge variant="outline" className="text-xs capitalize">
+                          {(customer.loyalty_tier || "Bronze").toLowerCase()}
+                        </Badge>
+                      </div>
+                    </td>
+                    <td className="p-4 text-sm text-muted-foreground hidden sm:table-cell">
+                      {formatDate(customer.last_purchase_at)}
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          fancy={false}
+                          className="rounded-lg"
+                          onClick={() => handleSendWhatsApp(customer)}
+                          title="WhatsApp"
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          fancy={false}
+                          className="rounded-lg"
+                          onClick={() => openEditCustomer(customer)}
+                          title="Edit"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          fancy={false}
+                          className="rounded-lg"
+                          onClick={() => setCustomerToDelete(customer)}
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
