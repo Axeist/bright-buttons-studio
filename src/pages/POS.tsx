@@ -117,6 +117,12 @@ const POS = () => {
     }
   }, []);
 
+  useEffect(() => {
+    if (holdDialogOpen) {
+      setHoldName(customer?.name || "");
+    }
+  }, [holdDialogOpen, customer?.name]);
+
   const generateHoldId = () => {
     // crypto.randomUUID is not available in all environments
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -132,6 +138,18 @@ const POS = () => {
     } catch {
       // ignore
     }
+  };
+
+  const ensureCustomerSelected = async () => {
+    if (customer) return true;
+    toast({
+      title: "Select Customer",
+      description: "Please select a customer before adding products to the cart.",
+      variant: "destructive",
+    });
+    setIsCustomerSelectModalOpen(true);
+    await fetchAllCustomers();
+    return false;
   };
 
   const clearCurrentSale = () => {
@@ -156,9 +174,21 @@ const POS = () => {
       return;
     }
 
+    if (!customer) {
+      toast({
+        title: "Select Customer",
+        description: "Please select a customer before holding a sale.",
+        variant: "destructive",
+      });
+      setHoldDialogOpen(false);
+      setIsCustomerSelectModalOpen(true);
+      void fetchAllCustomers();
+      return;
+    }
+
     const sale: HeldSale = {
       id: generateHoldId(),
-      name: holdName.trim() || (customer?.name ? `${customer.name}` : "Walk-in"),
+      name: holdName.trim() || customer.name,
       createdAt: new Date().toISOString(),
       data: {
         cart,
@@ -383,6 +413,8 @@ const POS = () => {
     if (closeScanner) {
       setIsScannerOpen(false);
     }
+    const ok = await ensureCustomerSelected();
+    if (!ok) return;
     const product = products.find((p) => p.barcode === barcode);
     if (product) {
       addToCart(product);
@@ -396,6 +428,10 @@ const POS = () => {
   };
 
   const addToCart = (product: Product) => {
+    if (!customer) {
+      void ensureCustomerSelected();
+      return;
+    }
     // Handle both array and object formats from Supabase
     const inventory = Array.isArray(product.inventory) 
       ? product.inventory[0] 
@@ -1038,6 +1074,11 @@ const POS = () => {
               >
                 <History className="w-4 h-4 mr-2" />
                 Resume
+                {heldSales.length > 0 ? (
+                  <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary/15 text-primary text-[11px] font-semibold">
+                    {heldSales.length}
+                  </span>
+                ) : null}
               </Button>
               {customer ? (
                 <button
@@ -1184,6 +1225,46 @@ const POS = () => {
               )}
             </AnimatePresence>
           </div>
+
+          {/* Held Sales (quick resume) */}
+          {heldSales.length > 0 && (
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-medium text-foreground">Held Sales</p>
+                <button
+                  type="button"
+                  onClick={() => setResumeDialogOpen(true)}
+                  className="text-xs text-primary hover:underline"
+                >
+                  View all
+                </button>
+              </div>
+              <div className="space-y-2 max-h-[140px] overflow-y-auto pr-1">
+                {heldSales.slice(0, 5).map((s) => {
+                  const items = s.data.cart.reduce((sum, it) => sum + (it.quantity || 0), 0);
+                  const totalAmount = s.data.cart.reduce((sum, it) => sum + it.price * it.quantity, 0);
+                  const customerName = s.data.customer?.name || s.name;
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => resumeSale(s.id)}
+                      className="w-full text-left p-3 rounded-xl border border-border/50 bg-background/60 hover:bg-accent transition-colors flex items-center justify-between gap-3"
+                      title="Click to load this held sale"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-foreground truncate">{customerName}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {items} item{items === 1 ? "" : "s"} • ₹{totalAmount.toLocaleString()}
+                        </p>
+                      </div>
+                      <Play className="w-4 h-4 text-primary flex-shrink-0" />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Summary */}
           <div className="border-t border-border pt-4 space-y-2">
@@ -1807,7 +1888,7 @@ const POS = () => {
               <Input
                 value={holdName}
                 onChange={(e) => setHoldName(e.target.value)}
-                placeholder={customer?.name ? customer.name : "Walk-in"}
+                placeholder={customer?.name ? customer.name : "Select a customer first"}
                 className="rounded-xl h-12"
               />
             </div>
