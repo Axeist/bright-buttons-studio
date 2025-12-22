@@ -1061,25 +1061,89 @@ const Reports = () => {
             <Layers className="w-5 h-5 text-primary" />
             <h2 className="text-lg font-semibold">Category Revenue Mix</h2>
           </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <RechartsPieChart>
-              <Pie
-                data={analyticsData.categoryMix}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ category, percentage }) => `${category}: ${percentage}%`}
-                outerRadius={100}
-                fill="#8884d8"
-                dataKey="revenue"
-              >
-                {analyticsData.categoryMix.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </RechartsPieChart>
-          </ResponsiveContainer>
+          {(() => {
+            // Group small categories (< 2%) into "Others"
+            const threshold = 2;
+            const mainCategories = analyticsData.categoryMix.filter(cat => cat.percentage >= threshold);
+            const otherCategories = analyticsData.categoryMix.filter(cat => cat.percentage < threshold);
+            const othersRevenue = otherCategories.reduce((sum, cat) => sum + cat.revenue, 0);
+            const othersPercentage = otherCategories.reduce((sum, cat) => sum + cat.percentage, 0);
+            
+            const chartData = [
+              ...mainCategories,
+              ...(othersRevenue > 0 ? [{
+                category: 'Others',
+                revenue: othersRevenue,
+                percentage: Math.round(othersPercentage),
+                growth: 0
+              }] : [])
+            ];
+
+            // Create color map for all categories
+            const colorMap = new Map<string, string>();
+            mainCategories.forEach((cat, index) => {
+              colorMap.set(cat.category, COLORS[index % COLORS.length]);
+            });
+            if (othersRevenue > 0) {
+              const othersColorIndex = mainCategories.length;
+              colorMap.set('Others', COLORS[othersColorIndex % COLORS.length]);
+              // All other categories use the same "Others" color
+              otherCategories.forEach(cat => {
+                colorMap.set(cat.category, COLORS[othersColorIndex % COLORS.length]);
+              });
+            }
+
+            return (
+              <>
+                <ResponsiveContainer width="100%" height={300}>
+                  <RechartsPieChart>
+                    <Pie
+                      data={chartData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ category, percentage }) => {
+                        // Only show label if percentage is >= 3% to avoid overlapping
+                        if (percentage >= 3) {
+                          return `${category}: ${percentage}%`;
+                        }
+                        return '';
+                      }}
+                      outerRadius={100}
+                      fill="#8884d8"
+                      dataKey="revenue"
+                    >
+                      {chartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      formatter={(value: number, name: string, props: any) => [
+                        `₹${value.toLocaleString()}`,
+                        `${props.payload.category} (${props.payload.percentage}%)`
+                      ]}
+                    />
+                  </RechartsPieChart>
+                </ResponsiveContainer>
+                {/* Show all categories in a list below */}
+                <div className="mt-4 pt-4 border-t border-primary/20">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
+                    {analyticsData.categoryMix.map((category) => (
+                      <div key={category.category} className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded" 
+                          style={{ backgroundColor: colorMap.get(category.category) || COLORS[0] }}
+                        />
+                        <span className="text-muted-foreground">
+                          {category.category}: <span className="font-semibold">{category.percentage}%</span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            );
+          })()}
         </motion.div>
       </div>
 
