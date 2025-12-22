@@ -517,14 +517,27 @@ const Reports = () => {
         }));
 
       // Sales Heatmap (day x hour)
+      const salesHeatmapMap = new Map<string, number>();
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const displayDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']; // Display order starting Monday
+      
+      currentOrders.forEach(order => {
+        const orderDate = new Date(order.created_at);
+        const dayIndex = orderDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+        const day = dayNames[dayIndex];
+        const hour = orderDate.getHours();
+        const key = `${day}-${hour}`;
+        salesHeatmapMap.set(key, (salesHeatmapMap.get(key) || 0) + 1);
+      });
+      
       const salesHeatmap: any[] = [];
-      const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-      days.forEach(day => {
+      displayDays.forEach(day => {
         for (let hour = 0; hour < 24; hour++) {
+          const key = `${day}-${hour}`;
           salesHeatmap.push({
             day,
             hour,
-            orders: Math.floor(Math.random() * 20), // Mock data
+            orders: salesHeatmapMap.get(key) || 0,
           });
         }
       });
@@ -1198,6 +1211,128 @@ const Reports = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Sales Heatmap & Order Status Flow */}
+      <div className="grid lg:grid-cols-2 gap-6 mb-6">
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="glass-card rounded-2xl p-6 shadow-xl"
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <Activity className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-semibold">Sales Heatmap</h2>
+            <span className="ml-auto text-xs text-muted-foreground">Orders by Day & Hour</span>
+          </div>
+          <div className="overflow-x-auto">
+            <div className="inline-block min-w-full">
+              {/* Header with hours */}
+              <div className="grid gap-1 mb-2" style={{ gridTemplateColumns: '60px repeat(24, minmax(20px, 1fr))' }}>
+                <div className="text-xs font-semibold text-muted-foreground text-center">Day/Hour</div>
+                {Array.from({ length: 24 }, (_, i) => (
+                  <div key={i} className="text-xs text-muted-foreground text-center">
+                    {i}
+                  </div>
+                ))}
+              </div>
+              {/* Rows for each day */}
+              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => {
+                const dayData = analyticsData.salesHeatmap.filter(h => h.day === day);
+                const maxOrders = Math.max(...analyticsData.salesHeatmap.map(h => h.orders), 1);
+                
+                return (
+                  <div key={day} className="grid gap-1 mb-1" style={{ gridTemplateColumns: '60px repeat(24, minmax(20px, 1fr))' }}>
+                    <div className="text-xs font-medium text-center py-1">{day}</div>
+                    {Array.from({ length: 24 }, (_, hour) => {
+                      const hourData = dayData.find(h => h.hour === hour);
+                      const orders = hourData?.orders || 0;
+                      const intensity = maxOrders > 0 ? orders / maxOrders : 0;
+                      
+                      return (
+                        <div
+                          key={hour}
+                          className="text-xs text-center py-1 rounded cursor-pointer hover:ring-2 hover:ring-primary transition-all"
+                          style={{
+                            backgroundColor: intensity > 0 
+                              ? `rgba(16, 185, 129, ${0.2 + intensity * 0.8})`
+                              : 'rgba(0, 0, 0, 0.05)',
+                            color: intensity > 0.5 ? 'white' : 'inherit',
+                          }}
+                          title={`${day} ${hour}:00 - ${orders} orders`}
+                        >
+                          {orders > 0 ? orders : ''}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+            {/* Legend */}
+            <div className="flex items-center justify-end gap-4 mt-4 text-xs text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-muted"></div>
+                <span>Less</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-primary"></div>
+                <span>More</span>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="glass-card rounded-2xl p-6 shadow-xl"
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <Clock className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-semibold">Order Status Flow</h2>
+            <span className="ml-auto text-xs text-muted-foreground">Avg time in status</span>
+          </div>
+          <div className="space-y-4">
+            {analyticsData.orderStatusFlow.map((status, index) => {
+              const totalOrders = analyticsData.orderStatusFlow.reduce((sum, s) => sum + s.count, 0);
+              const percentage = totalOrders > 0 ? (status.count / totalOrders) * 100 : 0;
+              
+              return (
+                <div key={status.status} className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-sm font-medium">{status.status}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {status.count} orders · Avg {status.avgTime.toFixed(1)} days
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold">{status.count}</p>
+                      <p className="text-xs text-muted-foreground">{percentage.toFixed(1)}%</p>
+                    </div>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-3 relative overflow-hidden">
+                    <div
+                      className="h-3 rounded-full transition-all flex items-center justify-end pr-2"
+                      style={{
+                        width: `${percentage}%`,
+                        backgroundColor: COLORS[index % COLORS.length],
+                        minWidth: percentage > 0 ? '30px' : '0',
+                      }}
+                    >
+                      {percentage > 5 && (
+                        <span className="text-xs font-semibold text-white">
+                          {percentage.toFixed(0)}%
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </motion.div>
       </div>
