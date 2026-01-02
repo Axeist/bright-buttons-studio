@@ -217,6 +217,7 @@ export type Database = {
           pincode: string | null
           whatsapp_number: string | null
           customer_type: string
+          signup_source: string | null
           total_orders: number
           total_spent: number
           last_purchase_at: string | null
@@ -234,6 +235,7 @@ export type Database = {
           pincode?: string | null
           whatsapp_number?: string | null
           customer_type?: string
+          signup_source?: string | null
           total_orders?: number
           total_spent?: number
           last_purchase_at?: string | null
@@ -251,6 +253,7 @@ export type Database = {
           pincode?: string | null
           whatsapp_number?: string | null
           customer_type?: string
+          signup_source?: string | null
           total_orders?: number
           total_spent?: number
           last_purchase_at?: string | null
