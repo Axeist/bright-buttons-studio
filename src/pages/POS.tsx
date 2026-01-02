@@ -768,6 +768,8 @@ const POS = () => {
 
       // Create auth account with default password
       // This will send a confirmation email automatically
+      console.log("Creating auth account for offline customer:", { email, name, customerId });
+      
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password: defaultPassword,
@@ -784,38 +786,58 @@ const POS = () => {
 
       if (authError) {
         console.error("Error creating auth account:", authError);
+        console.error("Full error details:", JSON.stringify(authError, null, 2));
         toast({
           title: "Warning",
-          description: `Customer created but failed to send email: ${authError.message}. Please check Supabase Auth settings.`,
+          description: `Customer created but failed to create account: ${authError.message}. Check console for details.`,
           variant: "destructive",
         });
         return;
       }
 
       if (authData?.user) {
+        console.log("Auth user created:", authData.user.id);
+        console.log("Session exists:", !!authData.session);
+        console.log("Email confirmed:", authData.user.email_confirmed_at);
+        
         // Link customer to auth user
-        await supabase
+        const { error: updateError } = await supabase
           .from("customers")
           .update({ user_id: authData.user.id })
           .eq("id", customerId);
 
+        if (updateError) {
+          console.error("Error linking customer to auth user:", updateError);
+        }
+
         // Check if email was sent (if session is null, email confirmation is required and email should be sent)
         if (!authData.session) {
           // Email confirmation required - email should be sent
+          console.log("Email confirmation required - email should be sent automatically");
           toast({
             title: "Success",
             description: `Sign-in email sent to ${email}. Default password: ${defaultPassword}. Please check inbox (including spam).`,
-            duration: 8000,
+            duration: 10000,
           });
         } else {
           // Email confirmation disabled - user can sign in immediately
+          console.warn("Email confirmation is DISABLED in Supabase. No email will be sent!");
           toast({
-            title: "Success",
-            description: `Account created. Default password: ${defaultPassword}. Email confirmation is disabled.`,
+            title: "Warning",
+            description: `Account created but email confirmation is disabled. No email sent. Default password: ${defaultPassword}. Enable email confirmation in Supabase Dashboard to send emails.`,
+            variant: "destructive",
+            duration: 10000,
           });
         }
         
-        console.log("Auth account created and linked. Email sent to:", email);
+        console.log("Auth account created and linked. User ID:", authData.user.id);
+      } else {
+        console.error("No user data returned from signUp");
+        toast({
+          title: "Error",
+          description: "Failed to create auth account. No user data returned.",
+          variant: "destructive",
+        });
       }
     } catch (error: any) {
       console.error("Error creating offline customer auth:", error);
