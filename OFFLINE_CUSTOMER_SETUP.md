@@ -48,39 +48,16 @@ When staff adds a customer via POS (Add Customer), the customer is marked as an 
 <p>Best regards,<br>Bright Buttons Team</p>
 ```
 
-   **Option B:** Check if the user is an offline customer and conditionally show the password:
+   **Option B (Recommended):** Use the complete HTML template with conditional logic for offline customers.
    
-```html
-{{ if .Data.is_offline_customer }}
-<h2>Welcome to Bright Buttons!</h2>
-
-<p>Hello {{ .Data.full_name }},</p>
-
-<p>Your account has been created by our staff. Here are your sign-in credentials:</p>
-
-<div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
-  <p><strong>Email:</strong> {{ .Email }}</p>
-  <p><strong>Default Password:</strong> Brightbuttons@123</p>
-</div>
-
-<p><strong>Important:</strong> For security reasons, please reset your password in the <strong>My Profile</strong> page once you log in.</p>
-{{ else }}
-<h2>Welcome to Bright Buttons!</h2>
-
-<p>Hello {{ .Data.full_name }},</p>
-
-<p>Thank you for signing up! Please confirm your email to get started.</p>
-{{ end }}
-
-<p>Click the button below to confirm your email and sign in:</p>
-
-<p><a href="{{ .ConfirmationURL }}" style="background-color: #4CAF50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">Confirm Email & Sign In</a></p>
-
-<p>If the button doesn't work, copy and paste this link into your browser:</p>
-<p>{{ .ConfirmationURL }}</p>
-
-<p>Best regards,<br>Bright Buttons Team</p>
-```
+   Copy the entire contents of `supabase_email_templates/confirm_signup_with_offline.html` and paste it into the Supabase email template editor.
+   
+   This template:
+   - Shows default password and credentials **ONLY** for offline customers (`{{ .Data.is_offline_customer }}`)
+   - Shows the regular welcome message for online customers (like the original template)
+   - Matches the beautiful design from your existing email templates
+   - Includes the "✨ Confirm Your Email" button
+   - Has proper styling and responsive design
 
 5. Click **Save**
 
