@@ -647,42 +647,148 @@ const POS = () => {
       return customer.id;
     }
 
-    // Create new customer
+    // Check if customer already exists
+    const { data: existing } = await supabase
+      .from("customers")
+      .select("id, name, phone, email, user_id")
+      .eq("phone", customerPhone)
+      .maybeSingle();
+
+    if (existing) {
+      setCustomer(existing);
+      // Update customer if email is provided
+      if (customerEmail && existing.email !== customerEmail) {
+        await supabase
+          .from("customers")
+          .update({ 
+            email: customerEmail, 
+            name: customerName || existing.name,
+            signup_source: "offline"
+          })
+          .eq("id", existing.id);
+        
+        // If email is provided and customer doesn't have auth account, create one
+        if (customerEmail && !existing.user_id) {
+          await createOfflineCustomerAuth(customerEmail, customerName || existing.name, existing.id);
+        }
+      }
+      return existing.id;
+    }
+
+    // Create new offline customer
     const { data, error } = await supabase
       .from("customers")
       .insert({
         name: customerName || "Walk-in Customer",
         phone: customerPhone,
         email: customerEmail || null,
+        signup_source: "offline",
       })
       .select()
       .single();
 
     if (error) {
-      // Customer might already exist
-      const { data: existing } = await supabase
-        .from("customers")
-        .select("id, name, phone")
-        .eq("phone", customerPhone)
-        .single();
-
-      if (existing) {
-        setCustomer(existing);
-        // Update customer if email is provided
-        if (customerEmail && existing.email !== customerEmail) {
-          await supabase
-            .from("customers")
-            .update({ email: customerEmail, name: customerName || existing.name })
-            .eq("id", existing.id);
-        }
-        return existing.id;
-      }
-
       throw error;
     }
 
     setCustomer(data);
+    
+    // If email is provided, create auth account and send sign-in email
+    if (customerEmail && data) {
+      await createOfflineCustomerAuth(customerEmail, customerName || "Walk-in Customer", data.id);
+    }
+    
     return data.id;
+  };
+
+  const createOfflineCustomerAuth = async (email: string, name: string, customerId: string) => {
+    try {
+      const defaultPassword = "Brightbuttons@123";
+      
+      // Check if auth user already exists
+      const { data: existingAuth } = await supabase
+        .from("profiles")
+        .select("id, email")
+        .eq("email", email)
+        .maybeSingle();
+
+      if (existingAuth) {
+        // User already exists, just link the customer
+        await supabase
+          .from("customers")
+          .update({ user_id: existingAuth.id })
+          .eq("id", customerId);
+        
+        toast({
+          title: "Info",
+          description: `Customer linked to existing account.`,
+        });
+        return;
+      }
+
+      // Create auth account with default password
+      // This will send a confirmation email - we'll customize the template
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password: defaultPassword,
+        options: {
+          data: {
+            full_name: name,
+            phone: customerPhone,
+            is_offline_customer: true,
+            default_password: defaultPassword,
+          },
+          emailRedirectTo: `${window.location.origin}/customer/login`,
+        },
+      });
+
+      if (authError) {
+        console.error("Error creating auth account:", authError);
+        toast({
+          title: "Warning",
+          description: `Customer created but failed to create account: ${authError.message}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (authData?.user) {
+        // Link customer to auth user
+        await supabase
+          .from("customers")
+          .update({ user_id: authData.user.id })
+          .eq("id", customerId);
+
+        // Send custom sign-in email via database function
+        // The email template should include the default password
+        const { error: emailError } = await supabase.rpc("send_offline_customer_signin_email", {
+          p_email: email,
+          p_name: name,
+          p_default_password: defaultPassword,
+        });
+
+        if (emailError) {
+          console.error("Error sending sign-in email:", emailError);
+          // Still show success since the account was created
+          toast({
+            title: "Success",
+            description: `Customer account created. Default password: ${defaultPassword}. Please check email for sign-in instructions.`,
+          });
+        } else {
+          toast({
+            title: "Success",
+            description: `Customer account created. Sign-in email sent to ${email} with default password.`,
+          });
+        }
+      }
+    } catch (error: any) {
+      console.error("Error creating offline customer auth:", error);
+      toast({
+        title: "Warning",
+        description: `Customer created but failed to create account: ${error.message}`,
+        variant: "destructive",
+      });
+    }
   };
 
   const completeSale = async (method: "cash" | "upi" | "card" | "split") => {

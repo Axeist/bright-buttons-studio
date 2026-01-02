@@ -40,20 +40,22 @@ BEGIN
   LIMIT 1;
 
   IF _customer_id IS NULL THEN
-    -- Create new customer record
+    -- Create new customer record (online signup)
     INSERT INTO public.customers (
       user_id,
       name,
       email,
       phone,
-      customer_type
+      customer_type,
+      signup_source
     )
     VALUES (
       NEW.id,
       COALESCE(_full_name, NEW.email),
       NEW.email,
       _phone,
-      'new'
+      'new',
+      'online'
     )
     RETURNING id INTO _customer_id;
   ELSE
