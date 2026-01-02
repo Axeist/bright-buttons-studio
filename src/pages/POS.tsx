@@ -759,6 +759,10 @@ const POS = () => {
           .eq("id", customerId);
         
         console.log("Customer linked to existing auth account");
+        toast({
+          title: "Info",
+          description: `Customer linked to existing account. No email sent.`,
+        });
         return;
       }
 
@@ -780,8 +784,11 @@ const POS = () => {
 
       if (authError) {
         console.error("Error creating auth account:", authError);
-        // Don't show toast here since this runs in background
-        // The customer was already created successfully
+        toast({
+          title: "Warning",
+          description: `Customer created but failed to send email: ${authError.message}. Please check Supabase Auth settings.`,
+          variant: "destructive",
+        });
         return;
       }
 
@@ -792,14 +799,31 @@ const POS = () => {
           .update({ user_id: authData.user.id })
           .eq("id", customerId);
 
+        // Check if email was sent (if session is null, email confirmation is required and email should be sent)
+        if (!authData.session) {
+          // Email confirmation required - email should be sent
+          toast({
+            title: "Success",
+            description: `Sign-in email sent to ${email}. Default password: ${defaultPassword}. Please check inbox (including spam).`,
+            duration: 8000,
+          });
+        } else {
+          // Email confirmation disabled - user can sign in immediately
+          toast({
+            title: "Success",
+            description: `Account created. Default password: ${defaultPassword}. Email confirmation is disabled.`,
+          });
+        }
+        
         console.log("Auth account created and linked. Email sent to:", email);
-        // Email is automatically sent by Supabase Auth
-        // The email template should be customized in Supabase Dashboard
       }
     } catch (error: any) {
       console.error("Error creating offline customer auth:", error);
-      // Don't show toast here since this runs in background
-      // The customer was already created successfully
+      toast({
+        title: "Warning",
+        description: `Customer created but failed to send email: ${error.message}. Please check Supabase Auth settings.`,
+        variant: "destructive",
+      });
     }
   };
 
