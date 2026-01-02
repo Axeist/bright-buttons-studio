@@ -647,58 +647,97 @@ const POS = () => {
       return customer.id;
     }
 
-    // Check if customer already exists
-    const { data: existing } = await supabase
-      .from("customers")
-      .select("id, name, phone, email, user_id")
-      .eq("phone", customerPhone)
-      .maybeSingle();
+    try {
+      // Check if customer already exists
+      const { data: existing } = await supabase
+        .from("customers")
+        .select("id, name, phone, email, user_id")
+        .eq("phone", customerPhone)
+        .maybeSingle();
 
-    if (existing) {
-      setCustomer(existing);
-      // Update customer if email is provided
-      if (customerEmail && existing.email !== customerEmail) {
-        await supabase
-          .from("customers")
-          .update({ 
-            email: customerEmail, 
-            name: customerName || existing.name,
-            signup_source: "offline"
-          })
-          .eq("id", existing.id);
-        
-        // If email is provided and customer doesn't have auth account, create one
-        if (customerEmail && !existing.user_id) {
-          await createOfflineCustomerAuth(customerEmail, customerName || existing.name, existing.id);
+      if (existing) {
+        setCustomer(existing);
+        // Update customer if email is provided
+        if (customerEmail && existing.email !== customerEmail) {
+          await supabase
+            .from("customers")
+            .update({ 
+              email: customerEmail, 
+              name: customerName || existing.name,
+              signup_source: "offline"
+            })
+            .eq("id", existing.id);
+          
+          // If email is provided and customer doesn't have auth account, create one in background
+          if (customerEmail && !existing.user_id) {
+            // Run in background - don't wait for it
+            createOfflineCustomerAuth(customerEmail, customerName || existing.name, existing.id).catch(err => {
+              console.error("Background auth creation failed:", err);
+            });
+          }
         }
+        return existing.id;
       }
-      return existing.id;
-    }
 
-    // Create new offline customer
-    const { data, error } = await supabase
-      .from("customers")
-      .insert({
-        name: customerName || "Walk-in Customer",
-        phone: customerPhone,
-        email: customerEmail || null,
-        signup_source: "offline",
-      })
-      .select()
-      .single();
+      // Create new offline customer immediately
+      const { data, error } = await supabase
+        .from("customers")
+        .insert({
+          name: customerName || "Walk-in Customer",
+          phone: customerPhone,
+          email: customerEmail || null,
+          signup_source: "offline",
+        })
+        .select()
+        .single();
 
-    if (error) {
-      throw error;
-    }
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to create customer",
+          variant: "destructive",
+        });
+        throw error;
+      }
 
-    setCustomer(data);
-    
-    // If email is provided, create auth account and send sign-in email
-    if (customerEmail && data) {
-      await createOfflineCustomerAuth(customerEmail, customerName || "Walk-in Customer", data.id);
+      // Set customer immediately so it can be used right away
+      setCustomer({
+        id: data.id,
+        name: data.name,
+        phone: data.phone,
+        email: data.email || undefined,
+      });
+      
+      // Show success message
+      toast({
+        title: "Success",
+        description: `Customer "${data.name}" created successfully!${customerEmail ? " Sign-in email will be sent shortly." : ""}`,
+      });
+
+      // If email is provided, create auth account in background (don't wait)
+      if (customerEmail && data) {
+        // Run in background - don't block on this
+        createOfflineCustomerAuth(customerEmail, customerName || "Walk-in Customer", data.id).catch(err => {
+          console.error("Background auth creation failed:", err);
+          // Don't show error to user since customer was created successfully
+        });
+      }
+      
+      // Refresh customer list if modal is open
+      if (isCustomerSelectModalOpen) {
+        await fetchAllCustomers();
+      }
+      
+      return data.id;
+    } catch (error: any) {
+      console.error("Error creating customer:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create customer",
+        variant: "destructive",
+      });
+      return null;
     }
-    
-    return data.id;
   };
 
   const createOfflineCustomerAuth = async (email: string, name: string, customerId: string) => {
@@ -719,15 +758,12 @@ const POS = () => {
           .update({ user_id: existingAuth.id })
           .eq("id", customerId);
         
-        toast({
-          title: "Info",
-          description: `Customer linked to existing account.`,
-        });
+        console.log("Customer linked to existing auth account");
         return;
       }
 
       // Create auth account with default password
-      // This will send a confirmation email - we'll customize the template
+      // This will send a confirmation email automatically
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password: defaultPassword,
@@ -744,11 +780,8 @@ const POS = () => {
 
       if (authError) {
         console.error("Error creating auth account:", authError);
-        toast({
-          title: "Warning",
-          description: `Customer created but failed to create account: ${authError.message}`,
-          variant: "destructive",
-        });
+        // Don't show toast here since this runs in background
+        // The customer was already created successfully
         return;
       }
 
@@ -759,35 +792,14 @@ const POS = () => {
           .update({ user_id: authData.user.id })
           .eq("id", customerId);
 
-        // Send custom sign-in email via database function
-        // The email template should include the default password
-        const { error: emailError } = await supabase.rpc("send_offline_customer_signin_email", {
-          p_email: email,
-          p_name: name,
-          p_default_password: defaultPassword,
-        });
-
-        if (emailError) {
-          console.error("Error sending sign-in email:", emailError);
-          // Still show success since the account was created
-          toast({
-            title: "Success",
-            description: `Customer account created. Default password: ${defaultPassword}. Please check email for sign-in instructions.`,
-          });
-        } else {
-          toast({
-            title: "Success",
-            description: `Customer account created. Sign-in email sent to ${email} with default password.`,
-          });
-        }
+        console.log("Auth account created and linked. Email sent to:", email);
+        // Email is automatically sent by Supabase Auth
+        // The email template should be customized in Supabase Dashboard
       }
     } catch (error: any) {
       console.error("Error creating offline customer auth:", error);
-      toast({
-        title: "Warning",
-        description: `Customer created but failed to create account: ${error.message}`,
-        variant: "destructive",
-      });
+      // Don't show toast here since this runs in background
+      // The customer was already created successfully
     }
   };
 
@@ -1793,9 +1805,15 @@ const POS = () => {
               />
             </div>
             <Button
-              onClick={() => {
-                createOrGetCustomer();
-                setIsCustomerModalOpen(false);
+              onClick={async () => {
+                const result = await createOrGetCustomer();
+                if (result) {
+                  setIsCustomerModalOpen(false);
+                  // Clear form after successful creation
+                  setCustomerPhone("");
+                  setCustomerName("");
+                  setCustomerEmail("");
+                }
               }}
               className="w-full rounded-xl"
             >
