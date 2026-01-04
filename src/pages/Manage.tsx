@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { validatePincodeCSVData, generateSamplePincodeCSV, type CSVPincodeRow } from "@/lib/pincodeCsvImport";
 import { parseCSV } from "@/lib/csvImport";
-import { Loader2, Plus, Edit, Trash2, Gift, Search, X, MapPin, Upload, Download, FileText, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, Plus, Edit, Trash2, Gift, Search, X, MapPin, Upload, Download, FileText, ChevronLeft, ChevronRight, Coins } from "lucide-react";
 
 interface RedeemableItem {
   id: string;
@@ -146,10 +146,19 @@ const Manage = () => {
   const [replySaving, setReplySaving] = useState<Record<string, boolean>>({});
   const [replyOpen, setReplyOpen] = useState<Record<string, boolean>>({});
 
+  // Loyalty Points Configuration
+  const [loyaltyConfig, setLoyaltyConfig] = useState({
+    amount_threshold: "",
+    points_earned: "",
+  });
+  const [isSavingLoyaltyConfig, setIsSavingLoyaltyConfig] = useState(false);
+  const [loyaltyConfigLoading, setLoyaltyConfigLoading] = useState(true);
+
   useEffect(() => {
     fetchItems();
     fetchPincodes();
     fetchCoupons();
+    fetchLoyaltyConfig();
   }, []);
 
   useEffect(() => {
@@ -628,6 +637,107 @@ const Manage = () => {
       });
     } finally {
       setReplySaving((prev) => ({ ...prev, [review.id]: false }));
+    }
+  };
+
+  // -------- Loyalty Points Configuration handlers --------
+  const fetchLoyaltyConfig = async () => {
+    setLoyaltyConfigLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("settings")
+        .select("key, value")
+        .in("key", ["loyalty_points_amount_threshold", "loyalty_points_earned"]);
+
+      if (error) throw error;
+
+      const config: any = {
+        amount_threshold: "",
+        points_earned: "",
+      };
+
+      (data || []).forEach((item) => {
+        if (item.key === "loyalty_points_amount_threshold") {
+          config.amount_threshold = item.value?.toString() || "";
+        } else if (item.key === "loyalty_points_earned") {
+          config.points_earned = item.value?.toString() || "";
+        }
+      });
+
+      setLoyaltyConfig(config);
+    } catch (error: any) {
+      console.error("Error fetching loyalty config:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to load loyalty points configuration",
+        variant: "destructive",
+      });
+    } finally {
+      setLoyaltyConfigLoading(false);
+    }
+  };
+
+  const handleSaveLoyaltyConfig = async () => {
+    if (!loyaltyConfig.amount_threshold || parseFloat(loyaltyConfig.amount_threshold) <= 0) {
+      toast({
+        title: "Validation Error",
+        description: "Amount threshold must be greater than 0",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!loyaltyConfig.points_earned || parseFloat(loyaltyConfig.points_earned) <= 0) {
+      toast({
+        title: "Validation Error",
+        description: "Points earned must be greater than 0",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSavingLoyaltyConfig(true);
+    try {
+      // Upsert both settings
+      const settings = [
+        {
+          key: "loyalty_points_amount_threshold",
+          value: parseFloat(loyaltyConfig.amount_threshold),
+        },
+        {
+          key: "loyalty_points_earned",
+          value: parseFloat(loyaltyConfig.points_earned),
+        },
+      ];
+
+      for (const setting of settings) {
+        const { error } = await supabase
+          .from("settings")
+          .upsert(
+            {
+              key: setting.key,
+              value: setting.value,
+            },
+            {
+              onConflict: "key",
+            }
+          );
+
+        if (error) throw error;
+      }
+
+      toast({
+        title: "Success",
+        description: "Loyalty points configuration saved successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save loyalty points configuration",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingLoyaltyConfig(false);
     }
   };
   const handleSubmit = async (e: React.FormEvent) => {
@@ -1462,6 +1572,116 @@ const Manage = () => {
     </section>
   );
 
+  const LoyaltyPointsTab = () => (
+    <section className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Coins className="w-5 h-5 text-primary" />
+            <CardTitle>Loyalty Points Configuration</CardTitle>
+          </div>
+          <CardDescription>
+            Configure how customers earn loyalty points based on their purchase amount
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loyaltyConfigLoading ? (
+            <div className="flex items-center justify-center h-48">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            </div>
+          ) : (
+            <div className="space-y-6 max-w-2xl">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="amount_threshold">
+                    Amount Threshold (₹) *
+                  </Label>
+                  <Input
+                    id="amount_threshold"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={loyaltyConfig.amount_threshold}
+                    onChange={(e) =>
+                      setLoyaltyConfig({
+                        ...loyaltyConfig,
+                        amount_threshold: e.target.value,
+                      })
+                    }
+                    placeholder="1000"
+                    className="rounded-xl h-12"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    The purchase amount (in rupees) required to earn loyalty points
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="points_earned">
+                    Points Earned *
+                  </Label>
+                  <Input
+                    id="points_earned"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={loyaltyConfig.points_earned}
+                    onChange={(e) =>
+                      setLoyaltyConfig({
+                        ...loyaltyConfig,
+                        points_earned: e.target.value,
+                      })
+                    }
+                    placeholder="10"
+                    className="rounded-xl h-12"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    The number of loyalty points customers earn for every threshold amount spent
+                  </p>
+                </div>
+
+                {loyaltyConfig.amount_threshold && loyaltyConfig.points_earned && (
+                  <div className="p-4 bg-primary/10 border border-primary/20 rounded-xl">
+                    <p className="text-sm font-medium text-foreground mb-2">
+                      Current Configuration:
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Customers will earn <span className="font-semibold text-foreground">{loyaltyConfig.points_earned} points</span> for every{" "}
+                      <span className="font-semibold text-foreground">₹{parseFloat(loyaltyConfig.amount_threshold).toLocaleString()}</span> spent
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Example: A purchase of ₹{parseFloat(loyaltyConfig.amount_threshold).toLocaleString()} will earn {loyaltyConfig.points_earned} points
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button
+                  onClick={handleSaveLoyaltyConfig}
+                  disabled={isSavingLoyaltyConfig}
+                  className="rounded-xl"
+                >
+                  {isSavingLoyaltyConfig ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Save Configuration
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </section>
+  );
+
   const RedeemTab = () => (
     <section className="space-y-6">
       <div className="flex items-center justify-between">
@@ -1765,11 +1985,12 @@ const Manage = () => {
   return (
     <AdminLayout>
       <Tabs defaultValue="redeem" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 mb-6 rounded-xl">
+        <TabsList className="grid w-full grid-cols-5 mb-6 rounded-xl">
           <TabsTrigger value="redeem" className="rounded-xl">Redeem Items</TabsTrigger>
           <TabsTrigger value="delivery" className="rounded-xl">Delivery</TabsTrigger>
           <TabsTrigger value="promotions" className="rounded-xl">Promotions</TabsTrigger>
           <TabsTrigger value="reviews" className="rounded-xl">Manage Reviews</TabsTrigger>
+          <TabsTrigger value="loyalty" className="rounded-xl">Loyalty Points</TabsTrigger>
         </TabsList>
 
         <TabsContent value="redeem" className="space-y-6">
@@ -1783,6 +2004,9 @@ const Manage = () => {
         </TabsContent>
         <TabsContent value="reviews" className="space-y-6">
           {ReviewsTab()}
+        </TabsContent>
+        <TabsContent value="loyalty" className="space-y-6">
+          {LoyaltyPointsTab()}
         </TabsContent>
       </Tabs>
     </AdminLayout>
