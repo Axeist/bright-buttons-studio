@@ -507,17 +507,15 @@ const Orders = () => {
                     </td>
                     <td className="p-4">
                       <div className="flex items-center gap-2">
-                        {(order.status === "delivered" || order.status === "ready") && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handlePrintInvoice(order)}
-                            className="rounded-lg"
-                          >
-                            <Printer className="w-4 h-4 mr-1" />
-                            Invoice
-                          </Button>
-                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePrintInvoice(order)}
+                          className="rounded-lg"
+                        >
+                          <Printer className="w-4 h-4 mr-1" />
+                          Invoice
+                        </Button>
                       </div>
                     </td>
                   </motion.tr>
