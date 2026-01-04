@@ -493,7 +493,6 @@ const Dashboard = () => {
       {/* Header with Date Range Selector */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
           <p className="text-muted-foreground">Key insights and analytics at a glance</p>
         </div>
         <Select value={dateRange} onValueChange={(value) => setDateRange(value as typeof dateRange)}>

@@ -60,6 +60,7 @@ interface Coupon {
   redeemable_in_online: boolean;
   starts_at: string | null;
   expires_at: string | null;
+  visible_until: string | null;
 }
 
 interface ReviewItem {
@@ -134,6 +135,7 @@ const Manage = () => {
     redeemable_in_online: true,
     starts_at: "",
     expires_at: "",
+    visible_until: "",
   });
 
   // Reviews
@@ -434,6 +436,7 @@ const Manage = () => {
       redeemable_in_online: coupon.redeemable_in_online,
       starts_at: coupon.starts_at ? new Date(coupon.starts_at).toISOString().slice(0, 16) : "",
       expires_at: coupon.expires_at ? new Date(coupon.expires_at).toISOString().slice(0, 16) : "",
+      visible_until: coupon.visible_until ? new Date(coupon.visible_until).toISOString().slice(0, 16) : "",
     });
   };
 
@@ -463,6 +466,7 @@ const Manage = () => {
         redeemable_in_online: couponForm.redeemable_in_online,
         starts_at: couponForm.starts_at || null,
         expires_at: couponForm.expires_at || null,
+        visible_until: couponForm.visible_until || null,
         created_by: user?.id || null,
       };
 
@@ -904,9 +908,9 @@ const Manage = () => {
     <section className="space-y-6">
       <Card>
         <CardHeader className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <MapPin className="w-5 h-5 text-primary" />
-            <CardTitle>Serviceable Pincodes</CardTitle>
+          <div className="flex items-center gap-2 min-w-0 flex-1 pr-4">
+            <MapPin className="w-5 h-5 text-primary flex-shrink-0" />
+            <CardTitle className="break-words whitespace-normal">Serviceable Pincodes</CardTitle>
           </div>
           <div className="flex gap-2">
             <Button
@@ -1124,8 +1128,8 @@ const Manage = () => {
     <section className="space-y-6">
       <Card>
         <CardHeader className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">Coupons</h2>
+          <div className="min-w-0 flex-1 pr-4">
+            <h2 className="text-lg font-semibold text-foreground break-words whitespace-normal">Coupons</h2>
             <p className="text-sm text-muted-foreground">Create and manage discount coupons</p>
           </div>
           <Button
@@ -1146,6 +1150,7 @@ const Manage = () => {
                 redeemable_in_online: true,
                 starts_at: "",
                 expires_at: "",
+                visible_until: "",
               });
             }}
             className="rounded-xl"
@@ -1200,6 +1205,9 @@ const Manage = () => {
                       </span>
                       {coupon.starts_at && (
                         <span>Starts: {new Date(coupon.starts_at).toLocaleDateString()}</span>
+                      )}
+                      {coupon.visible_until && (
+                        <span>Visible until: {new Date(coupon.visible_until).toLocaleDateString()}</span>
                       )}
                       {coupon.expires_at && (
                         <span>Expires: {new Date(coupon.expires_at).toLocaleDateString()}</span>
@@ -1342,6 +1350,17 @@ const Manage = () => {
             </div>
 
             <div className="space-y-2">
+              <Label>Visible Until</Label>
+              <Input
+                type="datetime-local"
+                value={couponForm.visible_until}
+                onChange={(e) => setCouponForm({ ...couponForm, visible_until: e.target.value })}
+                className="rounded-xl h-12"
+              />
+              <p className="text-xs text-muted-foreground">Date until when the coupon should be visible to customers</p>
+            </div>
+
+            <div className="space-y-2">
               <Label>Expires At</Label>
               <Input
                 type="datetime-local"
@@ -1349,6 +1368,7 @@ const Manage = () => {
                 onChange={(e) => setCouponForm({ ...couponForm, expires_at: e.target.value })}
                 className="rounded-xl h-12"
               />
+              <p className="text-xs text-muted-foreground">Date when the coupon expires and can no longer be used</p>
             </div>
 
             <div className="flex items-center gap-4 md:col-span-2">
@@ -1396,8 +1416,8 @@ const Manage = () => {
     <section className="space-y-6">
       <Card>
         <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">Manage Reviews</h2>
+          <div className="min-w-0 flex-1 pr-4">
+            <h2 className="text-lg font-semibold text-foreground break-words whitespace-normal">Manage Reviews</h2>
             <p className="text-sm text-muted-foreground">Approve or reject customer reviews</p>
           </div>
           <div className="flex items-center gap-3">
@@ -1576,9 +1596,9 @@ const Manage = () => {
     <section className="space-y-6">
       <Card>
         <CardHeader>
-          <div className="flex items-center gap-2">
-            <Coins className="w-5 h-5 text-primary" />
-            <CardTitle>Loyalty Points Configuration</CardTitle>
+          <div className="flex items-center gap-2 min-w-0 pr-4">
+            <Coins className="w-5 h-5 text-primary flex-shrink-0" />
+            <CardTitle className="break-words whitespace-normal">Loyalty Points Configuration</CardTitle>
           </div>
           <CardDescription>
             Configure how customers earn loyalty points based on their purchase amount

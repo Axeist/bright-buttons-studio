@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { AdminLayout } from "@/layouts/AdminLayout";
-import { Search, Plus, Minus, CreditCard, Banknote, Smartphone, Shuffle, WifiOff, Leaf, Scan, Loader2, X, User, Wifi, Phone, ShoppingCart, LayoutGrid, List, Pause, History, Play, Trash2 } from "lucide-react";
+import { Search, Plus, Minus, CreditCard, Banknote, Smartphone, Shuffle, WifiOff, Leaf, Scan, Loader2, X, User, Wifi, Phone, ShoppingCart, LayoutGrid, List, Pause, History, Play, Trash2, Keyboard } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
@@ -110,6 +110,10 @@ const POS = () => {
   const [holdDialogOpen, setHoldDialogOpen] = useState(false);
   const [resumeDialogOpen, setResumeDialogOpen] = useState(false);
   const [holdName, setHoldName] = useState("");
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [customerSuggestions, setCustomerSuggestions] = useState<{ id: string; name: string; phone: string; email?: string | null }[]>([]);
+  const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchProducts();
@@ -129,6 +133,128 @@ const POS = () => {
       setHoldName(customer?.name || "");
     }
   }, [holdDialogOpen, customer?.name]);
+
+  // Offline mode detection
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger shortcuts when typing in inputs
+      if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'TEXTAREA') {
+        return;
+      }
+
+      // Ctrl+F or Cmd+F - Focus search
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        return;
+      }
+
+      // Ctrl+S or Cmd+S - Hold/Save sale
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        if (cart.length > 0) {
+          setHoldDialogOpen(true);
+        }
+        return;
+      }
+
+      // Ctrl+P or Cmd+P - Print (if cart has items)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+        e.preventDefault();
+        // Print functionality can be added here
+        return;
+      }
+
+      // Ctrl+Enter or Cmd+Enter - Complete sale (if payment method selected)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        if (cart.length > 0 && selectedPaymentMethod) {
+          completeSale(selectedPaymentMethod);
+        } else if (cart.length > 0 && !selectedPaymentMethod) {
+          toast({
+            title: "Select Payment Method",
+            description: "Please select a payment method before completing the sale.",
+            variant: "destructive",
+          });
+        }
+        return;
+      }
+
+      // Escape - Close modals
+      if (e.key === 'Escape') {
+        setIsScannerOpen(false);
+        setIsCustomerModalOpen(false);
+        setIsCustomerSelectModalOpen(false);
+        setIsSplitModalOpen(false);
+        setHoldDialogOpen(false);
+        setResumeDialogOpen(false);
+        setShowCustomerSuggestions(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [cart, selectedPaymentMethod]);
+
+  // Auto-suggest customer based on phone number
+  useEffect(() => {
+    const fetchCustomerSuggestions = async () => {
+      if (customerPhone.length >= 3) {
+        try {
+          const { data } = await supabase
+            .from("customers")
+            .select("id, name, phone, email")
+            .ilike("phone", `%${customerPhone}%`)
+            .limit(5);
+          
+          if (data && data.length > 0) {
+            setCustomerSuggestions(data);
+            setShowCustomerSuggestions(true);
+          } else {
+            setCustomerSuggestions([]);
+            setShowCustomerSuggestions(false);
+          }
+        } catch (error) {
+          console.error("Error fetching customer suggestions:", error);
+        }
+      } else {
+        setCustomerSuggestions([]);
+        setShowCustomerSuggestions(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(fetchCustomerSuggestions, 300);
+    return () => clearTimeout(debounceTimer);
+  }, [customerPhone]);
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.customer-suggestions-container')) {
+        setShowCustomerSuggestions(false);
+      }
+    };
+
+    if (showCustomerSuggestions) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showCustomerSuggestions]);
 
   const generateHoldId = () => {
     // crypto.randomUUID is not available in all environments
@@ -616,9 +742,22 @@ const POS = () => {
       setCustomer(data);
       setCustomerName(data.name);
       setCustomerEmail(data.email || "");
+      setShowCustomerSuggestions(false);
     } else {
       setCustomer(null);
     }
+  };
+
+  const handleSelectSuggestion = (suggestedCustomer: { id: string; name: string; phone: string; email?: string | null }) => {
+    setCustomer(suggestedCustomer);
+    setCustomerPhone(suggestedCustomer.phone);
+    setCustomerName(suggestedCustomer.name);
+    setCustomerEmail(suggestedCustomer.email || "");
+    setShowCustomerSuggestions(false);
+    toast({
+      title: "Customer Selected",
+      description: `${suggestedCustomer.name} has been selected`,
+    });
   };
 
   const handleSelectCustomer = (selectedCustomer: { id: string; name: string; phone: string; email?: string | null }) => {
@@ -1125,6 +1264,56 @@ const POS = () => {
 
   return (
     <AdminLayout title="Point of Sale">
+      {/* Offline Mode Indicator */}
+      {!isOnline && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-xl flex items-center gap-3"
+        >
+          <WifiOff className="w-5 h-5 text-destructive" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-destructive">Offline Mode</p>
+            <p className="text-xs text-muted-foreground">You are currently offline. Some features may be limited.</p>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Keyboard Shortcuts Help */}
+      <div className="mb-4 flex items-center justify-end">
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="ghost" size="sm" className="rounded-xl text-xs">
+              <Keyboard className="w-4 h-4 mr-2" />
+              Shortcuts
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-md rounded-2xl">
+            <DialogHeader>
+              <DialogTitle>Keyboard Shortcuts</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3 mt-4">
+              <div className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                <span className="text-sm">Focus Search</span>
+                <kbd className="px-2 py-1 text-xs font-semibold bg-background border rounded">Ctrl+F</kbd>
+              </div>
+              <div className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                <span className="text-sm">Hold/Save Sale</span>
+                <kbd className="px-2 py-1 text-xs font-semibold bg-background border rounded">Ctrl+S</kbd>
+              </div>
+              <div className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                <span className="text-sm">Complete Sale</span>
+                <kbd className="px-2 py-1 text-xs font-semibold bg-background border rounded">Ctrl+Enter</kbd>
+              </div>
+              <div className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                <span className="text-sm">Close Modals</span>
+                <kbd className="px-2 py-1 text-xs font-semibold bg-background border rounded">Esc</kbd>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+
       {/* Scanner Connection Popup */}
       <Dialog open={showScannerConnectedPopup} onOpenChange={setShowScannerConnectedPopup}>
         <DialogContent className="sm:max-w-md rounded-2xl">
@@ -1164,6 +1353,7 @@ const POS = () => {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
+                ref={searchInputRef}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search products or scan barcode..."
@@ -1862,7 +2052,7 @@ const POS = () => {
             <DialogTitle>Customer Information</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-4">
-            <div>
+            <div className="relative customer-suggestions-container">
               <Label>Phone Number *</Label>
               <Input
                 value={customerPhone}
@@ -1870,9 +2060,39 @@ const POS = () => {
                   setCustomerPhone(e.target.value);
                   lookupCustomer(e.target.value);
                 }}
+                onFocus={() => {
+                  if (customerSuggestions.length > 0) {
+                    setShowCustomerSuggestions(true);
+                  }
+                }}
                 placeholder="+91 98765 43210"
                 className="rounded-xl h-12"
               />
+              {/* Auto-suggest dropdown */}
+              {showCustomerSuggestions && customerSuggestions.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="absolute z-50 w-full mt-1 bg-card border border-border rounded-xl shadow-lg max-h-60 overflow-y-auto"
+                >
+                  {customerSuggestions.map((suggested) => (
+                    <button
+                      key={suggested.id}
+                      onClick={() => handleSelectSuggestion(suggested)}
+                      className="w-full p-3 text-left hover:bg-accent transition-colors border-b border-border last:border-b-0"
+                    >
+                      <div className="flex items-center gap-3">
+                        <User className="w-4 h-4 text-primary" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">{suggested.name}</p>
+                          <p className="text-xs text-muted-foreground">{suggested.phone}</p>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </motion.div>
+              )}
             </div>
             <div>
               <Label>Name</Label>
