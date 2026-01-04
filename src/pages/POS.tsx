@@ -10,6 +10,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { useAuth } from "@/hooks/useAuth";
+import { getProductImageUrl } from "@/lib/utils";
 
 const categories = [
   'All',
@@ -29,6 +30,12 @@ interface Product {
   price: number;
   barcode: string | null;
   sku: string | null;
+  image_url: string | null;
+  product_photos?: Array<{
+    image_url: string;
+    display_order: number;
+    is_primary: boolean;
+  }>;
   inventory?: {
     quantity: number;
     reserved_quantity: number;
@@ -391,6 +398,11 @@ const POS = () => {
           inventory (
             quantity,
             reserved_quantity
+          ),
+          product_photos (
+            image_url,
+            display_order,
+            is_primary
           )
         `)
         .eq("status", "active")
@@ -1193,6 +1205,7 @@ const POS = () => {
                 ? product.inventory[0] 
                 : product.inventory;
               const stock = (inventory?.quantity || 0) - (inventory?.reserved_quantity || 0);
+              const productImageUrl = getProductImageUrl(product);
               return (
                 <motion.button
                   key={product.id}
@@ -1203,8 +1216,27 @@ const POS = () => {
                   transition={{ type: "spring", stiffness: 450, damping: 30 }}
                   className="p-3 bg-accent rounded-xl text-left hover:bg-accent/80 transition-colors group disabled:opacity-50 disabled:cursor-not-allowed will-change-transform"
                 >
-                  <div className="w-full aspect-square bg-gradient-to-br from-primary-50 to-earth-50 rounded-lg mb-2 flex items-center justify-center">
-                    <Leaf className="w-8 h-8 text-primary-400 group-hover:scale-110 transition-transform" />
+                  <div className="w-full aspect-square bg-gradient-to-br from-primary-50 to-earth-50 rounded-lg mb-2 flex items-center justify-center overflow-hidden relative">
+                    {productImageUrl ? (
+                      <img
+                        src={productImageUrl}
+                        alt={product.name}
+                        loading="lazy"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const fallback = target.parentElement?.querySelector('.product-fallback') as HTMLElement;
+                          if (fallback) {
+                            fallback.classList.remove('hidden');
+                            fallback.style.display = 'flex';
+                          }
+                        }}
+                      />
+                    ) : null}
+                    <div className={`absolute inset-0 flex items-center justify-center product-fallback ${productImageUrl ? 'hidden' : ''}`}>
+                      <Leaf className="w-8 h-8 text-primary-400 group-hover:scale-110 transition-transform" />
+                    </div>
                   </div>
                   <p className="text-sm font-medium text-foreground line-clamp-1">{product.name}</p>
                   <p className="text-xs text-muted-foreground">{product.fabric || product.category}</p>
