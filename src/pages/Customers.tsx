@@ -33,6 +33,7 @@ interface Customer {
   loyalty_tier?: string;
   user_id?: string;
   created_at?: string;
+  signup_source?: string | null;
 }
 
 const Customers = () => {
@@ -40,6 +41,7 @@ const Customers = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<"all" | "new" | "returning">("all");
+  const [sourceFilter, setSourceFilter] = useState<"all" | "online" | "offline">("all");
   const [viewMode, setViewMode] = useState<"tiles" | "list">("tiles");
   const [isAddCustomerModalOpen, setIsAddCustomerModalOpen] = useState(false);
   const [isEditCustomerModalOpen, setIsEditCustomerModalOpen] = useState(false);
@@ -87,7 +89,10 @@ const Customers = () => {
       c.phone.includes(searchQuery) ||
       c.email?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesType = typeFilter === "all" || c.customer_type === typeFilter;
-    return matchesSearch && matchesType;
+    const matchesSource = sourceFilter === "all" || 
+      (sourceFilter === "online" && c.signup_source === "online") ||
+      (sourceFilter === "offline" && c.signup_source === "offline");
+    return matchesSearch && matchesType && matchesSource;
   });
 
   const getInitials = (name: string) => {
@@ -261,7 +266,7 @@ const Customers = () => {
               className="pl-10 rounded-xl"
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {(["all", "new", "returning"] as const).map((type) => (
               <button
                 key={type}
@@ -273,6 +278,19 @@ const Customers = () => {
                 }`}
               >
                 {type}
+              </button>
+            ))}
+            {(["all", "online", "offline"] as const).map((source) => (
+              <button
+                key={source}
+                onClick={() => setSourceFilter(source)}
+                className={`px-4 py-2 rounded-full text-sm font-medium capitalize transition-colors ${
+                  sourceFilter === source
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-secondary-foreground hover:bg-accent"
+                }`}
+              >
+                {source === "all" ? "All Sources" : source === "online" ? "Online" : "Offline"}
               </button>
             ))}
           </div>

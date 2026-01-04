@@ -29,7 +29,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Plus, Trash2, Loader2, UserPlus, Users } from "lucide-react";
+import { Plus, Trash2, Loader2, UserPlus } from "lucide-react";
 import { z } from "zod";
 
 interface StaffMember {
@@ -40,15 +40,6 @@ interface StaffMember {
   created_at: string;
 }
 
-interface Customer {
-  id: string;
-  name: string;
-  phone: string;
-  email: string | null;
-  signup_source: string | null;
-  created_at: string;
-}
-
 const staffSchema = z.object({
   email: z.string().email("Please enter a valid email"),
   password: z.string().min(8, "Password must be at least 8 characters"),
@@ -56,16 +47,12 @@ const staffSchema = z.object({
   role: z.enum(["admin", "staff"]),
 });
 
-type FilterType = "staff" | "online" | "offline";
-
 const Staff = () => {
   const { isAdmin } = useAuth();
   const [staffMembers, setStaffMembers] = useState<StaffMember[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [filter, setFilter] = useState<FilterType>("staff");
   
   const [newStaff, setNewStaff] = useState({
     email: "",
@@ -113,24 +100,6 @@ const Staff = () => {
       }));
 
     setStaffMembers(staffWithRoles);
-
-    // Fetch customers
-    const { data: customersData, error: customersError } = await supabase
-      .from("customers")
-      .select("id, name, phone, email, signup_source, created_at")
-      .order("created_at", { ascending: false });
-
-    if (customersError) {
-      console.error("Error fetching customers:", customersError);
-      toast({
-        title: "Error",
-        description: "Failed to load customers.",
-        variant: "destructive",
-      });
-    } else {
-      setCustomers(customersData || []);
-    }
-
     setLoading(false);
   };
 
@@ -256,8 +225,8 @@ const Staff = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Staff & Customers</h1>
-            <p className="text-muted-foreground">Manage your team members, staff, and customers.</p>
+            <h1 className="text-2xl font-bold">Staff Management</h1>
+            <p className="text-muted-foreground">Manage your team members and staff accounts.</p>
           </div>
           
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -357,143 +326,61 @@ const Staff = () => {
           </Dialog>
         </div>
 
-        {/* Filter Buttons */}
-        <div className="flex gap-2">
-          <Button
-            variant={filter === "staff" ? "default" : "outline"}
-            onClick={() => setFilter("staff")}
-          >
-            <UserPlus className="mr-2 h-4 w-4" />
-            Staff ({staffMembers.length})
-          </Button>
-          <Button
-            variant={filter === "online" ? "default" : "outline"}
-            onClick={() => setFilter("online")}
-          >
-            <Users className="mr-2 h-4 w-4" />
-            Online Customer ({customers.filter(c => c.signup_source === "online").length})
-          </Button>
-          <Button
-            variant={filter === "offline" ? "default" : "outline"}
-            onClick={() => setFilter("offline")}
-          >
-            <Users className="mr-2 h-4 w-4" />
-            Offline Customer ({customers.filter(c => c.signup_source === "offline").length})
-          </Button>
-        </div>
-
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
-        ) : filter === "staff" ? (
-          staffMembers.length === 0 ? (
-            <div className="text-center py-12 border rounded-lg bg-card">
-              <UserPlus className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">No Staff Members Yet</h3>
-              <p className="text-muted-foreground mb-4">Get started by adding your first team member.</p>
-              <Button onClick={() => setIsDialogOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add First Staff
-              </Button>
-            </div>
-          ) : (
-            <div className="border rounded-lg overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Joined</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {staffMembers.map((staff) => (
-                    <TableRow key={staff.id}>
-                      <TableCell className="font-medium">
-                        {staff.full_name || "—"}
-                      </TableCell>
-                      <TableCell>{staff.email}</TableCell>
-                      <TableCell>
-                        <Badge variant={staff.role === "admin" ? "default" : "secondary"}>
-                          {staff.role}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(staff.created_at).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteStaff(staff.id, staff.full_name || "")}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )
+        ) : staffMembers.length === 0 ? (
+          <div className="text-center py-12 border rounded-lg bg-card">
+            <UserPlus className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium mb-2">No Staff Members Yet</h3>
+            <p className="text-muted-foreground mb-4">Get started by adding your first team member.</p>
+            <Button onClick={() => setIsDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add First Staff
+            </Button>
+          </div>
         ) : (
-          (() => {
-            const filteredCustomers = customers.filter((c) => {
-              if (filter === "online") return c.signup_source === "online";
-              if (filter === "offline") return c.signup_source === "offline";
-              return false;
-            });
-
-            return filteredCustomers.length === 0 ? (
-              <div className="text-center py-12 border rounded-lg bg-card">
-                <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">
-                  No {filter === "online" ? "Online" : "Offline"} Customers Yet
-                </h3>
-                <p className="text-muted-foreground">
-                  {filter === "online" 
-                    ? "Customers who sign up via the website will appear here."
-                    : "Customers added via POS will appear here."}
-                </p>
-              </div>
-            ) : (
-              <div className="border rounded-lg overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Source</TableHead>
-                      <TableHead>Joined</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredCustomers.map((customer) => (
-                      <TableRow key={customer.id}>
-                        <TableCell className="font-medium">
-                          {customer.name || "—"}
-                        </TableCell>
-                        <TableCell>{customer.phone}</TableCell>
-                        <TableCell>{customer.email || "—"}</TableCell>
-                        <TableCell>
-                          <Badge variant={customer.signup_source === "online" ? "default" : "secondary"}>
-                            {customer.signup_source === "online" ? "Online" : "Offline"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {new Date(customer.created_at).toLocaleDateString()}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            );
-          })()
+          <div className="border rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Joined</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {staffMembers.map((staff) => (
+                  <TableRow key={staff.id}>
+                    <TableCell className="font-medium">
+                      {staff.full_name || "—"}
+                    </TableCell>
+                    <TableCell>{staff.email}</TableCell>
+                    <TableCell>
+                      <Badge variant={staff.role === "admin" ? "default" : "secondary"}>
+                        {staff.role}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {new Date(staff.created_at).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteStaff(staff.id, staff.full_name || "")}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </div>
     </AdminLayout>

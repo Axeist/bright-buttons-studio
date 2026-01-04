@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AdminLayout } from "@/layouts/AdminLayout";
-import { ClipboardList, Sparkles, Loader2, ChevronDown } from "lucide-react";
+import { ClipboardList, Sparkles, Loader2, ChevronDown, Search, Printer, Filter, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -11,6 +13,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Invoice } from "@/components/ecommerce/Invoice";
 
 const orderStatuses = ['all', 'pending', 'confirmed', 'processing', 'ready', 'delivered', 'cancelled'] as const;
 
@@ -30,16 +39,33 @@ interface Order {
   total_amount: number;
   created_at: string;
   items_count?: number;
+  order_items?: any[];
 }
 
 const Orders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+  const [showInvoice, setShowInvoice] = useState(false);
+  const [selectedOrderForInvoice, setSelectedOrderForInvoice] = useState<Order | null>(null);
+  
+  // Advanced filters
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>("all");
+  const [sourceFilter, setSourceFilter] = useState<string>("all");
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>("all");
+  const [dateFrom, setDateFrom] = useState<string>("");
+  const [dateTo, setDateTo] = useState<string>("");
 
   useEffect(() => {
     fetchOrders();
   }, [activeTab]);
+
+  useEffect(() => {
+    applyFilters();
+  }, [allOrders, activeTab, searchQuery, paymentMethodFilter, sourceFilter, paymentStatusFilter, dateFrom, dateTo]);
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -65,6 +91,7 @@ const Orders = () => {
         items_count: order.order_items?.length || 0,
       }));
 
+      setAllOrders(ordersWithCounts);
       setOrders(ordersWithCounts);
     } catch (error: any) {
       toast({
@@ -134,6 +161,97 @@ const Orders = () => {
     });
   };
 
+  const applyFilters = () => {
+    let filtered = [...allOrders];
+
+    // Status filter (from activeTab)
+    if (activeTab !== "all") {
+      filtered = filtered.filter(order => order.status === activeTab);
+    }
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(order =>
+        order.order_number.toLowerCase().includes(query) ||
+        order.customer_name?.toLowerCase().includes(query) ||
+        order.customer_phone?.includes(query) ||
+        order.id.toLowerCase().includes(query)
+      );
+    }
+
+    // Payment method filter
+    if (paymentMethodFilter !== "all") {
+      filtered = filtered.filter(order => order.payment_method === paymentMethodFilter);
+    }
+
+    // Source filter
+    if (sourceFilter !== "all") {
+      filtered = filtered.filter(order => order.source === sourceFilter);
+    }
+
+    // Payment status filter
+    if (paymentStatusFilter !== "all") {
+      filtered = filtered.filter(order => order.payment_status === paymentStatusFilter);
+    }
+
+    // Date range filter
+    if (dateFrom) {
+      const fromDate = new Date(dateFrom);
+      fromDate.setHours(0, 0, 0, 0);
+      filtered = filtered.filter(order => new Date(order.created_at) >= fromDate);
+    }
+
+    if (dateTo) {
+      const toDate = new Date(dateTo);
+      toDate.setHours(23, 59, 59, 999);
+      filtered = filtered.filter(order => new Date(order.created_at) <= toDate);
+    }
+
+    setOrders(filtered);
+  };
+
+  const handlePrintInvoice = async (order: Order) => {
+    try {
+      // Fetch full order details with items
+      const { data, error } = await supabase
+        .from("orders")
+        .select(`
+          *,
+          order_items (*)
+        `)
+        .eq("id", order.id)
+        .single();
+
+      if (error) throw error;
+
+      setSelectedOrderForInvoice(data);
+      setShowInvoice(true);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to load order details",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const clearFilters = () => {
+    setPaymentMethodFilter("all");
+    setSourceFilter("all");
+    setPaymentStatusFilter("all");
+    setDateFrom("");
+    setDateTo("");
+    setSearchQuery("");
+  };
+
+  const hasActiveFilters = paymentMethodFilter !== "all" || 
+    sourceFilter !== "all" || 
+    paymentStatusFilter !== "all" || 
+    dateFrom || 
+    dateTo ||
+    searchQuery.trim() !== "";
+
   if (loading) {
     return (
       <AdminLayout title="Orders">
@@ -146,6 +264,129 @@ const Orders = () => {
 
   return (
     <AdminLayout title="Orders">
+      {/* Search and Filters */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="mb-6 space-y-4"
+      >
+        <div className="flex gap-4 items-center">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by order number, customer name, or phone..."
+              className="pl-10 rounded-xl"
+            />
+          </div>
+          <Button
+            variant={showFilters ? "default" : "outline"}
+            onClick={() => setShowFilters(!showFilters)}
+            className="rounded-xl"
+          >
+            <Filter className="w-4 h-4 mr-2" />
+            Filters
+            {hasActiveFilters && (
+              <span className="ml-2 px-2 py-0.5 bg-primary-foreground text-primary rounded-full text-xs">
+                Active
+              </span>
+            )}
+          </Button>
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              onClick={clearFilters}
+              className="rounded-xl"
+            >
+              <X className="w-4 h-4 mr-2" />
+              Clear
+            </Button>
+          )}
+        </div>
+
+        {/* Advanced Filters Panel */}
+        {showFilters && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="border rounded-xl p-4 bg-card space-y-4"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Payment Method</label>
+                <Select value={paymentMethodFilter} onValueChange={setPaymentMethodFilter}>
+                  <SelectTrigger className="rounded-lg">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Methods</SelectItem>
+                    <SelectItem value="cash">Cash</SelectItem>
+                    <SelectItem value="upi">UPI</SelectItem>
+                    <SelectItem value="card">Card</SelectItem>
+                    <SelectItem value="online">Online</SelectItem>
+                    <SelectItem value="split">Split</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">Source</label>
+                <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                  <SelectTrigger className="rounded-lg">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Sources</SelectItem>
+                    <SelectItem value="pos">POS</SelectItem>
+                    <SelectItem value="online">Online</SelectItem>
+                    <SelectItem value="phone">Phone</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">Payment Status</label>
+                <Select value={paymentStatusFilter} onValueChange={setPaymentStatusFilter}>
+                  <SelectTrigger className="rounded-lg">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="paid">Paid</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="partial">Partial</SelectItem>
+                    <SelectItem value="refunded">Refunded</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">Date From</label>
+                <Input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="rounded-lg"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">Date To</label>
+                <Input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="rounded-lg"
+                />
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </motion.div>
+
       {/* Tabs */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -192,6 +433,7 @@ const Orders = () => {
                 <th className="text-left text-sm font-semibold text-foreground p-4">Status</th>
                 <th className="text-left text-sm font-semibold text-foreground p-4 hidden sm:table-cell">Payment</th>
                 <th className="text-left text-sm font-semibold text-foreground p-4 hidden lg:table-cell">Source</th>
+                <th className="text-left text-sm font-semibold text-foreground p-4">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -263,6 +505,21 @@ const Orders = () => {
                         {order.source}
                       </span>
                     </td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-2">
+                        {(order.status === "delivered" || order.status === "ready") && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handlePrintInvoice(order)}
+                            className="rounded-lg"
+                          >
+                            <Printer className="w-4 h-4 mr-1" />
+                            Invoice
+                          </Button>
+                        )}
+                      </div>
+                    </td>
                   </motion.tr>
                 ))}
               </AnimatePresence>
@@ -281,6 +538,17 @@ const Orders = () => {
           </motion.div>
         )}
       </motion.div>
+
+      {/* Invoice Dialog */}
+      <Dialog open={showInvoice} onOpenChange={setShowInvoice}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto p-0">
+          <div className="p-6">
+            {selectedOrderForInvoice && (
+              <Invoice order={selectedOrderForInvoice} onClose={() => setShowInvoice(false)} />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 };
