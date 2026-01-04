@@ -643,6 +643,15 @@ const POS = () => {
       return null;
     }
 
+    if (!customerEmail || !customerEmail.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter customer email address",
+        variant: "destructive",
+      });
+      return null;
+    }
+
     if (customer) {
       return customer.id;
     }
@@ -657,8 +666,8 @@ const POS = () => {
 
       if (existing) {
         setCustomer(existing);
-        // Update customer if email is provided
-        if (customerEmail && existing.email !== customerEmail) {
+        // Update customer with email
+        if (existing.email !== customerEmail) {
           await supabase
             .from("customers")
             .update({ 
@@ -668,13 +677,18 @@ const POS = () => {
             })
             .eq("id", existing.id);
           
-          // If email is provided and customer doesn't have auth account, create one in background
-          if (customerEmail && !existing.user_id) {
+          // If customer doesn't have auth account, create one
+          if (!existing.user_id) {
             // Run in background - don't wait for it
             createOfflineCustomerAuth(customerEmail, customerName || existing.name, existing.id).catch(err => {
               console.error("Background auth creation failed:", err);
             });
           }
+        } else if (!existing.user_id) {
+          // Email matches but no auth account, create one
+          createOfflineCustomerAuth(customerEmail, customerName || existing.name, existing.id).catch(err => {
+            console.error("Background auth creation failed:", err);
+          });
         }
         return existing.id;
       }
@@ -685,7 +699,7 @@ const POS = () => {
         .insert({
           name: customerName || "Walk-in Customer",
           phone: customerPhone,
-          email: customerEmail || null,
+          email: customerEmail,
           signup_source: "offline",
         })
         .select()
@@ -711,17 +725,14 @@ const POS = () => {
       // Show success message
       toast({
         title: "Success",
-        description: `Customer "${data.name}" created successfully!${customerEmail ? " Sign-in email will be sent shortly." : ""}`,
+        description: `Customer "${data.name}" created successfully! Sign-in email will be sent shortly.`,
       });
 
-      // If email is provided, create auth account in background (don't wait)
-      if (customerEmail && data) {
-        // Run in background - don't block on this
-        createOfflineCustomerAuth(customerEmail, customerName || "Walk-in Customer", data.id).catch(err => {
-          console.error("Background auth creation failed:", err);
-          // Don't show error to user since customer was created successfully
-        });
-      }
+      // Create auth account in background (don't wait)
+      createOfflineCustomerAuth(customerEmail, customerName || "Walk-in Customer", data.id).catch(err => {
+        console.error("Background auth creation failed:", err);
+        // Don't show error to user since customer was created successfully
+      });
       
       // Refresh customer list if modal is open
       if (isCustomerSelectModalOpen) {
@@ -1841,13 +1852,14 @@ const POS = () => {
               />
             </div>
             <div>
-              <Label>Email ID (Optional)</Label>
+              <Label>Email ID *</Label>
               <Input
                 type="email"
                 value={customerEmail}
                 onChange={(e) => setCustomerEmail(e.target.value)}
                 placeholder="customer@example.com"
                 className="rounded-xl h-12"
+                required
               />
             </div>
             <Button
