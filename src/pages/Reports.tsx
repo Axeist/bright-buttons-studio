@@ -415,8 +415,9 @@ const Reports = () => {
       });
 
       const productPerformance = Array.from(productSalesMap.entries())
+        .filter(([name, data]) => name && data && data.revenue > 0)
         .map(([name, data]) => ({
-          name,
+          name: name || "Unknown Product",
           revenue: Math.round(data.revenue),
           units: data.units,
           margin: 40 + Math.random() * 20, // Mock margin
@@ -461,9 +462,11 @@ const Reports = () => {
       // Category Mix
       const categoryRevMap = new Map<string, number>();
       orderItems.forEach(item => {
+        if (!item || !item.product_id) return;
         const product = productMap.get(item.product_id);
         const category = product?.category || filters.category || "Uncategorized";
-        categoryRevMap.set(category, (categoryRevMap.get(category) || 0) + (item.unit_price * item.quantity));
+        const itemRevenue = (item.unit_price || 0) * (item.quantity || 0);
+        categoryRevMap.set(category, (categoryRevMap.get(category) || 0) + itemRevenue);
       });
 
       const totalCategoryRev = Array.from(categoryRevMap.values()).reduce((sum, val) => sum + val, 0);
@@ -566,30 +569,45 @@ const Reports = () => {
         { state: "Others", orders: Math.floor(totalOrders * 0.1), revenue: Math.round(totalRevenue * 0.1) },
       ];
 
-      const basketAnalysis = productPerformance.slice(0, 5).map((p, idx) => ({
-        product1: p.name,
-        product2: productPerformance[(idx + 1) % 5].name,
-        frequency: Math.floor(Math.random() * 50) + 10,
-        revenue: Math.floor(Math.random() * 50000) + 10000,
-      }));
+      const basketAnalysis = productPerformance
+        .filter(p => p && p.name)
+        .slice(0, 5)
+        .map((p, idx) => {
+          const nextProduct = productPerformance[(idx + 1) % productPerformance.length];
+          return {
+            product1: p.name || "Unknown",
+            product2: (nextProduct && nextProduct.name) || "Unknown",
+            frequency: Math.floor(Math.random() * 50) + 10,
+            revenue: Math.floor(Math.random() * 50000) + 10000,
+          };
+        });
 
       const topPerformers = {
-        products: productPerformance.slice(0, 5).map(p => ({
-          name: p.name,
-          revenue: p.revenue,
-          growth: -5 + Math.random() * 30,
-        })),
-        customers: customers.slice(0, 5).map(c => ({
-          name: c.name || "Guest",
-          orders: c.total_orders || 0,
-          revenue: Math.round(c.total_spent || 0),
-          clv: Math.round((c.total_spent || 0) * 1.5),
-        })),
-        categories: categoryMix.slice(0, 5).map(c => ({
-          name: c.category,
-          revenue: c.revenue,
-          growth: c.growth,
-        })),
+        products: productPerformance
+          .filter(p => p && p.name)
+          .slice(0, 5)
+          .map(p => ({
+            name: p.name || "Unknown Product",
+            revenue: p.revenue || 0,
+            growth: -5 + Math.random() * 30,
+          })),
+        customers: customers
+          .filter(c => c && (c.name || c.id))
+          .slice(0, 5)
+          .map(c => ({
+            name: c.name || "Guest",
+            orders: c.total_orders || 0,
+            revenue: Math.round(c.total_spent || 0),
+            clv: Math.round((c.total_spent || 0) * 1.5),
+          })),
+        categories: categoryMix
+          .filter(c => c && c.category)
+          .slice(0, 5)
+          .map(c => ({
+            name: c.category || "Uncategorized",
+            revenue: c.revenue || 0,
+            growth: c.growth || 0,
+          })),
       };
 
       const kpiTrends = revenueTimeSeries.slice(-7).map(item => ({
@@ -1211,25 +1229,32 @@ const Reports = () => {
             <h2 className="text-lg font-semibold">Geographic Distribution</h2>
           </div>
           <div className="space-y-3">
-            {analyticsData.geographicDistribution.map((geo, index) => (
-              <div key={geo.state} className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="font-medium">{geo.state}</span>
-                  <span className="text-muted-foreground">
-                    {geo.orders} orders · ₹{geo.revenue.toLocaleString()}
-                  </span>
-                </div>
-                <div className="w-full bg-muted rounded-full h-2">
-                  <div
-                    className="h-2 rounded-full transition-all"
-                    style={{ 
-                      width: `${(geo.revenue / analyticsData.geographicDistribution[0].revenue) * 100}%`,
-                      backgroundColor: COLORS[index % COLORS.length]
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
+            {analyticsData.geographicDistribution.length > 0 ? (
+              analyticsData.geographicDistribution.map((geo, index) => {
+                const maxRevenue = analyticsData.geographicDistribution[0]?.revenue || 1;
+                return (
+                  <div key={geo.state || index} className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="font-medium">{geo.state || "Unknown"}</span>
+                      <span className="text-muted-foreground">
+                        {(geo.orders || 0)} orders · ₹{(geo.revenue || 0).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="w-full bg-muted rounded-full h-2">
+                      <div
+                        className="h-2 rounded-full transition-all"
+                        style={{ 
+                          width: `${((geo.revenue || 0) / maxRevenue) * 100}%`,
+                          backgroundColor: COLORS[index % COLORS.length]
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">No geographic data available</p>
+            )}
           </div>
         </motion.div>
 
@@ -1440,32 +1465,36 @@ const Reports = () => {
             <h2 className="text-lg font-semibold">Top Products</h2>
           </div>
           <div className="space-y-3">
-            {analyticsData.topPerformers.products.map((product, index) => (
-              <div key={product.name} className="flex items-center justify-between p-3 rounded-lg bg-primary-50/50 dark:bg-primary-900/10 border border-primary-200/30">
-                <div className="flex items-center gap-3">
-                  <div 
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold"
-                    style={{ backgroundColor: COLORS[index] }}
-                  >
-                    {index + 1}
-                  </div>
+            {analyticsData.topPerformers.products.length > 0 ? (
+              analyticsData.topPerformers.products.map((product, index) => (
+                <div key={product.name || index} className="flex items-center justify-between p-3 rounded-lg bg-primary-50/50 dark:bg-primary-900/10 border border-primary-200/30">
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold"
+                      style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                    >
+                      {index + 1}
+                    </div>
                     <div>
-                    <p className="text-sm font-medium line-clamp-1">{product.name}</p>
-                    <p className="text-xs text-muted-foreground">₹{product.revenue.toLocaleString()}</p>
+                      <p className="text-sm font-medium line-clamp-1">{product.name || "Unknown Product"}</p>
+                      <p className="text-xs text-muted-foreground">₹{(product.revenue || 0).toLocaleString()}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {product.growth > 0 ? (
+                      <ArrowUpRight className="w-3 h-3 text-primary" />
+                    ) : (
+                      <ArrowDownRight className="w-3 h-3 text-destructive" />
+                    )}
+                    <span className={`text-xs font-semibold ${product.growth > 0 ? "text-primary" : "text-destructive"}`}>
+                      {Math.abs(product.growth || 0).toFixed(1)}%
+                    </span>
                   </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  {product.growth > 0 ? (
-                    <ArrowUpRight className="w-3 h-3 text-primary" />
-                  ) : (
-                    <ArrowDownRight className="w-3 h-3 text-destructive" />
-                  )}
-                  <span className={`text-xs font-semibold ${product.growth > 0 ? "text-primary" : "text-destructive"}`}>
-                    {Math.abs(product.growth).toFixed(1)}%
-                  </span>
-                </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">No product data available</p>
+            )}
           </div>
         </motion.div>
 
@@ -1480,20 +1509,24 @@ const Reports = () => {
             <h2 className="text-lg font-semibold">Top Customers</h2>
           </div>
           <div className="space-y-3">
-            {analyticsData.topPerformers.customers.map((customer, index) => (
-              <div key={customer.name} className="flex items-center justify-between p-3 rounded-lg bg-blue-50/50 dark:bg-blue-900/10 border border-blue-200/30">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white text-sm font-bold">
-                    {customer.name.charAt(0)}
+            {analyticsData.topPerformers.customers.length > 0 ? (
+              analyticsData.topPerformers.customers.map((customer, index) => (
+                <div key={customer.name || index} className="flex items-center justify-between p-3 rounded-lg bg-blue-50/50 dark:bg-blue-900/10 border border-blue-200/30">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white text-sm font-bold">
+                      {(customer.name || "G").charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{customer.name || "Guest"}</p>
+                      <p className="text-xs text-muted-foreground">{(customer.orders || 0)} orders · CLV: ₹{(customer.clv || 0).toLocaleString()}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium">{customer.name}</p>
-                    <p className="text-xs text-muted-foreground">{customer.orders} orders · CLV: ₹{customer.clv.toLocaleString()}</p>
-                  </div>
+                  <p className="text-sm font-bold">₹{(customer.revenue || 0).toLocaleString()}</p>
                 </div>
-                <p className="text-sm font-bold">₹{customer.revenue.toLocaleString()}</p>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">No customer data available</p>
+            )}
           </div>
         </motion.div>
 
@@ -1508,33 +1541,40 @@ const Reports = () => {
             <h2 className="text-lg font-semibold">Top Categories</h2>
           </div>
           <div className="space-y-3">
-            {analyticsData.topPerformers.categories.map((category, index) => (
-              <div key={category.name} className="space-y-2">
-                <div className="flex justify-between">
-                  <p className="text-sm font-medium">{category.name}</p>
-                  <div className="flex items-center gap-1">
-                    {category.growth > 0 ? (
-                      <ArrowUpRight className="w-3 h-3 text-primary" />
-                    ) : (
-                      <ArrowDownRight className="w-3 h-3 text-destructive" />
-                    )}
-                    <span className={`text-xs ${category.growth > 0 ? "text-primary" : "text-destructive"}`}>
-                      {Math.abs(category.growth).toFixed(1)}%
-                    </span>
+            {analyticsData.topPerformers.categories.length > 0 ? (
+              analyticsData.topPerformers.categories.map((category, index) => {
+                const maxRevenue = analyticsData.topPerformers.categories[0]?.revenue || 1;
+                return (
+                  <div key={category.name || index} className="space-y-2">
+                    <div className="flex justify-between">
+                      <p className="text-sm font-medium">{category.name || "Uncategorized"}</p>
+                      <div className="flex items-center gap-1">
+                        {category.growth > 0 ? (
+                          <ArrowUpRight className="w-3 h-3 text-primary" />
+                        ) : (
+                          <ArrowDownRight className="w-3 h-3 text-destructive" />
+                        )}
+                        <span className={`text-xs ${category.growth > 0 ? "text-primary" : "text-destructive"}`}>
+                          {Math.abs(category.growth || 0).toFixed(1)}%
+                        </span>
+                      </div>
+                    </div>
+                    <div className="w-full bg-muted rounded-full h-2">
+                      <div
+                        className="h-2 rounded-full transition-all"
+                        style={{ 
+                          width: `${((category.revenue || 0) / maxRevenue) * 100}%`,
+                          backgroundColor: COLORS[index % COLORS.length]
+                        }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">₹{(category.revenue || 0).toLocaleString()}</p>
                   </div>
-                </div>
-                <div className="w-full bg-muted rounded-full h-2">
-                  <div
-                    className="h-2 rounded-full transition-all"
-                    style={{ 
-                      width: `${(category.revenue / analyticsData.topPerformers.categories[0].revenue) * 100}%`,
-                      backgroundColor: COLORS[index]
-                    }}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">₹{category.revenue.toLocaleString()}</p>
-              </div>
-            ))}
+                );
+              })
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">No category data available</p>
+            )}
           </div>
         </motion.div>
       </div>
@@ -1600,19 +1640,23 @@ const Reports = () => {
           <h2 className="text-lg font-semibold">Frequently Bought Together</h2>
         </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {analyticsData.basketAnalysis.slice(0, 6).map((basket, index) => (
-            <div key={index} className="p-4 rounded-lg border border-primary/20 bg-primary-50/30 dark:bg-primary-900/10">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-sm font-medium">{basket.product1}</span>
-                <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm font-medium">{basket.product2}</span>
+          {analyticsData.basketAnalysis.length > 0 ? (
+            analyticsData.basketAnalysis.slice(0, 6).map((basket, index) => (
+              <div key={index} className="p-4 rounded-lg border border-primary/20 bg-primary-50/30 dark:bg-primary-900/10">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm font-medium">{basket.product1 || "Unknown"}</span>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">{basket.product2 || "Unknown"}</span>
+                </div>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>{(basket.frequency || 0)} times</span>
+                  <span>₹{(basket.revenue || 0).toLocaleString()}</span>
+                </div>
               </div>
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{basket.frequency} times</span>
-                <span>₹{basket.revenue.toLocaleString()}</span>
-              </div>
-            </div>
-          ))}
+            ))
+          ) : (
+            <p className="text-sm text-muted-foreground col-span-full text-center py-4">No basket analysis data available</p>
+          )}
       </div>
       </motion.div>
     </AdminLayout>
