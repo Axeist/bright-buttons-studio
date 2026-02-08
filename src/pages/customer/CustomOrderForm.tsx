@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -46,19 +46,6 @@ const productTypes = [
   "Other",
 ];
 
-const fabrics = [
-  "Silk",
-  "Cotton",
-  "Linen",
-  "Grape",
-  "Georgette",
-  "Tussar",
-  "Chiffon",
-  "Khadi",
-  "Handloom",
-  "Other",
-];
-
 const occasions = [
   "Wedding",
   "Festival",
@@ -93,6 +80,15 @@ const CustomOrderForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [orderNumber, setOrderNumber] = useState("");
+  const [fabrics, setFabrics] = useState<string[]>([]);
+
+  useEffect(() => {
+    supabase
+      .from("fabric_options")
+      .select("name")
+      .order("display_order", { ascending: true })
+      .then(({ data }) => setFabrics((data || []).map((r) => r.name)));
+  }, []);
 
   // Form state
   const [productType, setProductType] = useState("");

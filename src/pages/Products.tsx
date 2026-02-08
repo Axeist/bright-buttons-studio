@@ -25,23 +25,6 @@ const categories = [
   'Kidswear'
 ];
 
-const techniques = [
-  'Eco printing',
-  'Tie & Dye',
-  'Shibori',
-  'Batik',
-  'Kalamkari'
-];
-
-const fabrics = [
-  'Silk',
-  'Cotton',
-  'Linen',
-  'Grape',
-  'Georgette',
-  'Tussar'
-];
-
 interface ProductPhoto {
   id: string;
   product_id: string;
@@ -101,6 +84,8 @@ const Products = () => {
   const [galleryLoading, setGalleryLoading] = useState(false);
   const [photoSelectionMode, setPhotoSelectionMode] = useState<"gallery" | "upload">("upload");
   const [isForEdit, setIsForEdit] = useState(false);
+  const [fabricOptions, setFabricOptions] = useState<{ id: string; name: string }[]>([]);
+  const [techniqueOptions, setTechniqueOptions] = useState<{ id: string; name: string }[]>([]);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -119,6 +104,18 @@ const Products = () => {
 
   useEffect(() => {
     fetchProducts();
+  }, []);
+
+  useEffect(() => {
+    const loadFabricAndTechniqueOptions = async () => {
+      const [fabRes, techRes] = await Promise.all([
+        supabase.from("fabric_options").select("id, name").order("display_order", { ascending: true }),
+        supabase.from("technique_options").select("id, name").order("display_order", { ascending: true }),
+      ]);
+      if (!fabRes.error) setFabricOptions(fabRes.data || []);
+      if (!techRes.error) setTechniqueOptions(techRes.data || []);
+    };
+    loadFabricAndTechniqueOptions();
   }, []);
 
   const fetchProducts = async () => {
@@ -1438,8 +1435,8 @@ const Products = () => {
                   className="w-full px-4 py-2 h-12 rounded-xl border border-primary-200/50 dark:border-primary-800/30 bg-background text-foreground focus:ring-2 focus:ring-primary"
                 >
                   <option value="">Select fabric</option>
-                  {fabrics.map((f) => (
-                    <option key={f} value={f}>{f}</option>
+                  {fabricOptions.map((f) => (
+                    <option key={f.id} value={f.name}>{f.name}</option>
                   ))}
                 </select>
               </div>
@@ -1451,8 +1448,8 @@ const Products = () => {
                   className="w-full px-4 py-2 h-12 rounded-xl border border-primary-200/50 dark:border-primary-800/30 bg-background text-foreground focus:ring-2 focus:ring-primary"
                 >
                   <option value="">Select technique</option>
-                  {techniques.map((t) => (
-                    <option key={t} value={t}>{t}</option>
+                  {techniqueOptions.map((t) => (
+                    <option key={t.id} value={t.name}>{t.name}</option>
                   ))}
                 </select>
               </div>
@@ -1777,8 +1774,8 @@ const Products = () => {
                   className="w-full px-4 py-2 h-12 rounded-xl border border-primary-200/50 dark:border-primary-800/30 bg-background text-foreground focus:ring-2 focus:ring-primary"
                 >
                   <option value="">Select fabric</option>
-                  {fabrics.map((f) => (
-                    <option key={f} value={f}>{f}</option>
+                  {fabricOptions.map((f) => (
+                    <option key={f.id} value={f.name}>{f.name}</option>
                   ))}
                 </select>
               </div>
@@ -1790,8 +1787,8 @@ const Products = () => {
                   className="w-full px-4 py-2 h-12 rounded-xl border border-primary-200/50 dark:border-primary-800/30 bg-background text-foreground focus:ring-2 focus:ring-primary"
                 >
                   <option value="">Select technique</option>
-                  {techniques.map((t) => (
-                    <option key={t} value={t}>{t}</option>
+                  {techniqueOptions.map((t) => (
+                    <option key={t.id} value={t.name}>{t.name}</option>
                   ))}
                 </select>
               </div>

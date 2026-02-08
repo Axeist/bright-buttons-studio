@@ -50,8 +50,6 @@ interface Product {
 }
 
 const categories = ['All', 'Kurthas & Co-ords', 'Sarees', 'Shawls', "Men's Shirts", 'T-Shirts', 'Kidswear'];
-const fabrics = ['All', 'Silk', 'Cotton', 'Linen', 'Grape', 'Georgette', 'Tussar'];
-const techniques = ['All', 'Eco printing', 'Tie & Dye', 'Shibori', 'Batik', 'Kalamkari'];
 
 const Shop = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -60,6 +58,8 @@ const Shop = () => {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedFabric, setSelectedFabric] = useState("All");
   const [selectedTechnique, setSelectedTechnique] = useState("All");
+  const [fabricOptions, setFabricOptions] = useState<string[]>([]);
+  const [techniqueOptions, setTechniqueOptions] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
   const [sortBy, setSortBy] = useState("newest");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -77,10 +77,25 @@ const Shop = () => {
   }, []);
 
   useEffect(() => {
+    const load = async () => {
+      const [fRes, tRes] = await Promise.all([
+        supabase.from("fabric_options").select("name").order("display_order", { ascending: true }),
+        supabase.from("technique_options").select("name").order("display_order", { ascending: true }),
+      ]);
+      if (!fRes.error) setFabricOptions((fRes.data || []).map((r) => r.name));
+      if (!tRes.error) setTechniqueOptions((tRes.data || []).map((r) => r.name));
+    };
+    load();
+  }, []);
+
+  useEffect(() => {
     if (user) {
       fetchWishlistIds();
     }
   }, [user]);
+
+  const fabrics = ['All', ...fabricOptions];
+  const techniques = ['All', ...techniqueOptions];
 
   const fetchProducts = async () => {
     setLoading(true);
