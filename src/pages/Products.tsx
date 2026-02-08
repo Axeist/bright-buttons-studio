@@ -491,13 +491,17 @@ const Products = () => {
           if (quantityChange !== 0) {
             await supabase.from("stock_movements").insert({
               product_id: editingProduct.id,
-              quantity_change,
+              quantity_change: quantityChange,
               movement_type: quantityChange > 0 ? "purchase" : "adjustment",
               reference_type: "adjustment",
               notes: "Stock update",
               created_by: user?.id || null,
             });
           }
+          await supabase
+            .from("inventory")
+            .update({ quantity: stockQty })
+            .eq("product_id", editingProduct.id);
         } else if (stockQty > 0) {
           await supabase.from("inventory").insert({
             product_id: editingProduct.id,
