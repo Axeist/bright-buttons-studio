@@ -298,7 +298,7 @@ const Shop = () => {
       count: products.filter(p => p.category === cat).length,
     }));
 
-  const fabricOptions = fabrics
+  const fabricFilterOptions = fabrics
     .filter(f => f !== "All")
     .map(f => ({
       id: f,
