@@ -85,7 +85,7 @@ const AboutFounder = () => {
                 <div className="aspect-square rounded-full bg-gradient-to-br from-primary-100 to-earth-100 p-4 shadow-2xl overflow-hidden">
                   <div className="w-full h-full rounded-full bg-gradient-to-br from-primary-50 to-blush-50 flex items-center justify-center border-4 border-white relative overflow-hidden">
                     <img 
-                      src="https://iili.io/fTMZhil.jpg"
+                      src="https://i.ibb.co/8Lj96Kct/Whats-App-Image-2026-02-06-at-9-00-58-PM.jpg"
                       alt="Subhiksha Subramanian - Founder of Bright Buttons"
                       className="w-full h-full object-cover rounded-full"
                       loading="lazy"
