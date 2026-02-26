@@ -32,14 +32,6 @@ export function validateCSVData(rows: any[]): CSVImportResult {
   const errors: CSVValidationError[] = [];
 
   const requiredFields = ['name', 'category', 'price'];
-  const validCategories = [
-    'Kurthas & Co-ords',
-    'Sarees',
-    'Shawls',
-    "Men's Shirts",
-    'T-Shirts',
-    'Kidswear'
-  ];
 
   rows.forEach((row, index) => {
     const rowNum = index + 2; // +2 because row 1 is header, and arrays are 0-indexed
@@ -54,15 +46,6 @@ export function validateCSVData(rows: any[]): CSVImportResult {
           message: `${field} is required`,
         });
       }
-    }
-
-    // Validate category
-    if (row.category && !validCategories.includes(row.category.trim())) {
-      rowErrors.push({
-        row: rowNum,
-        field: 'category',
-        message: `Invalid category. Must be one of: ${validCategories.join(', ')}`,
-      });
     }
 
     // Validate price

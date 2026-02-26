@@ -16,15 +16,6 @@ import { parseCSV, validateCSVData, generateSampleCSV, CSVProductRow, CSVValidat
 import { getProductImageUrl } from "@/lib/utils";
 import logoImage from "@/assets/logo.jpg";
 
-const categories = [
-  'Kurthas & Co-ords',
-  'Sarees',
-  'Shawls',
-  "Men's Shirts",
-  'T-Shirts',
-  'Kidswear'
-];
-
 interface ProductPhoto {
   id: string;
   product_id: string;
@@ -86,10 +77,11 @@ const Products = () => {
   const [isForEdit, setIsForEdit] = useState(false);
   const [fabricOptions, setFabricOptions] = useState<{ id: string; name: string }[]>([]);
   const [techniqueOptions, setTechniqueOptions] = useState<{ id: string; name: string }[]>([]);
+  const [categoryOptions, setCategoryOptions] = useState<{ id: string; name: string }[]>([]);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    category: categories[0],
+    category: "",
     fabric: "",
     technique: "",
     price: "",
@@ -107,15 +99,21 @@ const Products = () => {
   }, []);
 
   useEffect(() => {
-    const loadFabricAndTechniqueOptions = async () => {
-      const [fabRes, techRes] = await Promise.all([
+    const loadOptions = async () => {
+      const [fabRes, techRes, catRes] = await Promise.all([
         supabase.from("fabric_options").select("id, name").order("display_order", { ascending: true }),
         supabase.from("technique_options").select("id, name").order("display_order", { ascending: true }),
+        supabase.from("category_options").select("id, name").order("display_order", { ascending: true }),
       ]);
       if (!fabRes.error) setFabricOptions(fabRes.data || []);
       if (!techRes.error) setTechniqueOptions(techRes.data || []);
+      if (!catRes.error) {
+        const cats = catRes.data || [];
+        setCategoryOptions(cats);
+        setFormData((prev) => ({ ...prev, category: prev.category || (cats[0]?.name ?? "") }));
+      }
     };
-    loadFabricAndTechniqueOptions();
+    loadOptions();
   }, []);
 
   const fetchProducts = async () => {
@@ -817,7 +815,7 @@ const Products = () => {
     setFormData({
       name: "",
       description: "",
-      category: categories[0],
+      category: categoryOptions[0]?.name ?? "",
       fabric: "",
       technique: "",
       price: "",
@@ -1172,8 +1170,8 @@ const Products = () => {
           className="px-4 py-2 h-12 rounded-xl border border-primary-200/50 dark:border-primary-800/30 bg-background text-foreground focus:ring-2 focus:ring-primary transition-all"
         >
           <option value="All">All Categories</option>
-          {categories.map((cat) => (
-            <option key={cat} value={cat}>{cat}</option>
+          {categoryOptions.map((cat) => (
+            <option key={cat.id} value={cat.name}>{cat.name}</option>
           ))}
         </motion.select>
         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -1408,8 +1406,8 @@ const Products = () => {
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                   className="w-full px-4 py-2 h-12 rounded-xl border border-primary-200/50 dark:border-primary-800/30 bg-background text-foreground focus:ring-2 focus:ring-primary"
                 >
-                  {categories.map((cat) => (
-                    <option key={cat} value={cat}>{cat}</option>
+                  {categoryOptions.map((cat) => (
+                    <option key={cat.id} value={cat.name}>{cat.name}</option>
                   ))}
                 </select>
               </div>
@@ -1747,8 +1745,8 @@ const Products = () => {
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                   className="w-full px-4 py-2 h-12 rounded-xl border border-primary-200/50 dark:border-primary-800/30 bg-background text-foreground focus:ring-2 focus:ring-primary"
                 >
-                  {categories.map((cat) => (
-                    <option key={cat} value={cat}>{cat}</option>
+                  {categoryOptions.map((cat) => (
+                    <option key={cat.id} value={cat.name}>{cat.name}</option>
                   ))}
                 </select>
               </div>

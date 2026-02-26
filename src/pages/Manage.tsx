@@ -156,16 +156,19 @@ const Manage = () => {
   const [isSavingLoyaltyConfig, setIsSavingLoyaltyConfig] = useState(false);
   const [loyaltyConfigLoading, setLoyaltyConfigLoading] = useState(true);
 
-  // Fabric and Technique options (for product dropdowns)
+  // Fabric, Technique, and Category options (for product dropdowns)
   type FabricOptionRow = { id: string; name: string; display_order: number };
   type TechniqueOptionRow = { id: string; name: string; display_order: number };
+  type CategoryOptionRow = { id: string; name: string; display_order: number };
   const [fabricOptions, setFabricOptions] = useState<FabricOptionRow[]>([]);
   const [techniqueOptions, setTechniqueOptions] = useState<TechniqueOptionRow[]>([]);
+  const [categoryOptions, setCategoryOptions] = useState<CategoryOptionRow[]>([]);
   const [fabricTechniqueLoading, setFabricTechniqueLoading] = useState(true);
   const [isFabricTechniqueModalOpen, setIsFabricTechniqueModalOpen] = useState(false);
-  const [fabricTechniqueModalType, setFabricTechniqueModalType] = useState<"fabric" | "technique">("fabric");
+  const [fabricTechniqueModalType, setFabricTechniqueModalType] = useState<"fabric" | "technique" | "category">("fabric");
   const [editingFabricOption, setEditingFabricOption] = useState<FabricOptionRow | null>(null);
   const [editingTechniqueOption, setEditingTechniqueOption] = useState<TechniqueOptionRow | null>(null);
+  const [editingCategoryOption, setEditingCategoryOption] = useState<CategoryOptionRow | null>(null);
   const [fabricTechniqueName, setFabricTechniqueName] = useState("");
   const [isSavingFabricTechnique, setIsSavingFabricTechnique] = useState(false);
 
@@ -794,21 +797,40 @@ const Manage = () => {
     }
   };
 
+  const fetchCategoryOptions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("category_options")
+        .select("id, name, display_order")
+        .order("display_order", { ascending: true });
+      if (error) throw error;
+      setCategoryOptions(data || []);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to load category options",
+        variant: "destructive",
+      });
+    }
+  };
+
   const fetchFabricAndTechniqueOptions = async () => {
     setFabricTechniqueLoading(true);
-    await Promise.all([fetchFabricOptions(), fetchTechniqueOptions()]);
+    await Promise.all([fetchFabricOptions(), fetchTechniqueOptions(), fetchCategoryOptions()]);
     setFabricTechniqueLoading(false);
   };
 
-  const openFabricTechniqueModal = (type: "fabric" | "technique", item?: FabricOptionRow | TechniqueOptionRow) => {
+  const openFabricTechniqueModal = (type: "fabric" | "technique" | "category", item?: FabricOptionRow | TechniqueOptionRow | CategoryOptionRow) => {
     setFabricTechniqueModalType(type);
     if (item) {
       setEditingFabricOption(type === "fabric" ? (item as FabricOptionRow) : null);
       setEditingTechniqueOption(type === "technique" ? (item as TechniqueOptionRow) : null);
+      setEditingCategoryOption(type === "category" ? (item as CategoryOptionRow) : null);
       setFabricTechniqueName(item.name);
     } else {
       setEditingFabricOption(null);
       setEditingTechniqueOption(null);
+      setEditingCategoryOption(null);
       setFabricTechniqueName("");
     }
     setIsFabricTechniqueModalOpen(true);
@@ -818,6 +840,7 @@ const Manage = () => {
     setIsFabricTechniqueModalOpen(false);
     setEditingFabricOption(null);
     setEditingTechniqueOption(null);
+    setEditingCategoryOption(null);
     setFabricTechniqueName("");
   };
 
@@ -850,7 +873,7 @@ const Manage = () => {
           toast({ title: "Added", description: "Fabric added successfully" });
         }
         fetchFabricOptions();
-      } else {
+      } else if (fabricTechniqueModalType === "technique") {
         if (editingTechniqueOption) {
           const { error } = await supabase
             .from("technique_options")
@@ -867,6 +890,23 @@ const Manage = () => {
           toast({ title: "Added", description: "Technique added successfully" });
         }
         fetchTechniqueOptions();
+      } else if (fabricTechniqueModalType === "category") {
+        if (editingCategoryOption) {
+          const { error } = await supabase
+            .from("category_options")
+            .update({ name })
+            .eq("id", editingCategoryOption.id);
+          if (error) throw error;
+          toast({ title: "Updated", description: "Category updated successfully" });
+        } else {
+          const maxOrder = categoryOptions.length === 0 ? 0 : Math.max(...categoryOptions.map((c) => c.display_order));
+          const { error } = await supabase
+            .from("category_options")
+            .insert({ name, display_order: maxOrder + 1 });
+          if (error) throw error;
+          toast({ title: "Added", description: "Category added successfully" });
+        }
+        fetchCategoryOptions();
       }
       closeFabricTechniqueModal();
     } catch (error: any) {
@@ -899,6 +939,18 @@ const Manage = () => {
       if (error) throw error;
       toast({ title: "Removed", description: "Technique option removed" });
       await fetchTechniqueOptions();
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleDeleteCategoryOption = async (id: string) => {
+    if (!confirm("Remove this category? Products using it will keep the value but it will no longer appear in the dropdown for new products.")) return;
+    try {
+      const { error } = await supabase.from("category_options").delete().eq("id", id);
+      if (error) throw error;
+      toast({ title: "Removed", description: "Category option removed" });
+      await fetchCategoryOptions();
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     }
@@ -1868,7 +1920,7 @@ const Manage = () => {
         <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="min-w-0 flex-1 pr-4">
             <h2 className="text-lg font-semibold text-foreground break-words whitespace-normal">Fabric and Technique</h2>
-            <p className="text-sm text-muted-foreground">Manage fabric and technique options. These appear in the Add Product and Edit Product dropdowns.</p>
+            <p className="text-sm text-muted-foreground">Manage categories, fabric and technique options. These appear in the Add Product and Edit Product dropdowns.</p>
           </div>
         </CardHeader>
         <CardContent className="space-y-8">
@@ -1878,6 +1930,52 @@ const Manage = () => {
             </div>
           ) : (
             <>
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-base font-medium text-foreground">Categories</h3>
+                  <Button
+                    size="sm"
+                    className="rounded-xl"
+                    onClick={() => openFabricTechniqueModal("category")}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Category
+                  </Button>
+                </div>
+                {categoryOptions.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-4">No categories yet. Add one to show in the product Category dropdown.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {categoryOptions.map((c) => (
+                      <div
+                        key={c.id}
+                        className="flex items-center justify-between p-3 rounded-xl bg-accent/40 border border-border"
+                      >
+                        <span className="font-medium text-foreground">{c.name}</span>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="rounded-xl"
+                            onClick={() => openFabricTechniqueModal("category", c)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="rounded-xl text-destructive hover:text-destructive"
+                            onClick={() => handleDeleteCategoryOption(c.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-base font-medium text-foreground">Fabrics</h3>
@@ -1980,10 +2078,12 @@ const Manage = () => {
             <DialogTitle>
               {fabricTechniqueModalType === "fabric"
                 ? (editingFabricOption ? "Edit Fabric" : "Add Fabric")
-                : (editingTechniqueOption ? "Edit Technique" : "Add Technique")}
+                : fabricTechniqueModalType === "technique"
+                ? (editingTechniqueOption ? "Edit Technique" : "Add Technique")
+                : (editingCategoryOption ? "Edit Category" : "Add Category")}
             </DialogTitle>
             <DialogDescription>
-              This option will appear in the product {fabricTechniqueModalType === "fabric" ? "Fabric" : "Technique"} dropdown when adding or editing products.
+              This option will appear in the product {fabricTechniqueModalType === "fabric" ? "Fabric" : fabricTechniqueModalType === "technique" ? "Technique" : "Category"} dropdown when adding or editing products.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-2">
@@ -1992,14 +2092,14 @@ const Manage = () => {
               id="fabric-technique-name"
               value={fabricTechniqueName}
               onChange={(e) => setFabricTechniqueName(e.target.value)}
-              placeholder={fabricTechniqueModalType === "fabric" ? "e.g. Cotton, Silk" : "e.g. Tie & Dye, Shibori"}
+              placeholder={fabricTechniqueModalType === "fabric" ? "e.g. Cotton, Silk" : fabricTechniqueModalType === "technique" ? "e.g. Tie & Dye, Shibori" : "e.g. Kurthas & Co-ords, Sarees"}
               className="rounded-xl"
             />
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={closeFabricTechniqueModal} className="rounded-xl">Cancel</Button>
               <Button onClick={handleSaveFabricTechnique} disabled={isSavingFabricTechnique} className="rounded-xl">
                 {isSavingFabricTechnique && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                {editingFabricOption || editingTechniqueOption ? "Update" : "Add"}
+                {editingFabricOption || editingTechniqueOption || editingCategoryOption ? "Update" : "Add"}
               </Button>
             </div>
           </div>
