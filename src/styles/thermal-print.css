@@ -1,0 +1,50 @@
+/**
+ * Thermal sticker print styles
+ * Used when printing barcode labels to Zebra, TSC, TVS or USB thermal printers.
+ * Ensures exact label size, no margins, no scaling, no headers/footers.
+ */
+
+/* Page size and margins - applied per label size in print window */
+@page {
+  margin: 0;
+  /* size set dynamically via inline styles in print window (50mm 30mm, 60mm 40mm, 100mm 50mm) */
+}
+
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    overflow: hidden !important;
+    background: white !important;
+  }
+
+  /* Only the sticker area is visible when printing */
+  .sticker-print-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+  }
+
+  .sticker-print-area .sticker-barcode-image {
+    max-width: 100% !important;
+    height: auto !important;
+    object-fit: contain !important;
+  }
+}

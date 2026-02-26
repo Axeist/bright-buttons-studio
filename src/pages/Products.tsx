@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
@@ -59,6 +60,11 @@ const Products = () => {
   const [barcodeImageUrl, setBarcodeImageUrl] = useState<string | null>(null);
   const [currentBarcodeValue, setCurrentBarcodeValue] = useState<string>("");
   const [barcodeProductName, setBarcodeProductName] = useState<string>("");
+  const [barcodeSku, setBarcodeSku] = useState<string>("");
+  type StickerSize = "50x30" | "60x40" | "100x50";
+  const [stickerSize, setStickerSize] = useState<StickerSize>("50x30");
+  const [showProductNameOnLabel, setShowProductNameOnLabel] = useState(true);
+  const [showSkuOnLabel, setShowSkuOnLabel] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportProductId, setExportProductId] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -151,7 +157,7 @@ const Products = () => {
     }
   };
 
-  const handleViewBarcode = (barcodeValue: string, productName?: string) => {
+  const handleViewBarcode = (barcodeValue: string, productName?: string, sku?: string) => {
     if (!barcodeValue) {
       toast({
         title: "No Barcode",
@@ -164,98 +170,147 @@ const Products = () => {
     setBarcodeImageUrl(imageUrl);
     setCurrentBarcodeValue(barcodeValue);
     setBarcodeProductName(productName || "");
+    setBarcodeSku(sku || "");
     setIsBarcodeModalOpen(true);
   };
 
-  const printBarcodeLabel = (args: { barcodeImage: string; barcodeValue: string; productName?: string }) => {
+  const THERMAL_SIZES: Record<StickerSize, { w: string; h: string }> = {
+    "50x30": { w: "50mm", h: "30mm" },
+    "60x40": { w: "60mm", h: "40mm" },
+    "100x50": { w: "100mm", h: "50mm" },
+  };
+
+  const printBarcodeLabel = (args: {
+    barcodeImage: string;
+    barcodeValue: string;
+    productName?: string;
+    sku?: string;
+    size: StickerSize;
+    showProductName: boolean;
+    showSku: boolean;
+  }) => {
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
 
+    const { w, h } = THERMAL_SIZES[args.size];
     const safeName = (args.productName || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
     const safeValue = (args.barcodeValue || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+    const safeSku = (args.sku || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
         <head>
+          <meta charset="utf-8">
           <title>Barcode - ${safeValue}</title>
           <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            html, body {
+              margin: 0 !important;
+              padding: 0 !important;
+              width: 100%;
+              height: 100%;
+              overflow: hidden;
+              background: #fff;
+              font-family: Arial, sans-serif;
+            }
             @media print {
               @page {
-                /* Small label-ish default; browsers may clamp this, but it prints nicely on A4 too */
-                margin: 6mm;
-                size: auto;
-              }
-              body {
+                size: ${w} ${h};
                 margin: 0;
-                padding: 0;
+              }
+              html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
+                overflow: hidden !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+              }
+              .sticker-print-area {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
+                margin: 0 !important;
+                padding: 2mm !important;
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
+              }
+              .sticker-print-area .sticker-barcode-image {
+                max-width: 100% !important;
+                height: auto !important;
+                object-fit: contain !important;
               }
             }
-            body {
+            .sticker-print-area {
+              position: absolute;
+              left: 0; top: 0;
+              width: 100%;
+              height: 100%;
+              margin: 0;
+              padding: 2mm;
               display: flex;
               flex-direction: column;
               align-items: center;
               justify-content: center;
-              min-height: 100vh;
-              font-family: Arial, sans-serif;
-              padding: 20px;
-            }
-            .barcode-container {
               text-align: center;
-              padding: 20px;
-              border: 1px solid #ddd;
-              border-radius: 8px;
-              background: white;
-              width: 320px;
             }
-            .brand {
+            .sticker-print-area .brand {
               display: flex;
               align-items: center;
               justify-content: center;
-              gap: 10px;
-              margin-bottom: 12px;
+              gap: 4px;
+              margin-bottom: 2px;
             }
-            .brand img {
-              width: 34px;
-              height: 34px;
+            .sticker-print-area .brand img {
+              width: 20px;
+              height: 20px;
               object-fit: contain;
-              border-radius: 6px;
             }
-            .brand .brand-name {
-              font-size: 16px;
+            .sticker-print-area .brand-name {
+              font-size: 9px;
               font-weight: 700;
-              letter-spacing: 0.2px;
             }
-            .barcode-image {
+            .sticker-print-area .sticker-barcode-image {
               max-width: 100%;
               height: auto;
             }
-            .barcode-value {
-              margin-top: 10px;
-              font-size: 18px;
+            .sticker-print-area .sticker-value {
+              font-size: 8px;
               font-weight: bold;
+              margin-top: 1px;
             }
-            .product-name {
-              margin-top: 5px;
-              font-size: 15px;
-              font-weight: 600;
-              color: #111;
+            .sticker-print-area .sticker-name {
+              font-size: 7px;
+              margin-top: 1px;
+            }
+            .sticker-print-area .sticker-sku {
+              font-size: 6px;
+              color: #333;
+              margin-top: 0;
             }
           </style>
         </head>
         <body>
-          <div class="barcode-container">
+          <div class="sticker-print-area">
             <div class="brand">
               <img src="${logoImage}" alt="Bright Buttons" />
-              <div class="brand-name">Bright Buttons</div>
+              <span class="brand-name">Bright Buttons</span>
             </div>
-            <img src="${args.barcodeImage}" alt="Barcode ${safeValue}" class="barcode-image" />
-            <div class="barcode-value">${safeValue}</div>
-            ${safeName ? `<div class="product-name">${safeName}</div>` : ""}
+            <img src="${args.barcodeImage}" alt="Barcode ${safeValue}" class="sticker-barcode-image" />
+            <div class="sticker-value">${safeValue}</div>
+            ${args.showProductName && safeName ? `<div class="sticker-name">${safeName}</div>` : ""}
+            ${args.showSku && safeSku ? `<div class="sticker-sku">${safeSku}</div>` : ""}
           </div>
           <script>
             window.onload = function() {
               window.print();
+              window.onafterprint = function() { window.close(); };
             };
           </script>
         </body>
@@ -270,6 +325,10 @@ const Products = () => {
       barcodeImage: barcodeImageUrl,
       barcodeValue: currentBarcodeValue,
       productName: barcodeProductName,
+      sku: barcodeSku,
+      size: stickerSize,
+      showProductName: showProductNameOnLabel,
+      showSku: showSkuOnLabel,
     });
   };
 
@@ -281,10 +340,12 @@ const Products = () => {
       setBarcodeImageUrl(generateBarcodeImage(value));
       setCurrentBarcodeValue(value);
       setBarcodeProductName(first.name);
+      setBarcodeSku(first.sku || "");
     } else {
       setBarcodeImageUrl(null);
       setCurrentBarcodeValue("");
       setBarcodeProductName("");
+      setBarcodeSku("");
     }
     setIsExportModalOpen(true);
   };
@@ -1320,7 +1381,7 @@ const Products = () => {
                               whileTap={{ scale: 0.9 }}
                               onClick={() => {
                                 setEditingProduct(product);
-                                handleViewBarcode(product.barcode || generateBarcode(product.id), product.name);
+                                handleViewBarcode(product.barcode || generateBarcode(product.id), product.name, product.sku ?? undefined);
                               }}
                               className="p-2 text-muted-foreground hover:text-primary rounded-lg hover:bg-primary/10 transition-colors"
                               title="View/Print barcode"
@@ -1518,7 +1579,7 @@ const Products = () => {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => handleViewBarcode(formData.barcode, formData.name)}
+                      onClick={() => handleViewBarcode(formData.barcode, formData.name, formData.sku)}
                       className="rounded-xl h-12"
                       title="View/Print barcode"
                     >
@@ -1857,7 +1918,7 @@ const Products = () => {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => handleViewBarcode(formData.barcode, formData.name)}
+                      onClick={() => handleViewBarcode(formData.barcode, formData.name, formData.sku)}
                       className="rounded-xl h-12"
                       title="View/Print barcode"
                     >
@@ -2079,12 +2140,14 @@ const Products = () => {
                     setBarcodeImageUrl(null);
                     setCurrentBarcodeValue("");
                     setBarcodeProductName("");
+                    setBarcodeSku("");
                     return;
                   }
                   const value = p.barcode || generateBarcode(p.id);
                   setBarcodeImageUrl(generateBarcodeImage(value));
                   setCurrentBarcodeValue(value);
                   setBarcodeProductName(p.name);
+                  setBarcodeSku(p.sku || "");
                 }}
                 className="w-full px-4 py-2 h-12 rounded-xl border border-primary-200/50 dark:border-primary-800/30 bg-background text-foreground focus:ring-2 focus:ring-primary transition-all"
               >
@@ -2119,6 +2182,35 @@ const Products = () => {
                 </div>
               </div>
             )}
+
+            <div className="space-y-3 rounded-xl border border-border/50 p-3 bg-muted/30">
+              <Label className="text-xs font-medium text-muted-foreground">Thermal label size</Label>
+              <select
+                value={stickerSize}
+                onChange={(e) => setStickerSize(e.target.value as StickerSize)}
+                className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm"
+              >
+                <option value="50x30">50mm × 30mm</option>
+                <option value="60x40">60mm × 40mm</option>
+                <option value="100x50">100mm × 50mm</option>
+              </select>
+              <div className="flex flex-col gap-2 pt-1">
+                <label className="flex items-center gap-2 cursor-pointer text-sm">
+                  <Checkbox
+                    checked={showProductNameOnLabel}
+                    onCheckedChange={(v) => setShowProductNameOnLabel(!!v)}
+                  />
+                  Include product name
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer text-sm">
+                  <Checkbox
+                    checked={showSkuOnLabel}
+                    onCheckedChange={(v) => setShowSkuOnLabel(!!v)}
+                  />
+                  Include SKU
+                </label>
+              </div>
+            </div>
 
             <div className="flex gap-3">
               <Button
@@ -2174,6 +2266,35 @@ const Products = () => {
                 </div>
               </div>
             )}
+
+            <div className="space-y-3 rounded-xl border border-border/50 p-3 bg-muted/30">
+              <Label className="text-xs font-medium text-muted-foreground">Thermal label size</Label>
+              <select
+                value={stickerSize}
+                onChange={(e) => setStickerSize(e.target.value as StickerSize)}
+                className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm"
+              >
+                <option value="50x30">50mm × 30mm</option>
+                <option value="60x40">60mm × 40mm</option>
+                <option value="100x50">100mm × 50mm</option>
+              </select>
+              <div className="flex flex-col gap-2 pt-1">
+                <label className="flex items-center gap-2 cursor-pointer text-sm">
+                  <Checkbox
+                    checked={showProductNameOnLabel}
+                    onCheckedChange={(v) => setShowProductNameOnLabel(!!v)}
+                  />
+                  Include product name
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer text-sm">
+                  <Checkbox
+                    checked={showSkuOnLabel}
+                    onCheckedChange={(v) => setShowSkuOnLabel(!!v)}
+                  />
+                  Include SKU
+                </label>
+              </div>
+            </div>
             
             <div className="flex gap-3">
               <Button
