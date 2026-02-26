@@ -1488,46 +1488,44 @@ const POS = () => {
             </div>
           </div>
 
-          {/* Customer Selection */}
-          <div className="mb-4">
+          {/* Customer Selection - compact */}
+          <div className="mb-2">
             {customer ? (
-              <div className="p-3 rounded-xl border border-border/60 bg-muted/20">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <User className="w-5 h-5 text-primary" />
+              <div className="px-2.5 py-2 rounded-lg border border-border/60 bg-muted/20">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <User className="w-4 h-4 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-foreground truncate">{customer.name}</p>
-                    <p className="text-xs text-muted-foreground">{customer.phone}</p>
+                    <p className="text-xs font-semibold text-foreground truncate">{customer.name}</p>
+                    <p className="text-[11px] text-muted-foreground">{customer.phone}</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      onClick={async () => {
-                        setIsCustomerSelectModalOpen(true);
-                        await fetchAllCustomers();
-                      }}
-                      variant="outline"
-                      size="sm"
-                      className="rounded-lg"
-                    >
-                      Change
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      fancy={false}
-                      onClick={() => {
-                        setCustomer(null);
-                        setCustomerPhone("");
-                        setCustomerName("");
-                        setCustomerEmail("");
-                      }}
-                      className="rounded-lg text-muted-foreground hover:text-destructive"
-                      title="Clear customer"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
+                  <Button
+                    onClick={async () => {
+                      setIsCustomerSelectModalOpen(true);
+                      await fetchAllCustomers();
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className="rounded-lg h-7 text-xs"
+                  >
+                    Change
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    fancy={false}
+                    onClick={() => {
+                      setCustomer(null);
+                      setCustomerPhone("");
+                      setCustomerName("");
+                      setCustomerEmail("");
+                    }}
+                    className="rounded-lg h-7 w-7 text-muted-foreground hover:text-destructive"
+                    title="Clear customer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </Button>
                 </div>
               </div>
             ) : (
@@ -1537,16 +1535,17 @@ const POS = () => {
                   await fetchAllCustomers();
                 }}
                 variant="outline"
-                className="w-full h-11 rounded-xl border-2 border-dashed border-primary/30 hover:border-primary hover:bg-primary/5 transition-all duration-200 font-medium"
+                size="sm"
+                className="w-full h-8 rounded-lg border-dashed text-xs font-medium"
               >
-                <User className="w-4 h-4 mr-2" />
+                <User className="w-3.5 h-3.5 mr-1.5" />
                 Select Customer
               </Button>
             )}
           </div>
 
-          {/* Cart Items */}
-          <div className="flex-1 overflow-y-auto space-y-3 mb-4 min-h-0">
+          {/* Cart Items - min height for 3-5 visible products */}
+          <div className="flex-1 overflow-y-auto space-y-2 mb-3 min-h-[260px]">
             <AnimatePresence initial={false}>
               {cart.length === 0 ? (
                 <motion.div
@@ -1554,10 +1553,10 @@ const POS = () => {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="text-center py-8 text-muted-foreground"
+                  className="text-center py-4 text-muted-foreground"
                 >
-                  <p>No items in cart</p>
-                  <p className="text-sm">Click products or scan barcode to add</p>
+                  <p className="text-sm">No items in cart</p>
+                  <p className="text-xs">Click products or scan barcode to add</p>
                 </motion.div>
               ) : (
                 cart.map((item) => (
@@ -1568,7 +1567,7 @@ const POS = () => {
                     animate={{ opacity: 1, x: 0, scale: 1 }}
                     exit={{ opacity: 0, x: -10, scale: 0.98 }}
                     transition={{ type: "spring", stiffness: 500, damping: 35 }}
-                    className="flex items-center gap-3 p-3 bg-accent rounded-lg"
+                    className="flex items-center gap-2 py-2 px-2.5 bg-accent rounded-lg"
                   >
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-foreground truncate">{item.name}</p>
@@ -1609,183 +1608,126 @@ const POS = () => {
             </AnimatePresence>
           </div>
 
-          {/* Summary */}
-          <div className="border-t border-border pt-4 space-y-2">
-            <div className="flex justify-between text-sm">
+          {/* Summary - compact single block */}
+          <div className="border-t border-border pt-2 space-y-1.5">
+            <div className="flex justify-between text-xs">
               <span className="text-muted-foreground">Subtotal</span>
               <span className="text-foreground">₹{subtotal.toLocaleString()}</span>
             </div>
-            {/* Coupon Section */}
+            {/* Coupon - one compact row */}
             {!appliedCoupon ? (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <Input
                   value={couponCode}
                   onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                  placeholder="Enter coupon code"
-                  className="flex-1 h-8 text-sm rounded-lg"
+                  placeholder="Coupon"
+                  className="flex-1 h-7 text-xs rounded-md"
                   onKeyPress={(e) => e.key === "Enter" && applyCoupon()}
                 />
-                <Button
-                  size="sm"
-                  onClick={applyCoupon}
-                  className="h-8 rounded-lg"
-                  disabled={!couponCode.trim()}
-                >
+                <Button size="sm" onClick={applyCoupon} className="h-7 px-2 text-xs rounded-md" disabled={!couponCode.trim()}>
                   Apply
                 </Button>
               </div>
             ) : (
-              <div className="flex items-center justify-between p-2 bg-primary/10 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-primary">{appliedCoupon.code}</span>
-                  <span className="text-xs text-muted-foreground">
-                    ({appliedCoupon.discount_type === "percentage" ? `${appliedCoupon.discount_value}%` : `₹${appliedCoupon.discount_value}`})
-                  </span>
-                </div>
-                <button
-                  onClick={removeCoupon}
-                  className="text-xs text-destructive hover:underline"
-                >
-                  Remove
-                </button>
+              <div className="flex items-center justify-between py-1 px-2 bg-primary/10 rounded-md">
+                <span className="text-xs font-medium text-primary">{appliedCoupon.code}</span>
+                <button onClick={removeCoupon} className="text-[11px] text-destructive hover:underline">Remove</button>
               </div>
             )}
-            
-            {/* Manual Discount */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Discount</span>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => setDiscountType("percentage")}
-                    className={`px-2 py-1 text-xs rounded ${
-                      discountType === "percentage"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    %
-                  </button>
-                  <button
-                    onClick={() => setDiscountType("rupees")}
-                    className={`px-2 py-1 text-xs rounded ${
-                      discountType === "rupees"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    ₹
-                  </button>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  value={discountValue}
-                  onChange={(e) => setDiscountValue(Number(e.target.value))}
-                  className="w-20 h-8 text-sm rounded-lg"
-                  min="0"
-                  max={discountType === "percentage" ? "100" : undefined}
-                  disabled={!!appliedCoupon}
-                />
-                <span className="text-sm text-foreground ml-auto">-₹{discountAmount.toLocaleString()}</span>
-              </div>
+            {/* Discount inline */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-muted-foreground">Discount</span>
+              <button
+                onClick={() => setDiscountType("percentage")}
+                className={`px-1.5 py-0.5 text-[11px] rounded ${
+                  discountType === "percentage" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                }`}
+              >
+                %
+              </button>
+              <button
+                onClick={() => setDiscountType("rupees")}
+                className={`px-1.5 py-0.5 text-[11px] rounded ${
+                  discountType === "rupees" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                }`}
+              >
+                ₹
+              </button>
+              <Input
+                type="number"
+                value={discountValue}
+                onChange={(e) => setDiscountValue(Number(e.target.value))}
+                className="w-14 h-6 text-xs rounded-md"
+                min="0"
+                max={discountType === "percentage" ? "100" : undefined}
+                disabled={!!appliedCoupon}
+              />
+              <span className="text-xs text-foreground">-₹{discountAmount.toLocaleString()}</span>
             </div>
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between text-xs">
               <span className="text-muted-foreground">Tax (18%)</span>
               <span className="text-foreground">₹{tax.toLocaleString()}</span>
             </div>
-            <div className="flex justify-between text-lg font-bold pt-2 border-t border-border">
+            <div className="flex justify-between text-sm font-bold pt-1 border-t border-border/60">
               <span>Total</span>
               <span className="text-primary">₹{total.toLocaleString()}</span>
             </div>
           </div>
 
-          {/* Payment Methods */}
-          <div className="mt-4 space-y-3">
-            <p className="text-sm font-medium text-foreground">Payment Method</p>
-            <div className="grid grid-cols-4 gap-2">
+          {/* Payment Methods - compact row, text only */}
+          <div className="mt-2 space-y-2">
+            <div className="flex items-center gap-1">
+              <span className="text-xs font-medium text-foreground">Payment</span>
               <button
                 onClick={() => setSelectedPaymentMethod("cash")}
                 disabled={cart.length === 0}
-                className={`flex flex-col items-center gap-1 p-3 rounded-lg transition-colors disabled:opacity-50 ${
-                  selectedPaymentMethod === "cash"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-accent hover:bg-primary hover:text-primary-foreground"
+                className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-colors disabled:opacity-50 ${
+                  selectedPaymentMethod === "cash" ? "bg-primary text-primary-foreground" : "bg-accent hover:bg-primary hover:text-primary-foreground"
                 }`}
               >
-                <Banknote className="w-5 h-5" />
-                <span className="text-xs">Cash</span>
+                Cash
               </button>
               <button
                 onClick={() => setSelectedPaymentMethod("upi")}
                 disabled={cart.length === 0}
-                className={`flex flex-col items-center gap-1 p-3 rounded-lg transition-colors disabled:opacity-50 ${
-                  selectedPaymentMethod === "upi"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-accent hover:bg-primary hover:text-primary-foreground"
+                className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-colors disabled:opacity-50 ${
+                  selectedPaymentMethod === "upi" ? "bg-primary text-primary-foreground" : "bg-accent hover:bg-primary hover:text-primary-foreground"
                 }`}
               >
-                <Smartphone className="w-5 h-5" />
-                <span className="text-xs">UPI</span>
+                UPI
               </button>
               <button
                 onClick={() => setSelectedPaymentMethod("card")}
                 disabled={cart.length === 0}
-                className={`flex flex-col items-center gap-1 p-3 rounded-lg transition-colors disabled:opacity-50 ${
-                  selectedPaymentMethod === "card"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-accent hover:bg-primary hover:text-primary-foreground"
+                className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-colors disabled:opacity-50 ${
+                  selectedPaymentMethod === "card" ? "bg-primary text-primary-foreground" : "bg-accent hover:bg-primary hover:text-primary-foreground"
                 }`}
               >
-                <CreditCard className="w-5 h-5" />
-                <span className="text-xs">Card</span>
+                Card
               </button>
               <button
-                onClick={() => {
-                  setSelectedPaymentMethod("split");
-                  setIsSplitModalOpen(true);
-                }}
+                onClick={() => { setSelectedPaymentMethod("split"); setIsSplitModalOpen(true); }}
                 disabled={cart.length === 0}
-                className={`flex flex-col items-center gap-1 p-3 rounded-lg transition-colors disabled:opacity-50 ${
-                  selectedPaymentMethod === "split"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-accent hover:bg-primary hover:text-primary-foreground"
+                className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-colors disabled:opacity-50 ${
+                  selectedPaymentMethod === "split" ? "bg-primary text-primary-foreground" : "bg-accent hover:bg-primary hover:text-primary-foreground"
                 }`}
               >
-                <Shuffle className="w-5 h-5" />
-                <span className="text-xs">Split</span>
+                Split
               </button>
             </div>
-
             <Button
               onClick={() => {
                 if (!selectedPaymentMethod) {
-                  toast({
-                    title: "Select Payment Method",
-                    description: "Please select a payment method",
-                    variant: "destructive",
-                  });
+                  toast({ title: "Select Payment Method", description: "Please select a payment method", variant: "destructive" });
                   return;
                 }
-                if (selectedPaymentMethod === "split") {
-                  setIsSplitModalOpen(true);
-                } else {
-                  completeSale(selectedPaymentMethod);
-                }
+                if (selectedPaymentMethod === "split") setIsSplitModalOpen(true);
+                else completeSale(selectedPaymentMethod);
               }}
               disabled={cart.length === 0 || isProcessing || !selectedPaymentMethod}
-              className="w-full rounded-full"
-              size="lg"
+              className="w-full rounded-lg h-9 text-sm"
             >
-              {isProcessing ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                "Complete Sale"
-              )}
+              {isProcessing ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Processing...</> : "Complete Sale"}
             </Button>
           </div>
         </div>
