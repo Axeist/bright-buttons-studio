@@ -119,6 +119,11 @@ const POS = () => {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [invoiceOrderForPrint, setInvoiceOrderForPrint] = useState<any>(null);
 
+  // USB/Bluetooth barcode scanner: buffer rapid keystrokes and treat Enter as barcode
+  const barcodeBufferRef = useRef("");
+  const lastKeyTimeRef = useRef(0);
+  const handleBarcodeScanRef = useRef<(barcode: string, closeScanner?: boolean) => Promise<boolean>>(() => Promise.resolve(false));
+
   useEffect(() => {
     fetchProducts();
   }, []);
@@ -213,6 +218,49 @@ const POS = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [cart, selectedPaymentMethod]);
+
+  // USB/Bluetooth barcode scanner: listen for rapid keydown burst + Enter (scanner-like input)
+  useEffect(() => {
+    const SCANNER_KEY_INTERVAL_MS = 50; // Max ms between keystrokes to consider "scanner"
+    const MIN_BARCODE_LENGTH = 3;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const tag = target.tagName;
+      const isInput = tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable;
+      if (isInput) return; // Don't capture when user is typing in a field
+
+      if (e.key === "Enter") {
+        const barcode = barcodeBufferRef.current.trim();
+        if (barcode.length >= MIN_BARCODE_LENGTH) {
+          e.preventDefault();
+          e.stopPropagation();
+          handleBarcodeScanRef.current(barcode, true).then((added) => {
+            if (added) toast({ title: "Scanned", description: `Scanned: ${barcode}` });
+          });
+          barcodeBufferRef.current = "";
+          lastKeyTimeRef.current = 0;
+        } else {
+          barcodeBufferRef.current = "";
+          lastKeyTimeRef.current = 0;
+        }
+        return;
+      }
+
+      // Single character (scanner sends one char per key)
+      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const now = Date.now();
+        if (now - lastKeyTimeRef.current > SCANNER_KEY_INTERVAL_MS) {
+          barcodeBufferRef.current = "";
+        }
+        barcodeBufferRef.current += e.key;
+        lastKeyTimeRef.current = now;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
+  }, []);
 
   // Auto-suggest customer based on phone number
   useEffect(() => {
@@ -551,23 +599,26 @@ const POS = () => {
     }
   };
 
-  const handleBarcodeScan = async (barcode: string, closeScanner = true) => {
+  const handleBarcodeScan = async (barcode: string, closeScanner = true): Promise<boolean> => {
     if (closeScanner) {
       setIsScannerOpen(false);
     }
     const ok = await ensureCustomerSelected();
-    if (!ok) return;
+    if (!ok) return false;
     const product = products.find((p) => p.barcode === barcode);
     if (product) {
       addToCart(product);
+      return true;
     } else {
       toast({
         title: "Product not found",
         description: `No product found with barcode: ${barcode}`,
         variant: "destructive",
       });
+      return false;
     }
   };
+  handleBarcodeScanRef.current = handleBarcodeScan;
 
   const addToCart = (product: Product) => {
     if (!customer) {
