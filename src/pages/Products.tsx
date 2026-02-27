@@ -2641,12 +2641,12 @@ const Products = () => {
                 </div>
               </div>
 
-              {detailsProduct.description && (
-                <div className="rounded-xl bg-muted/40 p-3">
-                  <p className="text-xs font-semibold text-muted-foreground mb-1">Description</p>
-                  <p className="text-sm text-foreground whitespace-pre-line">{detailsProduct.description}</p>
-                </div>
-              )}
+              <div className="rounded-xl bg-muted/40 p-3">
+                <p className="text-xs font-semibold text-muted-foreground mb-1">Description</p>
+                <p className="text-sm text-foreground whitespace-pre-line">
+                  {detailsProduct.description?.trim() || "—"}
+                </p>
+              </div>
 
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="space-y-1">
