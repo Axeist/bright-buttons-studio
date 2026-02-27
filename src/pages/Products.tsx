@@ -1557,15 +1557,6 @@ const Products = () => {
                   ))}
                 </select>
               </div>
-              <div>
-                <Label>Tagline</Label>
-                <Input
-                  value={formData.tagline}
-                  onChange={(e) => setFormData({ ...formData, tagline: e.target.value })}
-                  placeholder="Short tagline"
-                  className="rounded-xl h-12"
-                />
-              </div>
             </div>
 
             {/* Pricing & stock — clear section */}
@@ -1666,7 +1657,7 @@ const Products = () => {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => handleViewBarcode(formData.barcode, formData.name, formData.sku)}
+                      onClick={() => handleViewBarcode(formData.barcode, formData.name, "")}
                       className="rounded-xl h-12 shrink-0"
                       title="View/Print barcode"
                     >
@@ -1675,15 +1666,6 @@ const Products = () => {
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">Leave empty to auto-generate</p>
-              </div>
-              <div>
-                <Label>SKU</Label>
-                <Input
-                  value={formData.sku}
-                  onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                  placeholder="Stock keeping unit"
-                  className="rounded-xl h-12 w-full"
-                />
               </div>
               <div>
                 <Label>Low Stock Threshold</Label>
@@ -1936,15 +1918,6 @@ const Products = () => {
                   ))}
                 </select>
               </div>
-              <div>
-                <Label>Tagline</Label>
-                <Input
-                  value={formData.tagline}
-                  onChange={(e) => setFormData({ ...formData, tagline: e.target.value })}
-                  placeholder="Short tagline"
-                  className="rounded-xl h-12"
-                />
-              </div>
             </div>
 
             {/* Pricing & stock — clear section */}
@@ -2045,7 +2018,7 @@ const Products = () => {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => handleViewBarcode(formData.barcode, formData.name, formData.sku)}
+                      onClick={() => handleViewBarcode(formData.barcode, formData.name, "")}
                       className="rounded-xl h-12 shrink-0"
                       title="View/Print barcode"
                     >
@@ -2054,15 +2027,6 @@ const Products = () => {
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">Leave empty to auto-generate</p>
-              </div>
-              <div>
-                <Label>SKU</Label>
-                <Input
-                  value={formData.sku}
-                  onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                  placeholder="Stock keeping unit"
-                  className="rounded-xl h-12 w-full"
-                />
               </div>
               <div>
                 <Label>Low Stock Threshold</Label>
@@ -2540,10 +2504,8 @@ const Products = () => {
                 <li><strong>description</strong> - Product description (optional)</li>
                 <li><strong>fabric</strong> - Fabric type (optional)</li>
                 <li><strong>technique</strong> - Printing technique (optional)</li>
-                <li><strong>tagline</strong> - Product tagline (optional)</li>
                 <li><strong>cost_price</strong> - Cost price in ₹ (optional)</li>
                 <li><strong>stock</strong> - Initial stock quantity (optional)</li>
-                <li><strong>sku</strong> - Stock keeping unit (optional)</li>
                 <li><strong>low_stock_threshold</strong> - Low stock alert threshold (optional, default: 5)</li>
                 <li><strong>image_url</strong> - Product image URL (optional)</li>
               </ul>
@@ -2709,8 +2671,8 @@ const Products = () => {
                 </div>
                 <div className="flex-1 space-y-1">
                   <p className="font-semibold text-lg text-foreground">{detailsProduct.name}</p>
-                  {detailsProduct.tagline && (
-                    <p className="text-sm text-muted-foreground">{detailsProduct.tagline}</p>
+                  {detailsProduct.description?.trim() && (
+                    <p className="text-sm text-muted-foreground line-clamp-2">{detailsProduct.description.trim()}</p>
                   )}
                   <div className="flex flex-wrap items-center gap-2 mt-1">
                     <span className="px-3 py-1 bg-gradient-to-r from-primary/10 to-primary/5 dark:from-primary-900/30 dark:to-primary-900/20 rounded-full text-xs font-semibold text-primary border border-primary/20 dark:border-primary-800/40">
@@ -2773,12 +2735,6 @@ const Products = () => {
                   </p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs font-semibold text-muted-foreground">Tagline</p>
-                  <p className="font-medium text-foreground">
-                    {detailsProduct.tagline || "—"}
-                  </p>
-                </div>
-                <div className="space-y-1">
                   <p className="text-xs font-semibold text-muted-foreground">Stock</p>
                   <p className="font-medium text-foreground">
                     {detailsProduct.inventory?.quantity ?? 0}
@@ -2794,12 +2750,6 @@ const Products = () => {
                   <p className="text-xs font-semibold text-muted-foreground">Barcode</p>
                   <p className="font-mono text-xs text-foreground break-all">
                     {detailsProduct.barcode || "—"}
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold text-muted-foreground">SKU</p>
-                  <p className="font-mono text-xs text-foreground break-all">
-                    {detailsProduct.sku || "—"}
                   </p>
                 </div>
                 <div className="space-y-1">

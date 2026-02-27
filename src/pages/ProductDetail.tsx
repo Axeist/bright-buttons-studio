@@ -470,7 +470,7 @@ const ProductDetail = () => {
               productName={product.name}
               productUrl={window.location.href}
               productImage={productImages[0]}
-              description={product.tagline || product.description || undefined}
+              description={product.description || product.tagline || undefined}
               trigger={
                 <Button
                   variant="outline"
@@ -509,7 +509,7 @@ const ProductDetail = () => {
                     </p>
                   ) : (
                     <p className="text-muted-foreground">
-                      {product.tagline || "A beautiful handcrafted piece made with care and attention to detail."}
+                      A beautiful handcrafted piece made with care and attention to detail.
                     </p>
                   )}
                 </div>
