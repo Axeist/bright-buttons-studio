@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AdminLayout } from "@/layouts/AdminLayout";
-import { ClipboardList, Sparkles, Loader2, ChevronDown, Search, Printer, Filter, X } from "lucide-react";
+import { ClipboardList, Sparkles, Loader2, ChevronDown, Search, Printer, Filter, X, Trash2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -18,10 +18,15 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Invoice } from "@/components/ecommerce/Invoice";
 
 const orderStatuses = ['all', 'pending', 'confirmed', 'processing', 'ready', 'delivered', 'cancelled'] as const;
+
+const DELETE_PIN = "0303";
 
 type OrderStatus = 'pending' | 'confirmed' | 'processing' | 'ready' | 'delivered' | 'cancelled';
 type PaymentStatus = 'pending' | 'paid' | 'partial' | 'refunded';
@@ -51,6 +56,13 @@ const Orders = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [showInvoice, setShowInvoice] = useState(false);
   const [selectedOrderForInvoice, setSelectedOrderForInvoice] = useState<Order | null>(null);
+
+  // Bulk delete & PIN
+  const [selectedOrderIds, setSelectedOrderIds] = useState<Set<string>>(new Set());
+  const [showDeletePinModal, setShowDeletePinModal] = useState(false);
+  const [deletePinInput, setDeletePinInput] = useState("");
+  const [ordersToDelete, setOrdersToDelete] = useState<string[]>([]);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // Advanced filters
   const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>("all");
@@ -125,6 +137,71 @@ const Orders = () => {
         description: error.message || "Failed to update order status",
         variant: "destructive",
       });
+    }
+  };
+
+  const toggleSelectOrder = (id: string) => {
+    setSelectedOrderIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedOrderIds.size === orders.length) {
+      setSelectedOrderIds(new Set());
+    } else {
+      setSelectedOrderIds(new Set(orders.map((o) => o.id)));
+    }
+  };
+
+  const openDeleteModal = (orderIds: string[]) => {
+    setOrdersToDelete(orderIds);
+    setDeletePinInput("");
+    setShowDeletePinModal(true);
+  };
+
+  const closeDeletePinModal = () => {
+    setShowDeletePinModal(false);
+    setOrdersToDelete([]);
+    setDeletePinInput("");
+    setSelectedOrderIds(new Set());
+  };
+
+  const handleConfirmDelete = async () => {
+    if (deletePinInput !== DELETE_PIN) {
+      toast({
+        title: "Invalid PIN",
+        description: "The PIN you entered is incorrect.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (ordersToDelete.length === 0) return;
+    setIsDeleting(true);
+    try {
+      for (const orderId of ordersToDelete) {
+        await supabase.from("order_items").delete().eq("order_id", orderId);
+      }
+      const { error } = await supabase.from("orders").delete().in("id", ordersToDelete);
+      if (error) throw error;
+      toast({
+        title: "Deleted",
+        description: ordersToDelete.length === 1 ? "Order deleted." : `${ordersToDelete.length} orders deleted.`,
+      });
+      closeDeletePinModal();
+      fetchOrders();
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      toast({
+        title: "Error",
+        description: err.message || "Failed to delete order(s)",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -294,6 +371,16 @@ const Orders = () => {
               </span>
             )}
           </Button>
+          {selectedOrderIds.size > 0 && (
+            <Button
+              variant="destructive"
+              onClick={() => openDeleteModal(Array.from(selectedOrderIds))}
+              className="rounded-xl"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete selected ({selectedOrderIds.size})
+            </Button>
+          )}
           {hasActiveFilters && (
             <Button
               variant="ghost"
@@ -425,6 +512,13 @@ const Orders = () => {
           <table className="w-full">
             <thead>
               <tr className="border-b border-primary-200/50 dark:border-primary-800/30 bg-gradient-to-r from-primary-50/50 via-transparent to-earth-50/50 dark:from-primary-900/20 dark:to-transparent">
+                <th className="text-left text-sm font-semibold text-foreground p-4 w-10">
+                  <Checkbox
+                    checked={orders.length > 0 && selectedOrderIds.size === orders.length}
+                    onCheckedChange={toggleSelectAll}
+                    aria-label="Select all"
+                  />
+                </th>
                 <th className="text-left text-sm font-semibold text-foreground p-4">Order ID</th>
                 <th className="text-left text-sm font-semibold text-foreground p-4">Customer</th>
                 <th className="text-left text-sm font-semibold text-foreground p-4 hidden md:table-cell">Date & Time</th>
@@ -438,7 +532,14 @@ const Orders = () => {
             </thead>
             <tbody>
               <AnimatePresence>
-                {orders.map((order, index) => (
+                {orders.length === 0 ? (
+                      <tr>
+                        <td colSpan={9} className="py-8 text-center text-muted-foreground">
+                          No orders in this list.
+                        </td>
+                      </tr>
+                    ) : (
+                      orders.map((order, index) => (
                   <motion.tr
                     key={order.id}
                     initial={{ opacity: 0, x: -20 }}
@@ -448,6 +549,13 @@ const Orders = () => {
                     whileHover={{ x: 4, backgroundColor: "rgba(var(--primary), 0.05)" }}
                     className="border-b border-primary-200/30 dark:border-primary-800/20 transition-colors"
                   >
+                    <td className="p-4">
+                      <Checkbox
+                        checked={selectedOrderIds.has(order.id)}
+                        onCheckedChange={() => toggleSelectOrder(order.id)}
+                        aria-label={`Select order ${order.order_number}`}
+                      />
+                    </td>
                     <td className="p-4">
                       <span className="font-semibold text-foreground">{order.order_number}</span>
                     </td>
@@ -516,10 +624,20 @@ const Orders = () => {
                           <Printer className="w-4 h-4 mr-1" />
                           Invoice
                         </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openDeleteModal([order.id])}
+                          className="rounded-lg text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="w-4 h-4 mr-1" />
+                          Delete
+                        </Button>
                       </div>
                     </td>
                   </motion.tr>
-                ))}
+                      ))
+                    )}
               </AnimatePresence>
             </tbody>
           </table>
@@ -544,6 +662,50 @@ const Orders = () => {
             {selectedOrderForInvoice && (
               <Invoice order={selectedOrderForInvoice} onClose={() => setShowInvoice(false)} />
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete PIN verification */}
+      <Dialog open={showDeletePinModal} onOpenChange={(open) => !open && closeDeletePinModal()}>
+        <DialogContent className="sm:max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Enter PIN to delete</DialogTitle>
+            <DialogDescription>
+              {ordersToDelete.length === 1
+                ? "This order will be permanently deleted. Enter your PIN to confirm."
+                : `${ordersToDelete.length} orders will be permanently deleted. Enter your PIN to confirm.`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label htmlFor="delete-pin">PIN</Label>
+              <Input
+                id="delete-pin"
+                type="password"
+                inputMode="numeric"
+                maxLength={4}
+                placeholder="Enter PIN"
+                value={deletePinInput}
+                onChange={(e) => setDeletePinInput(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                className="rounded-xl font-mono text-lg tracking-widest"
+                autoFocus
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={closeDeletePinModal} className="rounded-xl">
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleConfirmDelete}
+                disabled={isDeleting || deletePinInput.length < 4}
+                className="rounded-xl"
+              >
+                {isDeleting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {isDeleting ? "Deleting…" : "Delete"}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
