@@ -1495,14 +1495,16 @@ const Products = () => {
           </DialogHeader>
           
           <div className="space-y-4 mt-4">
-            <div className="grid grid-cols-2 gap-4">
+            {/* 1. Basic information */}
+            <div className="space-y-4 rounded-xl border border-border/50 bg-muted/20 dark:bg-muted/10 p-4">
+              <p className="text-sm font-semibold text-foreground">Basic information</p>
               <div>
                 <Label>Product Name *</Label>
                 <Input
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Enter product name"
-                  className="rounded-xl h-12"
+                  className="rounded-xl h-12 mt-1"
                 />
               </div>
               <div>
@@ -1510,62 +1512,65 @@ const Products = () => {
                 <select
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-4 py-2 h-12 rounded-xl border border-primary-200/50 dark:border-primary-800/30 bg-background text-foreground focus:ring-2 focus:ring-primary"
+                  className="w-full px-4 py-2 h-12 rounded-xl border border-primary-200/50 dark:border-primary-800/30 bg-background text-foreground focus:ring-2 focus:ring-primary mt-1"
                 >
                   {categoryOptions.map((cat) => (
                     <option key={cat.id} value={cat.name}>{cat.name}</option>
                   ))}
                 </select>
               </div>
-            </div>
-
-            <div>
-              <Label>Description</Label>
-              <Textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Product description"
-                className="rounded-xl"
-                rows={3}
-              />
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
               <div>
-                <Label>Fabric</Label>
-                <select
-                  value={formData.fabric}
-                  onChange={(e) => setFormData({ ...formData, fabric: e.target.value })}
-                  className="w-full px-4 py-2 h-12 rounded-xl border border-primary-200/50 dark:border-primary-800/30 bg-background text-foreground focus:ring-2 focus:ring-primary"
-                >
-                  <option value="">Select fabric</option>
-                  {fabricOptions.map((f) => (
-                    <option key={f.id} value={f.name}>{f.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <Label>Technique</Label>
-                <select
-                  value={formData.technique}
-                  onChange={(e) => setFormData({ ...formData, technique: e.target.value })}
-                  className="w-full px-4 py-2 h-12 rounded-xl border border-primary-200/50 dark:border-primary-800/30 bg-background text-foreground focus:ring-2 focus:ring-primary"
-                >
-                  <option value="">Select technique</option>
-                  {techniqueOptions.map((t) => (
-                    <option key={t.id} value={t.name}>{t.name}</option>
-                  ))}
-                </select>
+                <Label>Description</Label>
+                <Textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Product description"
+                  className="rounded-xl mt-1 resize-none"
+                  rows={4}
+                />
               </div>
             </div>
 
-            {/* Pricing & stock — clear section */}
+            {/* 2. Material & technique */}
+            <div className="space-y-4 rounded-xl border border-border/50 bg-muted/20 dark:bg-muted/10 p-4">
+              <p className="text-sm font-semibold text-foreground">Material & technique</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label>Fabric</Label>
+                  <select
+                    value={formData.fabric}
+                    onChange={(e) => setFormData({ ...formData, fabric: e.target.value })}
+                    className="w-full px-4 py-2 h-12 rounded-xl border border-primary-200/50 dark:border-primary-800/30 bg-background text-foreground focus:ring-2 focus:ring-primary mt-1"
+                  >
+                    <option value="">Select fabric</option>
+                    {fabricOptions.map((f) => (
+                      <option key={f.id} value={f.name}>{f.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <Label>Technique</Label>
+                  <select
+                    value={formData.technique}
+                    onChange={(e) => setFormData({ ...formData, technique: e.target.value })}
+                    className="w-full px-4 py-2 h-12 rounded-xl border border-primary-200/50 dark:border-primary-800/30 bg-background text-foreground focus:ring-2 focus:ring-primary mt-1"
+                  >
+                    <option value="">Select technique</option>
+                    {techniqueOptions.map((t) => (
+                      <option key={t.id} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Pricing & stock */}
             <div className="space-y-4 rounded-xl border border-border/50 bg-muted/20 dark:bg-muted/10 p-4">
               <p className="text-sm font-semibold text-foreground">Pricing & stock</p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="sm:col-span-2">
                   <Label>Price (₹) *</Label>
-                  <div className="flex gap-3 items-stretch mt-0">
+                  <div className="flex gap-3 items-stretch mt-1">
                     <Input
                       type="number"
                       value={formData.price}
@@ -1596,7 +1601,7 @@ const Products = () => {
                     value={formData.tax_percent}
                     onChange={(e) => setFormData({ ...formData, tax_percent: e.target.value })}
                     disabled={formData.price_type === "without_tax"}
-                    className={`w-full px-4 py-2 h-12 rounded-xl border border-primary-200/50 dark:border-primary-800/30 bg-background text-foreground focus:ring-2 focus:ring-primary ${
+                    className={`w-full px-4 py-2 h-12 rounded-xl border border-primary-200/50 dark:border-primary-800/30 bg-background text-foreground focus:ring-2 focus:ring-primary mt-1 ${
                       formData.price_type === "without_tax" ? "opacity-50 cursor-not-allowed" : ""
                     }`}
                   >
@@ -1610,7 +1615,7 @@ const Products = () => {
                   )}
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <Label>Cost Price (₹)</Label>
                   <Input
@@ -1618,7 +1623,7 @@ const Products = () => {
                     value={formData.cost_price}
                     onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
                     placeholder="0"
-                    className="rounded-xl h-12 w-full"
+                    className="rounded-xl h-12 w-full mt-1"
                   />
                 </div>
                 <div>
@@ -1628,59 +1633,59 @@ const Products = () => {
                     value={formData.stock}
                     onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
                     placeholder="0"
-                    className="rounded-xl h-12 w-full"
+                    className="rounded-xl h-12 w-full mt-1"
+                  />
+                </div>
+                <div>
+                  <Label>Low Stock Threshold</Label>
+                  <Input
+                    type="number"
+                    value={formData.low_stock_threshold}
+                    onChange={(e) => setFormData({ ...formData, low_stock_threshold: e.target.value })}
+                    placeholder="5"
+                    className="rounded-xl h-12 w-full mt-1"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>Barcode</Label>
-                <div className="flex gap-2">
-                  <Input
-                    value={formData.barcode}
-                    onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
-                    placeholder="Auto-generated if left empty"
-                    className="rounded-xl h-12 flex-1 min-w-0"
-                  />
+            {/* 4. Barcode */}
+            <div className="space-y-2 rounded-xl border border-border/50 bg-muted/20 dark:bg-muted/10 p-4">
+              <p className="text-sm font-semibold text-foreground">Barcode</p>
+              <div className="flex gap-2">
+                <Input
+                  value={formData.barcode}
+                  onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
+                  placeholder="Auto-generated if left empty"
+                  className="rounded-xl h-12 flex-1 min-w-0"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsScannerOpen(true)}
+                  className="rounded-xl h-12 shrink-0"
+                  title="Scan barcode"
+                >
+                  <Scan className="w-4 h-4" />
+                </Button>
+                {formData.barcode && (
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setIsScannerOpen(true)}
+                    onClick={() => handleViewBarcode(formData.barcode, formData.name, "")}
                     className="rounded-xl h-12 shrink-0"
-                    title="Scan barcode"
+                    title="View/Print barcode"
                   >
-                    <Scan className="w-4 h-4" />
+                    <Eye className="w-4 h-4" />
                   </Button>
-                  {formData.barcode && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => handleViewBarcode(formData.barcode, formData.name, "")}
-                      className="rounded-xl h-12 shrink-0"
-                      title="View/Print barcode"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground">Leave empty to auto-generate</p>
+                )}
               </div>
-              <div>
-                <Label>Low Stock Threshold</Label>
-                <Input
-                  type="number"
-                  value={formData.low_stock_threshold}
-                  onChange={(e) => setFormData({ ...formData, low_stock_threshold: e.target.value })}
-                  placeholder="5"
-                  className="rounded-xl h-12 w-full"
-                />
-              </div>
+              <p className="text-xs text-muted-foreground">Leave empty to auto-generate</p>
             </div>
 
-            <div>
-              <Label>Product Photos</Label>
+            {/* 5. Product photos */}
+            <div className="space-y-3 rounded-xl border border-border/50 bg-muted/20 dark:bg-muted/10 p-4">
+              <p className="text-sm font-semibold text-foreground">Product photos</p>
               <div className="space-y-3">
                 {productPhotos.length > 0 && (
                   <div className="grid grid-cols-3 gap-3">
