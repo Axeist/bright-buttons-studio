@@ -32,6 +32,7 @@ interface Product {
   fabric: string | null;
   technique: string | null;
   price: number;
+  cost_price?: number | null;
   barcode: string | null;
   sku: string | null;
   image_url: string | null;
@@ -44,7 +45,7 @@ interface Product {
 }
 
 const Products = () => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -1284,6 +1285,11 @@ const Products = () => {
                 <th className="text-left text-sm font-semibold text-foreground p-4 hidden md:table-cell">Category</th>
                 <th className="text-left text-sm font-semibold text-foreground p-4 hidden lg:table-cell">Stock</th>
                 <th className="text-left text-sm font-semibold text-foreground p-4">Price</th>
+                {isAdmin && (
+                  <th className="text-left text-sm font-semibold text-foreground p-4 hidden xl:table-cell">
+                    Cost Price
+                  </th>
+                )}
                 <th className="text-left text-sm font-semibold text-foreground p-4">Status</th>
                 <th className="text-left text-sm font-semibold text-foreground p-4">Actions</th>
               </tr>
@@ -1361,6 +1367,17 @@ const Products = () => {
                       <td className="p-4">
                         <span className="text-sm font-bold text-foreground">₹{product.price.toLocaleString()}</span>
                       </td>
+                      {isAdmin && (
+                        <td className="p-4 hidden xl:table-cell">
+                          {product.cost_price != null ? (
+                            <span className="text-sm font-medium text-foreground">
+                              ₹{product.cost_price.toLocaleString()}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </td>
+                      )}
                       <td className="p-4">
                         <motion.span
                           whileHover={{ scale: 1.05 }}
