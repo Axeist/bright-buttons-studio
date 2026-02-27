@@ -1095,7 +1095,7 @@ const POS = () => {
 
       if (orderError) throw orderError;
 
-      // Create order items and update inventory
+      // Create order items and record stock movements (inventory is updated via DB logic)
       for (const item of cart) {
         // Create order item
         await supabase.from("order_items").insert({
@@ -1109,32 +1109,16 @@ const POS = () => {
           total_price: item.price * item.quantity,
         });
 
-        // Update inventory
-        const { data: inventory } = await supabase
-          .from("inventory")
-          .select("quantity")
-          .eq("product_id", item.product_id)
-          .single();
-
-        if (inventory) {
-          await supabase
-            .from("inventory")
-            .update({
-              quantity: inventory.quantity - item.quantity,
-            })
-            .eq("product_id", item.product_id);
-
-          // Record stock movement
-          await supabase.from("stock_movements").insert({
-            product_id: item.product_id,
-            quantity_change: -item.quantity,
-            movement_type: "sale",
-            reference_id: order.id,
-            reference_type: "order",
-            notes: `Sale - Order ${orderNumber}`,
-            created_by: user?.id || null,
-          });
-        }
+        // Record stock movement (inventory table should be updated via database-side logic/triggers)
+        await supabase.from("stock_movements").insert({
+          product_id: item.product_id,
+          quantity_change: -item.quantity,
+          movement_type: "sale",
+          reference_id: order.id,
+          reference_type: "order",
+          notes: `Sale - Order ${orderNumber}`,
+          created_by: user?.id || null,
+        });
       }
 
       // Create payment record(s)
