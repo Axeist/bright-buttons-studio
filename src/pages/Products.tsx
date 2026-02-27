@@ -1565,90 +1565,96 @@ const Products = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div>
-                <Label>Price (₹) *</Label>
-                <div className="flex gap-2 items-center">
-                  <Input
-                    type="number"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    placeholder="0"
-                    className="rounded-xl h-12 flex-1"
-                  />
+            {/* Pricing & stock — clear section */}
+            <div className="space-y-4 rounded-xl border border-border/50 bg-muted/20 dark:bg-muted/10 p-4">
+              <p className="text-sm font-semibold text-foreground">Pricing & stock</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="sm:col-span-2">
+                  <Label>Price (₹) *</Label>
+                  <div className="flex gap-3 items-stretch mt-0">
+                    <Input
+                      type="number"
+                      value={formData.price}
+                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                      placeholder="Enter selling price"
+                      className="rounded-xl h-12 flex-1 min-w-0 text-base"
+                    />
+                    <select
+                      value={formData.price_type}
+                      onChange={(e) => {
+                        const value = e.target.value as "with_tax" | "without_tax";
+                        setFormData({
+                          ...formData,
+                          price_type: value,
+                          tax_percent: value === "without_tax" ? "0" : formData.tax_percent,
+                        });
+                      }}
+                      className="px-4 py-2 h-12 rounded-xl border border-primary-200/50 dark:border-primary-800/30 bg-background text-foreground focus:ring-2 focus:ring-primary text-sm w-[140px] shrink-0"
+                    >
+                      <option value="without_tax">Without Tax</option>
+                      <option value="with_tax">With Tax</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <Label>Tax %</Label>
                   <select
-                    value={formData.price_type}
-                    onChange={(e) => {
-                      const value = e.target.value as "with_tax" | "without_tax";
-                      setFormData({
-                        ...formData,
-                        price_type: value,
-                        tax_percent: value === "without_tax" ? "0" : formData.tax_percent,
-                      });
-                    }}
-                    className="px-3 py-2 h-12 rounded-xl border border-primary-200/50 dark:border-primary-800/30 bg-background text-foreground focus:ring-2 focus:ring-primary text-sm min-w-[120px]"
+                    value={formData.tax_percent}
+                    onChange={(e) => setFormData({ ...formData, tax_percent: e.target.value })}
+                    disabled={formData.price_type === "without_tax"}
+                    className={`w-full px-4 py-2 h-12 rounded-xl border border-primary-200/50 dark:border-primary-800/30 bg-background text-foreground focus:ring-2 focus:ring-primary ${
+                      formData.price_type === "without_tax" ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
                   >
-                    <option value="without_tax">Without Tax</option>
-                    <option value="with_tax">With Tax</option>
+                    <option value="0">0%</option>
+                    <option value="5">5%</option>
+                    <option value="12">12%</option>
+                    <option value="18">18%</option>
                   </select>
+                  {formData.price_type === "without_tax" && (
+                    <p className="text-xs text-muted-foreground mt-1">Enable with &quot;With Tax&quot;</p>
+                  )}
                 </div>
               </div>
-              <div>
-                <Label>Tax %</Label>
-                <select
-                  value={formData.tax_percent}
-                  onChange={(e) => setFormData({ ...formData, tax_percent: e.target.value })}
-                  disabled={formData.price_type === "without_tax"}
-                  className={`w-full px-4 py-2 h-12 rounded-xl border border-primary-200/50 dark:border-primary-800/30 bg-background text-foreground focus:ring-2 focus:ring-primary ${
-                    formData.price_type === "without_tax" ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
-                >
-                  <option value="0">0%</option>
-                  <option value="5">5%</option>
-                  <option value="12">12%</option>
-                  <option value="18">18%</option>
-                </select>
-                {formData.price_type === "without_tax" && (
-                  <p className="text-xs text-muted-foreground mt-1">Select &quot;With Tax&quot; to set tax %</p>
-                )}
-              </div>
-              <div>
-                <Label>Cost Price (₹)</Label>
-                <Input
-                  type="number"
-                  value={formData.cost_price}
-                  onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
-                  placeholder="0"
-                  className="rounded-xl h-12"
-                />
-              </div>
-              <div>
-                <Label>Initial Stock</Label>
-                <Input
-                  type="number"
-                  value={formData.stock}
-                  onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                  placeholder="0"
-                  className="rounded-xl h-12"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label>Cost Price (₹)</Label>
+                  <Input
+                    type="number"
+                    value={formData.cost_price}
+                    onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
+                    placeholder="0"
+                    className="rounded-xl h-12 w-full"
+                  />
+                </div>
+                <div>
+                  <Label>Initial Stock</Label>
+                  <Input
+                    type="number"
+                    value={formData.stock}
+                    onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                    placeholder="0"
+                    className="rounded-xl h-12 w-full"
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
-              <div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-2">
                 <Label>Barcode</Label>
                 <div className="flex gap-2">
                   <Input
                     value={formData.barcode}
                     onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
                     placeholder="Auto-generated if left empty"
-                    className="rounded-xl h-12"
+                    className="rounded-xl h-12 flex-1 min-w-0"
                   />
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => setIsScannerOpen(true)}
-                    className="rounded-xl h-12"
+                    className="rounded-xl h-12 shrink-0"
                     title="Scan barcode"
                   >
                     <Scan className="w-4 h-4" />
@@ -1658,16 +1664,14 @@ const Products = () => {
                       type="button"
                       variant="outline"
                       onClick={() => handleViewBarcode(formData.barcode, formData.name, formData.sku)}
-                      className="rounded-xl h-12"
+                      className="rounded-xl h-12 shrink-0"
                       title="View/Print barcode"
                     >
                       <Eye className="w-4 h-4" />
                     </Button>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Leave empty to auto-generate a scannable barcode
-                </p>
+                <p className="text-xs text-muted-foreground">Leave empty to auto-generate</p>
               </div>
               <div>
                 <Label>SKU</Label>
@@ -1675,7 +1679,7 @@ const Products = () => {
                   value={formData.sku}
                   onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
                   placeholder="Stock keeping unit"
-                  className="rounded-xl h-12"
+                  className="rounded-xl h-12 w-full"
                 />
               </div>
               <div>
@@ -1685,7 +1689,7 @@ const Products = () => {
                   value={formData.low_stock_threshold}
                   onChange={(e) => setFormData({ ...formData, low_stock_threshold: e.target.value })}
                   placeholder="5"
-                  className="rounded-xl h-12"
+                  className="rounded-xl h-12 w-full"
                 />
               </div>
             </div>
@@ -1940,90 +1944,96 @@ const Products = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div>
-                <Label>Price (₹) *</Label>
-                <div className="flex gap-2 items-center">
-                  <Input
-                    type="number"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    placeholder="0"
-                    className="rounded-xl h-12 flex-1"
-                  />
+            {/* Pricing & stock — clear section */}
+            <div className="space-y-4 rounded-xl border border-border/50 bg-muted/20 dark:bg-muted/10 p-4">
+              <p className="text-sm font-semibold text-foreground">Pricing & stock</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="sm:col-span-2">
+                  <Label>Price (₹) *</Label>
+                  <div className="flex gap-3 items-stretch mt-0">
+                    <Input
+                      type="number"
+                      value={formData.price}
+                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                      placeholder="Enter selling price"
+                      className="rounded-xl h-12 flex-1 min-w-0 text-base"
+                    />
+                    <select
+                      value={formData.price_type}
+                      onChange={(e) => {
+                        const value = e.target.value as "with_tax" | "without_tax";
+                        setFormData({
+                          ...formData,
+                          price_type: value,
+                          tax_percent: value === "without_tax" ? "0" : formData.tax_percent,
+                        });
+                      }}
+                      className="px-4 py-2 h-12 rounded-xl border border-primary-200/50 dark:border-primary-800/30 bg-background text-foreground focus:ring-2 focus:ring-primary text-sm w-[140px] shrink-0"
+                    >
+                      <option value="without_tax">Without Tax</option>
+                      <option value="with_tax">With Tax</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <Label>Tax %</Label>
                   <select
-                    value={formData.price_type}
-                    onChange={(e) => {
-                      const value = e.target.value as "with_tax" | "without_tax";
-                      setFormData({
-                        ...formData,
-                        price_type: value,
-                        tax_percent: value === "without_tax" ? "0" : formData.tax_percent,
-                      });
-                    }}
-                    className="px-3 py-2 h-12 rounded-xl border border-primary-200/50 dark:border-primary-800/30 bg-background text-foreground focus:ring-2 focus:ring-primary text-sm min-w-[120px]"
+                    value={formData.tax_percent}
+                    onChange={(e) => setFormData({ ...formData, tax_percent: e.target.value })}
+                    disabled={formData.price_type === "without_tax"}
+                    className={`w-full px-4 py-2 h-12 rounded-xl border border-primary-200/50 dark:border-primary-800/30 bg-background text-foreground focus:ring-2 focus:ring-primary ${
+                      formData.price_type === "without_tax" ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
                   >
-                    <option value="without_tax">Without Tax</option>
-                    <option value="with_tax">With Tax</option>
+                    <option value="0">0%</option>
+                    <option value="5">5%</option>
+                    <option value="12">12%</option>
+                    <option value="18">18%</option>
                   </select>
+                  {formData.price_type === "without_tax" && (
+                    <p className="text-xs text-muted-foreground mt-1">Enable with &quot;With Tax&quot;</p>
+                  )}
                 </div>
               </div>
-              <div>
-                <Label>Tax %</Label>
-                <select
-                  value={formData.tax_percent}
-                  onChange={(e) => setFormData({ ...formData, tax_percent: e.target.value })}
-                  disabled={formData.price_type === "without_tax"}
-                  className={`w-full px-4 py-2 h-12 rounded-xl border border-primary-200/50 dark:border-primary-800/30 bg-background text-foreground focus:ring-2 focus:ring-primary ${
-                    formData.price_type === "without_tax" ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
-                >
-                  <option value="0">0%</option>
-                  <option value="5">5%</option>
-                  <option value="12">12%</option>
-                  <option value="18">18%</option>
-                </select>
-                {formData.price_type === "without_tax" && (
-                  <p className="text-xs text-muted-foreground mt-1">Select &quot;With Tax&quot; to set tax %</p>
-                )}
-              </div>
-              <div>
-                <Label>Cost Price (₹)</Label>
-                <Input
-                  type="number"
-                  value={formData.cost_price}
-                  onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
-                  placeholder="0"
-                  className="rounded-xl h-12"
-                />
-              </div>
-              <div>
-                <Label>Update Stock</Label>
-                <Input
-                  type="number"
-                  value={formData.stock}
-                  onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                  placeholder="Current stock"
-                  className="rounded-xl h-12"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label>Cost Price (₹)</Label>
+                  <Input
+                    type="number"
+                    value={formData.cost_price}
+                    onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
+                    placeholder="0"
+                    className="rounded-xl h-12 w-full"
+                  />
+                </div>
+                <div>
+                  <Label>Update Stock</Label>
+                  <Input
+                    type="number"
+                    value={formData.stock}
+                    onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                    placeholder="Current stock"
+                    className="rounded-xl h-12 w-full"
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
-              <div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-2">
                 <Label>Barcode</Label>
                 <div className="flex gap-2">
                   <Input
                     value={formData.barcode}
                     onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
                     placeholder="Auto-generated if left empty"
-                    className="rounded-xl h-12"
+                    className="rounded-xl h-12 flex-1 min-w-0"
                   />
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => setIsScannerOpen(true)}
-                    className="rounded-xl h-12"
+                    className="rounded-xl h-12 shrink-0"
                     title="Scan barcode"
                   >
                     <Scan className="w-4 h-4" />
@@ -2033,16 +2043,14 @@ const Products = () => {
                       type="button"
                       variant="outline"
                       onClick={() => handleViewBarcode(formData.barcode, formData.name, formData.sku)}
-                      className="rounded-xl h-12"
+                      className="rounded-xl h-12 shrink-0"
                       title="View/Print barcode"
                     >
                       <Eye className="w-4 h-4" />
                     </Button>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Leave empty to auto-generate a scannable barcode
-                </p>
+                <p className="text-xs text-muted-foreground">Leave empty to auto-generate</p>
               </div>
               <div>
                 <Label>SKU</Label>
@@ -2050,7 +2058,7 @@ const Products = () => {
                   value={formData.sku}
                   onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
                   placeholder="Stock keeping unit"
-                  className="rounded-xl h-12"
+                  className="rounded-xl h-12 w-full"
                 />
               </div>
               <div>
@@ -2060,7 +2068,7 @@ const Products = () => {
                   value={formData.low_stock_threshold}
                   onChange={(e) => setFormData({ ...formData, low_stock_threshold: e.target.value })}
                   placeholder="5"
-                  className="rounded-xl h-12"
+                  className="rounded-xl h-12 w-full"
                 />
               </div>
             </div>
