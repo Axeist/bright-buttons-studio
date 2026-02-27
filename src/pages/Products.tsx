@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AdminLayout } from "@/layouts/AdminLayout";
-import { Search, Plus, Edit, Trash2, Leaf, Sparkles, Package, Scan, Loader2, AlertCircle, Upload, Download, FileText, X, Image as ImageIcon, Printer, Eye } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Leaf, Sparkles, Package, Scan, Loader2, AlertCircle, Upload, Download, FileText, X, Image as ImageIcon, Printer, Eye, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,6 +29,7 @@ interface Product {
   id: string;
   name: string;
   category: string;
+  description?: string | null;
   fabric: string | null;
   technique: string | null;
   price: number;
@@ -36,6 +37,8 @@ interface Product {
   barcode: string | null;
   sku: string | null;
   image_url: string | null;
+  low_stock_threshold?: number;
+  tagline?: string | null;
   status: 'active' | 'inactive' | 'archived';
   inventory?: {
     quantity: number;
@@ -75,6 +78,8 @@ const Products = () => {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const imageInputEditRef = useRef<HTMLInputElement>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [detailsProduct, setDetailsProduct] = useState<Product | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [productPhotos, setProductPhotos] = useState<Array<{ file?: File; url: string; isPrimary?: boolean; fromGallery?: boolean }>>([]);
   const [editingProductPhotos, setEditingProductPhotos] = useState<Array<{ id?: string; file?: File; url: string; isPrimary?: boolean; fromGallery?: boolean }>>([]);
   const [isGalleryModalOpen, setIsGalleryModalOpen] = useState(false);
@@ -1392,6 +1397,18 @@ const Products = () => {
                       </td>
                       <td className="p-4">
                         <div className="flex items-center gap-2">
+                          <motion.button
+                            whileHover={{ scale: 1.1, rotate: 5 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => {
+                              setDetailsProduct(product);
+                              setIsDetailsModalOpen(true);
+                            }}
+                            className="p-2 text-muted-foreground hover:text-primary rounded-lg hover:bg-primary/10 transition-colors"
+                            title="View details"
+                          >
+                            <Info className="w-4 h-4" />
+                          </motion.button>
                           {product.barcode && (
                             <motion.button
                               whileHover={{ scale: 1.1, rotate: 5 }}
@@ -2557,6 +2574,161 @@ const Products = () => {
               onClick={() => setIsGalleryModalOpen(false)}
             >
               Done
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Product Details Modal */}
+      <Dialog
+        open={isDetailsModalOpen}
+        onOpenChange={(open) => {
+          setIsDetailsModalOpen(open);
+          if (!open) {
+            setDetailsProduct(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-lg rounded-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-script text-gradient flex items-center gap-2">
+              <Info className="w-6 h-6 text-primary" />
+              Product Details
+            </DialogTitle>
+            {detailsProduct && (
+              <DialogDescription className="text-muted-foreground pt-2">
+                Full details for <span className="font-semibold text-foreground">{detailsProduct.name}</span>
+              </DialogDescription>
+            )}
+          </DialogHeader>
+
+          {detailsProduct && (
+            <div className="space-y-4 mt-4">
+              <div className="flex items-start gap-4">
+                <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary-100 to-earth-100 dark:from-primary-900/40 dark:to-earth-900/40 flex items-center justify-center flex-shrink-0 shadow-md overflow-hidden">
+                  {getProductImageUrl(detailsProduct) ? (
+                    <img
+                      src={getProductImageUrl(detailsProduct)!}
+                      alt={detailsProduct.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Leaf className="w-8 h-8 text-primary" />
+                  )}
+                </div>
+                <div className="flex-1 space-y-1">
+                  <p className="font-semibold text-lg text-foreground">{detailsProduct.name}</p>
+                  {detailsProduct.tagline && (
+                    <p className="text-sm text-muted-foreground">{detailsProduct.tagline}</p>
+                  )}
+                  <div className="flex flex-wrap items-center gap-2 mt-1">
+                    <span className="px-3 py-1 bg-gradient-to-r from-primary/10 to-primary/5 dark:from-primary-900/30 dark:to-primary-900/20 rounded-full text-xs font-semibold text-primary border border-primary/20 dark:border-primary-800/40">
+                      {detailsProduct.category}
+                    </span>
+                    {detailsProduct.fabric && (
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Sparkles className="w-3 h-3" />
+                        {detailsProduct.fabric}
+                      </span>
+                    )}
+                    {detailsProduct.technique && (
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Sparkles className="w-3 h-3" />
+                        {detailsProduct.technique}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {detailsProduct.description && (
+                <div className="rounded-xl bg-muted/40 p-3">
+                  <p className="text-xs font-semibold text-muted-foreground mb-1">Description</p>
+                  <p className="text-sm text-foreground whitespace-pre-line">{detailsProduct.description}</p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-muted-foreground">Price (MRP)</p>
+                  <p className="font-semibold text-foreground">
+                    ₹{detailsProduct.price.toLocaleString()}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-muted-foreground">Cost Price</p>
+                  <p className="font-semibold text-foreground">
+                    {detailsProduct.cost_price != null ? `₹${detailsProduct.cost_price.toLocaleString()}` : "—"}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-muted-foreground">Stock</p>
+                  <p className="font-medium text-foreground">
+                    {detailsProduct.inventory?.quantity ?? 0}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-muted-foreground">Low Stock Threshold</p>
+                  <p className="font-medium text-foreground">
+                    {detailsProduct.low_stock_threshold ?? 5}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-muted-foreground">Barcode</p>
+                  <p className="font-mono text-xs text-foreground break-all">
+                    {detailsProduct.barcode || "—"}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-muted-foreground">SKU</p>
+                  <p className="font-mono text-xs text-foreground break-all">
+                    {detailsProduct.sku || "—"}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-muted-foreground">Status</p>
+                  <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold border ${
+                    detailsProduct.status === "active"
+                      ? "bg-gradient-to-r from-primary/10 to-primary/5 dark:from-primary-900/30 dark:to-primary-900/20 text-primary border-primary/20 dark:border-primary-800/40"
+                      : "bg-muted text-muted-foreground border-border"
+                  }`}>
+                    {detailsProduct.status}
+                  </span>
+                </div>
+              </div>
+
+              {detailsProduct.product_photos && detailsProduct.product_photos.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-muted-foreground">Photos</p>
+                  <div className="flex flex-wrap gap-2">
+                    {detailsProduct.product_photos.map((photo) => (
+                      <div
+                        key={photo.id}
+                        className="w-16 h-16 rounded-lg overflow-hidden border border-primary-200 dark:border-primary-800"
+                      >
+                        <img
+                          src={photo.image_url}
+                          alt={detailsProduct.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="flex gap-3 mt-6">
+            <Button
+              variant="outline"
+              className="flex-1 rounded-xl"
+              onClick={() => {
+                setIsDetailsModalOpen(false);
+                setDetailsProduct(null);
+              }}
+            >
+              Close
             </Button>
           </div>
         </DialogContent>
