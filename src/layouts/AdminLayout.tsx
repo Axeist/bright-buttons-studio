@@ -17,7 +17,8 @@ import {
   Leaf,
   HandHeart,
   Image as ImageIcon,
-  Gift
+  Gift,
+  Wallet
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ const sidebarItems = [
   { name: "Products", icon: Package, href: "/products" },
   { name: "Gallery", icon: ImageIcon, href: "/gallery" },
   { name: "Orders", icon: ClipboardList, href: "/orders" },
+  { name: "Expenses", icon: Wallet, href: "/expenses" },
   { name: "Custom Orders", icon: HandHeart, href: "/custom-orders" },
   { name: "Customers", icon: Users, href: "/customers" },
   { name: "Reports", icon: BarChart3, href: "/reports" },

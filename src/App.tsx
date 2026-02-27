@@ -53,6 +53,7 @@ const Reports = lazy(() => import("./pages/Reports"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Staff = lazy(() => import("./pages/Staff"));
 const Manage = lazy(() => import("./pages/Manage"));
+const Expenses = lazy(() => import("./pages/Expenses"));
 const Scanner = lazy(() => import("./pages/Scanner"));
 
 // Optimized QueryClient configuration
@@ -216,6 +217,11 @@ const App = () => (
                   <Route path="/manage" element={
                     <StaffProtectedRoute>
                       <Manage />
+                    </StaffProtectedRoute>
+                  } />
+                  <Route path="/expenses" element={
+                    <StaffProtectedRoute>
+                      <Expenses />
                     </StaffProtectedRoute>
                   } />
                   <Route path="/scanner" element={
