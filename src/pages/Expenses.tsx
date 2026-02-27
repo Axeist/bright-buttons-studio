@@ -57,6 +57,14 @@ const getCategoryColor = (category: string) => {
   return found?.color ?? "bg-gray-500";
 };
 
+/** Format amount as ₹ with 2 decimal places for KPI cards */
+function formatCurrency(value: number): string {
+  return `₹${Number(value).toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
 interface Expense {
   id: string;
   name: string;
@@ -151,7 +159,10 @@ export default function Expenses() {
       const paid = (data || []).filter(
         (o) => !["cancelled", "refunded"].includes((o.status || "").toLowerCase())
       );
-      const total = paid.reduce((sum, o) => sum + (o.total_amount || 0), 0);
+      const total = paid.reduce(
+        (sum, o) => sum + Number(o.total_amount ?? 0),
+        0
+      );
       setRevenue(total);
     } catch {
       setRevenue(0);
@@ -271,18 +282,21 @@ export default function Expenses() {
 
   const withdrawalsTotal = expenses
     .filter((e) => e.category === "Partner withdrawals")
-    .reduce((s, e) => s + e.amount, 0);
+    .reduce((s, e) => s + Number(e.amount), 0);
   const operatingExpenses = expenses
     .filter((e) => e.category !== "Partner withdrawals")
-    .reduce((s, e) => s + e.amount, 0);
-  const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
+    .reduce((s, e) => s + Number(e.amount), 0);
+  const totalExpenses = expenses.reduce((s, e) => s + Number(e.amount), 0);
   const netProfit = revenue - operatingExpenses;
   const moneyInBank = netProfit - withdrawalsTotal;
-  const profitMargin = revenue > 0 ? (netProfit / revenue) * 100 : 0;
+  const profitMargin =
+    revenue > 0 ? (netProfit / revenue) * 100 : 0;
 
   const categoryTotals = EXPENSE_CATEGORIES.map((cat) => ({
     ...cat,
-    total: expenses.filter((e) => e.category === cat.value).reduce((s, e) => s + e.amount, 0),
+    total: expenses
+      .filter((e) => e.category === cat.value)
+      .reduce((s, e) => s + Number(e.amount), 0),
   })).filter((c) => c.total > 0);
 
   const filteredExpenses = categoryFilter
@@ -357,7 +371,7 @@ export default function Expenses() {
           </Select>
         </div>
 
-        {/* Summary cards */}
+        {/* Summary cards - each card shows the correct KPI from computed values */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
           {summaryCards.map((card) => (
             <Card key={card.title} className="rounded-xl overflow-hidden">
@@ -370,12 +384,18 @@ export default function Expenses() {
                 </div>
                 <p className="text-xl font-bold text-foreground">
                   {card.title === "Profit Margin"
-                    ? `${profitMargin.toFixed(2)}%`
-                    : card.title === "Net Profit" && netProfit < 0
-                    ? `-₹${Math.abs(netProfit).toLocaleString("en-IN")}`
-                    : card.title === "Money in Bank" && moneyInBank < 0
-                    ? `-₹${Math.abs(moneyInBank).toLocaleString("en-IN")}`
-                    : `₹${Math.abs(card.value).toLocaleString("en-IN")}`}
+                    ? `${Number(profitMargin).toFixed(2)}%`
+                    : card.title === "Gross Income"
+                    ? formatCurrency(revenue)
+                    : card.title === "Operating Expenses"
+                    ? formatCurrency(operatingExpenses)
+                    : card.title === "Net Profit"
+                    ? (netProfit < 0 ? "-" : "") + formatCurrency(Math.abs(netProfit))
+                    : card.title === "Withdrawals"
+                    ? formatCurrency(withdrawalsTotal)
+                    : card.title === "Money in Bank"
+                    ? (moneyInBank < 0 ? "-" : "") + formatCurrency(Math.abs(moneyInBank))
+                    : formatCurrency(Math.abs(card.value))}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">{card.desc}</p>
               </CardContent>
