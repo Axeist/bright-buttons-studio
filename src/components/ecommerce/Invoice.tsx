@@ -55,6 +55,12 @@ export const Invoice = ({ order, onClose }: InvoiceProps) => {
   };
 
   const handlePrint = () => {
+    const cleanup = () => {
+      document.body.classList.remove("print-invoice-active");
+      window.removeEventListener("afterprint", cleanup);
+    };
+    window.addEventListener("afterprint", cleanup);
+    document.body.classList.add("print-invoice-active");
     window.print();
   };
 
@@ -79,9 +85,20 @@ export const Invoice = ({ order, onClose }: InvoiceProps) => {
           body * {
             visibility: hidden;
           }
+          /* Show invoice and all its ancestors (e.g. dialog portal) so content is visible */
+          body *:has(.invoice-print-root),
           .invoice-print-root,
           .invoice-print-root * {
-            visibility: visible;
+            visibility: visible !important;
+          }
+          /* When print was triggered from invoice button, ensure only invoice shows */
+          body.print-invoice-active * {
+            visibility: hidden;
+          }
+          body.print-invoice-active *:has(.invoice-print-root),
+          body.print-invoice-active .invoice-print-root,
+          body.print-invoice-active .invoice-print-root * {
+            visibility: visible !important;
           }
           .invoice-print-root {
             position: absolute;
@@ -91,6 +108,7 @@ export const Invoice = ({ order, onClose }: InvoiceProps) => {
             padding: 0;
             margin: 0;
             background: white;
+            z-index: 99999;
           }
           
           * {
@@ -107,6 +125,13 @@ export const Invoice = ({ order, onClose }: InvoiceProps) => {
           
           .no-print {
             display: none !important;
+          }
+          
+          /* Dialog: no floating box in print, content flows normally */
+          [role="dialog"] {
+            position: static !important;
+            background: transparent !important;
+            box-shadow: none !important;
           }
           
           .invoice-container {
