@@ -1161,18 +1161,18 @@ const Products = () => {
     setEditingProduct(product);
     setFormData({
       name: product.name,
-      description: "",
+      description: product.description || "",
       category: product.category,
       fabric: product.fabric || "",
       technique: product.technique || "",
       price: product.price.toString(),
-      cost_price: "",
+      cost_price: product.cost_price != null ? product.cost_price.toString() : "",
       barcode: product.barcode || "",
       sku: product.sku || "",
       stock: product.inventory?.quantity.toString() || "",
-      low_stock_threshold: "5",
+      low_stock_threshold: (product.low_stock_threshold ?? 5).toString(),
       image_url: product.image_url || "",
-      tagline: "",
+      tagline: product.tagline || "",
     });
     setImageFile(null);
     setImagePreview(product.image_url || null);
@@ -2655,12 +2655,14 @@ const Products = () => {
                     ₹{detailsProduct.price.toLocaleString()}
                   </p>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold text-muted-foreground">Cost Price</p>
-                  <p className="font-semibold text-foreground">
-                    {detailsProduct.cost_price != null ? `₹${detailsProduct.cost_price.toLocaleString()}` : "—"}
-                  </p>
-                </div>
+                {isAdmin && (
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-muted-foreground">Cost Price</p>
+                    <p className="font-semibold text-foreground">
+                      {detailsProduct.cost_price != null ? `₹${detailsProduct.cost_price.toLocaleString()}` : "—"}
+                    </p>
+                  </div>
+                )}
                 <div className="space-y-1">
                   <p className="text-xs font-semibold text-muted-foreground">Stock</p>
                   <p className="font-medium text-foreground">
