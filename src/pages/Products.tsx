@@ -2664,6 +2664,30 @@ const Products = () => {
                   </div>
                 )}
                 <div className="space-y-1">
+                  <p className="text-xs font-semibold text-muted-foreground">Category</p>
+                  <p className="font-medium text-foreground">
+                    {detailsProduct.category}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-muted-foreground">Fabric</p>
+                  <p className="font-medium text-foreground">
+                    {detailsProduct.fabric || "—"}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-muted-foreground">Technique</p>
+                  <p className="font-medium text-foreground">
+                    {detailsProduct.technique || "—"}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-muted-foreground">Tagline</p>
+                  <p className="font-medium text-foreground">
+                    {detailsProduct.tagline || "—"}
+                  </p>
+                </div>
+                <div className="space-y-1">
                   <p className="text-xs font-semibold text-muted-foreground">Stock</p>
                   <p className="font-medium text-foreground">
                     {detailsProduct.inventory?.quantity ?? 0}
