@@ -1095,9 +1095,8 @@ const POS = () => {
 
       if (orderError) throw orderError;
 
-      // Create order items and record stock movements (inventory is updated via DB logic)
+      // Create order items and update inventory once per item (app-only deduction)
       for (const item of cart) {
-        // Create order item
         await supabase.from("order_items").insert({
           order_id: order.id,
           product_id: item.product_id,
@@ -1109,16 +1108,21 @@ const POS = () => {
           total_price: item.price * item.quantity,
         });
 
-        // Record stock movement (inventory table should be updated via database-side logic/triggers)
-        await supabase.from("stock_movements").insert({
-          product_id: item.product_id,
-          quantity_change: -item.quantity,
-          movement_type: "sale",
-          reference_id: order.id,
-          reference_type: "order",
-          notes: `Sale - Order ${orderNumber}`,
-          created_by: user?.id || null,
-        });
+        // Single inventory deduction in app so stock reduces by sold quantity only (e.g. 6 → 5 for 1 sold).
+        // If you still see -2: remove any DB trigger on order_items that updates inventory.
+        const { data: inv } = await supabase
+          .from("inventory")
+          .select("quantity")
+          .eq("product_id", item.product_id)
+          .single();
+
+        if (inv) {
+          const newQty = Math.max(0, inv.quantity - item.quantity);
+          await supabase
+            .from("inventory")
+            .update({ quantity: newQty })
+            .eq("product_id", item.product_id);
+        }
       }
 
       // Create payment record(s)
