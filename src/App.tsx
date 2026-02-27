@@ -11,8 +11,6 @@ import { CartProvider } from "@/hooks/useCart";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { CustomerProtectedRoute } from "@/components/CustomerProtectedRoute";
 import { StaffProtectedRoute } from "@/components/StaffProtectedRoute";
-import { ConstructionPopup } from "@/components/ConstructionPopup";
-
 // Public Pages - Lazy loaded for better performance
 const Index = lazy(() => import("./pages/Index"));
 const AboutFounder = lazy(() => import("./pages/AboutFounder"));
@@ -231,7 +229,6 @@ const App = () => (
                 </Routes>
               </Suspense>
             </BrowserRouter>
-            <ConstructionPopup />
           </CartProvider>
           </CustomerAuthProvider>
         </AuthProvider>

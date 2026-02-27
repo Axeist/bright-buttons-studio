@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { useAuth } from "@/hooks/useAuth";
 import { getProductImageUrl } from "@/lib/utils";
+import { Invoice } from "@/components/ecommerce/Invoice";
 
 const categories = [
   'All',
@@ -116,6 +117,7 @@ const POS = () => {
   const [customerSuggestions, setCustomerSuggestions] = useState<{ id: string; name: string; phone: string; email?: string | null }[]>([]);
   const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [invoiceOrderForPrint, setInvoiceOrderForPrint] = useState<any>(null);
 
   useEffect(() => {
     fetchProducts();
@@ -1186,6 +1188,19 @@ const POS = () => {
         title: "Sale Completed!",
         description: `Order ${orderNumber} created. Total: ₹${total.toLocaleString()}`,
       });
+
+      // Build order with items for invoice (before clearing cart)
+      const orderWithItems = {
+        ...order,
+        order_items: cart.map((item) => ({
+          product_name: item.name,
+          product_sku: item.sku,
+          quantity: item.quantity,
+          unit_price: item.price,
+          total_price: item.price * item.quantity,
+        })),
+      };
+      setInvoiceOrderForPrint(orderWithItems);
 
       // Reset
       setCart([]);
@@ -2310,6 +2325,20 @@ const POS = () => {
               })
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Invoice after Complete Sale - Print option */}
+      <Dialog open={!!invoiceOrderForPrint} onOpenChange={(open) => !open && setInvoiceOrderForPrint(null)}>
+        <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto rounded-2xl p-0 gap-0 print:hidden">
+          {invoiceOrderForPrint && (
+            <div className="p-4 print:p-0">
+              <Invoice
+                order={invoiceOrderForPrint}
+                onClose={() => setInvoiceOrderForPrint(null)}
+              />
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 

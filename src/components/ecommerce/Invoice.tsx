@@ -67,13 +67,30 @@ export const Invoice = ({ order, onClose }: InvoiceProps) => {
   if (!order) return null;
 
   return (
-    <div className="bg-white text-black print:bg-white print:text-black">
-      {/* Print Styles */}
+    <div className="invoice-print-root bg-white text-black print:bg-white print:text-black">
+      {/* Print: show only this invoice (A4), hide rest of page */}
       <style>{`
         @media print {
           @page {
             size: A4;
             margin: 0.75in;
+          }
+          
+          body * {
+            visibility: hidden;
+          }
+          .invoice-print-root,
+          .invoice-print-root * {
+            visibility: visible;
+          }
+          .invoice-print-root {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            padding: 0;
+            margin: 0;
+            background: white;
           }
           
           * {
@@ -94,8 +111,9 @@ export const Invoice = ({ order, onClose }: InvoiceProps) => {
           
           .invoice-container {
             max-width: 100% !important;
-            margin: 0 !important;
-            padding: 0 !important;
+            width: 210mm !important;
+            margin: 0 auto !important;
+            padding: 0 0.75in !important;
             box-shadow: none !important;
             background: white !important;
             page-break-inside: avoid;
@@ -228,7 +246,9 @@ export const Invoice = ({ order, onClose }: InvoiceProps) => {
               </p>
               <p>
                 <span className="font-semibold text-black">Payment Method:</span>{" "}
-                {order.payment_method === "cash" ? "Cash on Delivery" : 
+                {order.source === "pos"
+                  ? (order.payment_method === "cash" ? "Cash" : order.payment_method === "upi" ? "UPI" : order.payment_method === "card" ? "Card" : order.payment_method === "split" ? "Split" : order.payment_method || "N/A")
+                  : order.payment_method === "cash" ? "Cash on Delivery" : 
                  order.payment_method === "online" ? "Online Payment" : 
                  order.payment_method || "N/A"}
               </p>
