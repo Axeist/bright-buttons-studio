@@ -79,6 +79,7 @@ export type Database = {
           status: Database["public"]["Enums"]["product_status"]
           low_stock_threshold: number
           is_featured: boolean
+          tax_percent: number
           created_at: string
           updated_at: string
         }
@@ -98,6 +99,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["product_status"]
           low_stock_threshold?: number
           is_featured?: boolean
+          tax_percent?: number
           created_at?: string
           updated_at?: string
         }
@@ -117,6 +119,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["product_status"]
           low_stock_threshold?: number
           is_featured?: boolean
+          tax_percent?: number
           created_at?: string
           updated_at?: string
         }

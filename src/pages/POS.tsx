@@ -31,6 +31,7 @@ interface Product {
   barcode: string | null;
   sku: string | null;
   image_url: string | null;
+  tax_percent?: number;
   product_photos?: Array<{
     image_url: string;
     display_order: number;
@@ -52,6 +53,7 @@ interface CartItem {
   quantity: number;
   product_id: string;
   sku: string | null;
+  tax_percent: number;
 }
 
 type HeldSale = {
@@ -348,7 +350,7 @@ const POS = () => {
     const sale = heldSales.find((s) => s.id === saleId);
     if (!sale) return;
 
-    setCart(sale.data.cart);
+    setCart(sale.data.cart.map((it) => ({ ...it, tax_percent: (it as CartItem).tax_percent ?? 0 })));
     setCustomer(sale.data.customer);
     setCustomerPhone(sale.data.customer?.phone || "");
     setCustomerName(sale.data.customer?.name || "");
@@ -599,6 +601,7 @@ const POS = () => {
         quantity: 1,
         product_id: product.id,
         sku: product.sku,
+        tax_percent: product.tax_percent ?? 0,
       }]);
     }
   };
@@ -1055,9 +1058,12 @@ const POS = () => {
       // Ensure discount doesn't exceed subtotal
       discountAmount = Math.min(discountAmount, subtotal);
       
-      const taxRate = 0.18;
-      const tax = (subtotal - discountAmount) * taxRate;
-      const total = subtotal - discountAmount + tax;
+      // Per-item tax from product tax_percent
+      const totalTax = cart.reduce(
+        (sum, item) => sum + (item.price * item.quantity * (item.tax_percent || 0)) / 100,
+        0
+      );
+      const total = subtotal - discountAmount + totalTax;
 
       // Get customer details
       let customerDetails = null;
@@ -1085,7 +1091,7 @@ const POS = () => {
           source: "pos",
           subtotal,
           discount_amount: discountAmount,
-          tax_amount: tax,
+          tax_amount: totalTax,
           shipping_amount: 0,
           total_amount: total,
           created_by: user?.id || null,
@@ -1233,8 +1239,22 @@ const POS = () => {
   }
   discountAmount = Math.min(discountAmount, subtotal);
   
-  const tax = (subtotal - discountAmount) * 0.18;
-  const total = subtotal - discountAmount + tax;
+  // Per-item tax from product tax_percent
+  const totalTax = cart.reduce(
+    (sum, item) => sum + (item.price * item.quantity * (item.tax_percent || 0)) / 100,
+    0
+  );
+  const taxByRate: Record<number, number> = {};
+  cart.forEach((item) => {
+    const r = item.tax_percent || 0;
+    if (r > 0) {
+      taxByRate[r] = (taxByRate[r] || 0) + (item.price * item.quantity * r) / 100;
+    }
+  });
+  const total = subtotal - discountAmount + totalTax;
+  
+  // Use totalTax as the single tax value for display when not showing breakdown
+  const tax = totalTax;
   
   // Calculate split payment amounts
   const splitCash = splitCashAmount ? parseFloat(splitCashAmount) : 0;
@@ -1653,9 +1673,25 @@ const POS = () => {
               <span className="text-xs text-foreground">-₹{discountAmount.toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">Tax (18%)</span>
+              <span className="text-muted-foreground">
+                {Object.keys(taxByRate).length === 1
+                  ? `Tax (${Object.keys(taxByRate)[0]}%)`
+                  : "Total Tax"}
+              </span>
               <span className="text-foreground">₹{tax.toLocaleString()}</span>
             </div>
+            {Object.keys(taxByRate).length > 1 && (
+              <div className="pl-2 space-y-0.5 border-l-2 border-muted">
+                {Object.entries(taxByRate)
+                  .sort(([a], [b]) => Number(a) - Number(b))
+                  .map(([rate, amt]) => (
+                    <div key={rate} className="flex justify-between text-[11px] text-muted-foreground">
+                      <span>Tax ({rate}%)</span>
+                      <span>₹{amt.toLocaleString()}</span>
+                    </div>
+                  ))}
+              </div>
+            )}
             <div className="flex justify-between text-sm font-bold pt-1 border-t border-border/60">
               <span>Total</span>
               <span className="text-primary">₹{total.toLocaleString()}</span>

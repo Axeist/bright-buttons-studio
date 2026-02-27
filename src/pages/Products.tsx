@@ -40,6 +40,7 @@ interface Product {
   low_stock_threshold?: number;
   tagline?: string | null;
   status: 'active' | 'inactive' | 'archived';
+  tax_percent?: number;
   inventory?: {
     quantity: number;
     reserved_quantity: number;
@@ -439,6 +440,7 @@ const Products = () => {
           image_url: imageUrl,
           tagline: formData.tagline || null,
           status: "active",
+          tax_percent: parseInt(formData.tax_percent, 10) || 0,
         })
         .select()
         .single();
@@ -538,6 +540,7 @@ const Products = () => {
           low_stock_threshold: parseInt(formData.low_stock_threshold) || 5,
           image_url: imageUrl,
           tagline: formData.tagline || null,
+          tax_percent: parseInt(formData.tax_percent, 10) || 0,
         })
         .eq("id", editingProduct.id);
 
@@ -1180,7 +1183,7 @@ const Products = () => {
       image_url: product.image_url || "",
       tagline: product.tagline || "",
       price_type: "without_tax",
-      tax_percent: "0",
+      tax_percent: product.tax_percent != null ? String(product.tax_percent) : "0",
     });
     setImageFile(null);
     setImagePreview(product.image_url || null);

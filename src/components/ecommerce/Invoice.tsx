@@ -305,13 +305,19 @@ export const Invoice = ({ order, onClose }: InvoiceProps) => {
                   <span className="text-green-600 font-semibold">FREE</span>
                 </div>
               )}
+              <div className="flex justify-between text-sm font-medium">
+                <span className="text-gray-700">Taxable Amount</span>
+                <span className="text-black">
+                  ₹{(Number(order.subtotal) - Number(order.discount_amount || 0)).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Tax (GST)</span>
-                <span className="text-black">₹{parseFloat(order.tax_amount).toFixed(2)}</span>
+                <span className="text-gray-600">Total Tax</span>
+                <span className="text-black">₹{parseFloat(order.tax_amount ?? 0).toFixed(2)}</span>
               </div>
               <div className="border-t-2 border-gray-800 pt-2 mt-2">
                 <div className="flex justify-between">
-                  <span className="text-lg font-bold text-black">Total</span>
+                  <span className="text-lg font-bold text-black">Total Amount</span>
                   <span className="text-lg font-bold text-black">
                     ₹{parseFloat(order.total_amount).toFixed(2)}
                   </span>
