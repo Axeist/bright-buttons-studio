@@ -1091,32 +1091,33 @@ const POS = () => {
 
       const orderNumber = orderNumberData || `BB-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}`;
 
-      // Calculate totals
-      const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-      
-      // Calculate discount (from coupon or manual discount)
+      // Calculate totals (price is inclusive when tax_percent > 0)
+      const grandTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      const subtotal = cart.reduce((sum, item) => {
+        const lineTotal = item.price * item.quantity;
+        const r = item.tax_percent || 0;
+        return sum + (r > 0 ? lineTotal / (1 + r / 100) : lineTotal);
+      }, 0);
+      const totalTax = cart.reduce((sum, item) => {
+        const lineTotal = item.price * item.quantity;
+        const r = item.tax_percent || 0;
+        return sum + (r > 0 ? (lineTotal * (r / 100)) / (1 + r / 100) : 0);
+      }, 0);
+
       let discountAmount = 0;
       if (appliedCoupon) {
         if (appliedCoupon.discount_type === "percentage") {
-          discountAmount = (subtotal * appliedCoupon.discount_value) / 100;
+          discountAmount = (grandTotal * appliedCoupon.discount_value) / 100;
         } else {
           discountAmount = appliedCoupon.discount_value;
         }
       } else if (discountType === "percentage") {
-        discountAmount = (subtotal * discountValue) / 100;
+        discountAmount = (grandTotal * discountValue) / 100;
       } else {
         discountAmount = discountValue;
       }
-      
-      // Ensure discount doesn't exceed subtotal
-      discountAmount = Math.min(discountAmount, subtotal);
-      
-      // Per-item tax from product tax_percent
-      const totalTax = cart.reduce(
-        (sum, item) => sum + (item.price * item.quantity * (item.tax_percent || 0)) / 100,
-        0
-      );
-      const total = subtotal - discountAmount + totalTax;
+      discountAmount = Math.min(discountAmount, grandTotal);
+      const total = grandTotal - discountAmount;
 
       // Get customer details
       let customerDetails = null;
@@ -1288,38 +1289,44 @@ const POS = () => {
     return matchesSearch && matchesCategory && hasStock;
   });
 
-  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  
-  // Calculate discount
-  let discountAmount = 0;
-  if (appliedCoupon) {
-    if (appliedCoupon.discount_type === "percentage") {
-      discountAmount = (subtotal * appliedCoupon.discount_value) / 100;
-    } else {
-      discountAmount = appliedCoupon.discount_value;
-    }
-  } else if (discountType === "percentage") {
-    discountAmount = (subtotal * discountValue) / 100;
-  } else {
-    discountAmount = discountValue;
-  }
-  discountAmount = Math.min(discountAmount, subtotal);
-  
-  // Per-item tax from product tax_percent
-  const totalTax = cart.reduce(
-    (sum, item) => sum + (item.price * item.quantity * (item.tax_percent || 0)) / 100,
-    0
-  );
+  // When product has tax_percent, price is INCLUSIVE (grand total per unit). Breakdown: base = price/(1+r/100), tax = price - base.
+  const grandTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const subtotal = cart.reduce((sum, item) => {
+    const lineTotal = item.price * item.quantity;
+    const r = item.tax_percent || 0;
+    return sum + (r > 0 ? lineTotal / (1 + r / 100) : lineTotal);
+  }, 0);
+  const totalTax = cart.reduce((sum, item) => {
+    const lineTotal = item.price * item.quantity;
+    const r = item.tax_percent || 0;
+    return sum + (r > 0 ? (lineTotal * (r / 100)) / (1 + r / 100) : 0);
+  }, 0);
   const taxByRate: Record<number, number> = {};
   cart.forEach((item) => {
     const r = item.tax_percent || 0;
     if (r > 0) {
-      taxByRate[r] = (taxByRate[r] || 0) + (item.price * item.quantity * r) / 100;
+      const lineTotal = item.price * item.quantity;
+      const lineTax = (lineTotal * (r / 100)) / (1 + r / 100);
+      taxByRate[r] = (taxByRate[r] || 0) + lineTax;
     }
   });
-  const total = subtotal - discountAmount + totalTax;
-  
-  // Use totalTax as the single tax value for display when not showing breakdown
+
+  // Discount applies to grand total (inclusive)
+  let discountAmount = 0;
+  if (appliedCoupon) {
+    if (appliedCoupon.discount_type === "percentage") {
+      discountAmount = (grandTotal * appliedCoupon.discount_value) / 100;
+    } else {
+      discountAmount = appliedCoupon.discount_value;
+    }
+  } else if (discountType === "percentage") {
+    discountAmount = (grandTotal * discountValue) / 100;
+  } else {
+    discountAmount = discountValue;
+  }
+  discountAmount = Math.min(discountAmount, grandTotal);
+  const total = grandTotal - discountAmount;
+
   const tax = totalTax;
   
   // Calculate split payment amounts

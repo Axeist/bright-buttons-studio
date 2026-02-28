@@ -1586,8 +1586,11 @@ const Products = () => {
                     <option value="12">12%</option>
                     <option value="18">18%</option>
                   </select>
+                  {formData.price_type === "with_tax" && (
+                    <p className="text-xs text-muted-foreground mt-1">Price is inclusive of tax. Tax breakdown will show at POS/checkout.</p>
+                  )}
                   {formData.price_type === "without_tax" && (
-                    <p className="text-xs text-muted-foreground mt-1">Enable with &quot;With Tax&quot;</p>
+                    <p className="text-xs text-muted-foreground mt-1">Enable &quot;With Tax&quot; for inclusive pricing.</p>
                   )}
                 </div>
               </div>
@@ -1942,8 +1945,11 @@ const Products = () => {
                     <option value="12">12%</option>
                     <option value="18">18%</option>
                   </select>
+                  {formData.price_type === "with_tax" && (
+                    <p className="text-xs text-muted-foreground mt-1">Price is inclusive of tax. Tax breakdown will show at POS/checkout.</p>
+                  )}
                   {formData.price_type === "without_tax" && (
-                    <p className="text-xs text-muted-foreground mt-1">Enable with &quot;With Tax&quot;</p>
+                    <p className="text-xs text-muted-foreground mt-1">Enable &quot;With Tax&quot; for inclusive pricing.</p>
                   )}
                 </div>
               </div>
