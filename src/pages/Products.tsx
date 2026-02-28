@@ -369,23 +369,25 @@ const Products = () => {
       .single();
 
     if (data) {
-      setEditingProduct(data as Product);
+      const d = data as Product;
+      const hasTax = d.tax_percent != null && d.tax_percent > 0;
+      setEditingProduct(d);
       setFormData({
-        name: data.name,
-        description: data.description || "",
-        category: data.category,
-        fabric: data.fabric || "",
-        technique: data.technique || "",
-        price: data.price.toString(),
-        cost_price: data.cost_price?.toString() || "",
-        barcode: data.barcode || "",
-        sku: data.sku || "",
+        name: d.name,
+        description: d.description || "",
+        category: d.category,
+        fabric: d.fabric || "",
+        technique: d.technique || "",
+        price: d.price.toString(),
+        cost_price: d.cost_price?.toString() || "",
+        barcode: d.barcode || "",
+        sku: d.sku || "",
         stock: "",
-        low_stock_threshold: data.low_stock_threshold.toString(),
-        image_url: data.image_url || "",
-        tagline: data.tagline || "",
-        price_type: "without_tax",
-        tax_percent: "0",
+        low_stock_threshold: d.low_stock_threshold.toString(),
+        image_url: d.image_url || "",
+        tagline: d.tagline || "",
+        price_type: hasTax ? "with_tax" : "without_tax",
+        tax_percent: d.tax_percent != null ? String(d.tax_percent) : "0",
       });
       setIsEditModalOpen(true);
     } else {
@@ -1156,6 +1158,7 @@ const Products = () => {
 
   const openEditModal = (product: Product) => {
     setEditingProduct(product);
+    const hasTax = product.tax_percent != null && product.tax_percent > 0;
     setFormData({
       name: product.name,
       description: product.description || "",
@@ -1170,7 +1173,7 @@ const Products = () => {
       low_stock_threshold: (product.low_stock_threshold ?? 5).toString(),
       image_url: product.image_url || "",
       tagline: product.tagline || "",
-      price_type: "without_tax",
+      price_type: hasTax ? "with_tax" : "without_tax",
       tax_percent: product.tax_percent != null ? String(product.tax_percent) : "0",
     });
     setImageFile(null);
@@ -2704,6 +2707,12 @@ const Products = () => {
                   <p className="text-xs font-semibold text-muted-foreground">Price (MRP)</p>
                   <p className="font-semibold text-foreground">
                     ₹{detailsProduct.price.toLocaleString()}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-muted-foreground">Tax %</p>
+                  <p className="font-medium text-foreground">
+                    {(detailsProduct.tax_percent ?? 0) > 0 ? `${detailsProduct.tax_percent}%` : "—"}
                   </p>
                 </div>
                 {isAdmin && (
