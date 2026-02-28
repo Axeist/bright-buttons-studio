@@ -12,7 +12,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { useAuth } from "@/hooks/useAuth";
-import { generateBarcode, generateBarcodeImage } from "@/lib/barcode";
+import { generateBarcode, generateBarcodeImage, generateBarcodeImageForPrint } from "@/lib/barcode";
 import { parseCSV, validateCSVData, generateSampleCSV, CSVProductRow, CSVValidationError } from "@/lib/csvImport";
 import { getProductImageUrl } from "@/lib/utils";
 import logoImage from "@/assets/logo.jpg";
@@ -185,26 +185,18 @@ const Products = () => {
     setIsBarcodeModalOpen(true);
   };
 
-  const THERMAL_SIZES: Record<StickerSize, { w: string; h: string }> = {
-    "50x25": { w: "50mm", h: "25mm" },
-    "60x40": { w: "60mm", h: "40mm" },
-    "100x50": { w: "100mm", h: "50mm" },
-  };
-
   const printBarcodeLabel = (args: {
     barcodeImage: string;
     barcodeValue: string;
     productName?: string;
     sku?: string;
     costPrice?: number | null;
-    size: StickerSize;
     showProductName: boolean;
     showSku: boolean;
   }) => {
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
 
-    const { w, h } = THERMAL_SIZES[args.size];
     const safeName = (args.productName || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
     const safeSku = (args.sku || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
     const safeValue = (args.barcodeValue || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
@@ -221,104 +213,83 @@ const Products = () => {
             html, body {
               margin: 0 !important;
               padding: 0 !important;
-              width: 100%;
-              height: 100%;
+              width: 50mm;
+              height: 25mm;
               overflow: hidden;
               background: #fff;
               font-family: Arial, sans-serif;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
             }
             @media print {
               @page {
-                size: ${w} ${h};
+                size: 50mm 25mm;
                 margin: 0;
               }
-              html, body {
+              body {
                 margin: 0 !important;
                 padding: 0 !important;
-                width: 100% !important;
-                height: 100% !important;
-                overflow: hidden !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
               }
-              .sticker-print-area {
-                position: absolute !important;
-                left: 0 !important;
-                top: 0 !important;
-                width: 100% !important;
-                height: 100% !important;
-                margin: 0 !important;
-                padding: 2mm !important;
-                display: flex !important;
-                flex-direction: column !important;
-                align-items: center !important;
-                justify-content: center !important;
+              .print-container {
+                width: 50mm;
+                height: 25mm;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                overflow: hidden;
               }
-              .sticker-print-area .sticker-barcode-image {
-                max-width: 100% !important;
-                height: auto !important;
+              .print-container .barcode-img {
+                width: 40mm !important;
+                height: 12mm !important;
                 object-fit: contain !important;
+                flex-shrink: 0;
+              }
+              .print-container .label-text {
+                font-size: 8pt !important;
+                max-height: 4mm;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                max-width: 48mm;
+              }
+              svg, canvas {
+                max-width: 100%;
+                max-height: 100%;
               }
             }
-            .sticker-print-area {
-              position: absolute;
-              left: 0; top: 0;
-              width: 100%;
-              height: 100%;
-              margin: 0;
-              padding: 2mm;
+            .print-container {
+              width: 50mm;
+              height: 25mm;
               display: flex;
               flex-direction: column;
               align-items: center;
               justify-content: center;
-              text-align: center;
+              overflow: hidden;
+              padding: 0;
             }
-            .sticker-print-area .brand {
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              gap: 4px;
-              margin-bottom: 2px;
-            }
-            .sticker-print-area .brand img {
-              width: 20px;
-              height: 20px;
+            .print-container .barcode-img {
+              width: 40mm;
+              height: 12mm;
               object-fit: contain;
+              flex-shrink: 0;
             }
-            .sticker-print-area .brand-name {
-              font-size: 9px;
-              font-weight: 700;
-            }
-            .sticker-print-area .sticker-barcode-image {
-              max-width: 100%;
-              height: auto;
-            }
-            .sticker-print-area .sticker-value {
-              font-size: 8px;
-              font-weight: bold;
-              margin-top: 1px;
-            }
-            .sticker-print-area .sticker-name {
-              font-size: 7px;
-              margin-top: 1px;
-            }
-            .sticker-print-area .sticker-sku {
-              font-size: 6px;
-              color: #333;
-              margin-top: 0;
+            .print-container .label-text {
+              font-size: 8pt;
+              line-height: 1.1;
+              margin-top: 0.5mm;
+              text-align: center;
             }
           </style>
         </head>
         <body>
-          <div class="sticker-print-area">
-            <div class="brand">
-              <img src="${logoImage}" alt="Bright Buttons" />
-              <span class="brand-name">Bright Buttons</span>
-            </div>
-            <img src="${args.barcodeImage}" alt="Barcode" class="sticker-barcode-image" />
-            <div class="sticker-value">${costPriceText}</div>
-            ${args.showProductName && safeName ? `<div class="sticker-name">${safeName}</div>` : ""}
-            ${args.showSku && safeSku ? `<div class="sticker-sku">${safeSku}</div>` : ""}
+          <div class="print-container">
+            <img src="${args.barcodeImage}" alt="Barcode" class="barcode-img" />
+            <div class="label-text">${costPriceText}</div>
+            ${args.showProductName && safeName ? `<div class="label-text">${safeName}</div>` : ""}
+            ${args.showSku && safeSku ? `<div class="label-text">${safeSku}</div>` : ""}
           </div>
           <script>
             window.onload = function() {
@@ -333,14 +304,14 @@ const Products = () => {
   };
 
   const handlePrintBarcode = () => {
-    if (!barcodeImageUrl) return;
+    if (!barcodeImageUrl || !currentBarcodeValue) return;
+    const printImageUrl = generateBarcodeImageForPrint(currentBarcodeValue);
     printBarcodeLabel({
-      barcodeImage: barcodeImageUrl,
+      barcodeImage: printImageUrl,
       barcodeValue: currentBarcodeValue,
       productName: barcodeProductName,
       sku: barcodeSku,
       costPrice: barcodeCostPrice,
-      size: stickerSize,
       showProductName: showProductNameOnLabel,
       showSku: showSkuOnLabel,
     });
