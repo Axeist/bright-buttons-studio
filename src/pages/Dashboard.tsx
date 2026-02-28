@@ -6,7 +6,6 @@ import {
   ShoppingBag, 
   DollarSign, 
   Package,
-  AlertTriangle,
   ArrowUpRight,
   ArrowDownRight,
   Sparkles,
@@ -35,7 +34,6 @@ interface DashboardStats {
   avgOrderValue: number;
   whatsappOrders: number;
   onlineOrders: number;
-  lowStockItems: Array<{ name: string; stock: number }>;
   topProducts: Array<{ name: string; sales: number; revenue: number }>;
   recentOrders: Array<{
     id: string;
@@ -68,7 +66,6 @@ const Dashboard = () => {
     avgOrderValue: 0,
     whatsappOrders: 0,
     onlineOrders: 0,
-    lowStockItems: [],
     topProducts: [],
     recentOrders: [],
     monthlyRevenue: [],
@@ -132,20 +129,6 @@ const Dashboard = () => {
       const todayOrdersCount = orders.length;
       const avgOrderValue = todayOrdersCount > 0 ? todayRevenue / todayOrdersCount : 0;
       const onlineOrdersCount = orders.filter(o => o.source === "online").length;
-
-      // Low stock items
-      const { data: lowStockData } = await supabase
-        .from("products")
-        .select("name, low_stock_threshold, inventory(quantity)")
-        .eq("status", "active");
-
-      const lowStockItems = (lowStockData || [])
-        .filter(p => (p.inventory?.[0]?.quantity || 0) <= (p.low_stock_threshold || 5))
-        .map(p => ({
-          name: p.name,
-          stock: p.inventory?.[0]?.quantity || 0,
-        }))
-        .slice(0, 3);
 
       // Calculate monthly/daily revenue based on date range
       const revenueData = new Map<string, { revenue: number; orders: number }>();
@@ -376,7 +359,6 @@ const Dashboard = () => {
         avgOrderValue,
         whatsappOrders: 0,
         onlineOrders: onlineOrdersCount,
-        lowStockItems,
         topProducts,
         recentOrders: recentOrdersData || [],
         monthlyRevenue,
@@ -403,7 +385,6 @@ const Dashboard = () => {
         avgOrderValue: 0,
         whatsappOrders: 0,
         onlineOrders: 0,
-        lowStockItems: [],
         topProducts: [],
         recentOrders: [],
         monthlyRevenue: [],
@@ -789,45 +770,6 @@ const Dashboard = () => {
                   />
                 </div>
               </div>
-            </div>
-          </motion.div>
-
-          {/* Low Stock */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.6, duration: 0.5 }}
-            className="glass-card rounded-2xl p-6 shadow-xl"
-          >
-            <div className="flex items-center gap-2 mb-5">
-              <motion.div
-                animate={{ rotate: [0, -10, 10, 0] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              >
-                <AlertTriangle className="w-5 h-5 text-earth-400" />
-              </motion.div>
-              <h3 className="font-semibold text-foreground text-lg">Low Stock Alerts</h3>
-            </div>
-            <div className="space-y-3">
-              {stats.lowStockItems.length > 0 ? (
-                stats.lowStockItems.map((item, index) => (
-                  <motion.div
-                    key={item.name}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.6 + index * 0.1 }}
-                    whileHover={{ x: 4 }}
-                    className="flex items-center justify-between p-3 rounded-xl bg-earth-50/50 dark:bg-earth-900/20 border border-earth-200/50 dark:border-earth-800/30 hover:border-earth-400 dark:hover:border-earth-600 transition-colors"
-                  >
-                    <span className="text-sm text-foreground truncate pr-2 font-medium">{item.name}</span>
-                    <span className="text-sm font-bold text-earth-600 dark:text-earth-400 flex-shrink-0 px-2 py-1 bg-earth-100 dark:bg-earth-900/40 rounded-full">
-                      {item.stock} left
-                    </span>
-                  </motion.div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground">No low stock items</p>
-              )}
             </div>
           </motion.div>
 

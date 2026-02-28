@@ -103,7 +103,6 @@ const Products = () => {
     barcode: "",
     sku: "",
     stock: "",
-    low_stock_threshold: "5",
     image_url: "",
     tagline: "",
     price_type: "without_tax" as "with_tax" | "without_tax",
@@ -383,7 +382,6 @@ const Products = () => {
         barcode: d.barcode || "",
         sku: d.sku || "",
         stock: "",
-        low_stock_threshold: d.low_stock_threshold.toString(),
         image_url: d.image_url || "",
         tagline: d.tagline || "",
         price_type: hasTax ? "with_tax" : "without_tax",
@@ -442,7 +440,7 @@ const Products = () => {
           cost_price: formData.cost_price ? parseFloat(formData.cost_price) : null,
           barcode: barcodeValue,
           sku: formData.sku || null,
-          low_stock_threshold: parseInt(formData.low_stock_threshold) || 5,
+          low_stock_threshold: 5,
           image_url: imageUrl,
           tagline: formData.tagline || null,
           status: "active",
@@ -536,7 +534,7 @@ const Products = () => {
           cost_price: formData.cost_price ? parseFloat(formData.cost_price) : null,
           barcode: formData.barcode || null,
           sku: formData.sku || null,
-          low_stock_threshold: parseInt(formData.low_stock_threshold) || 5,
+          low_stock_threshold: 5,
           image_url: imageUrl,
           tagline: formData.tagline || null,
           tax_percent: parseInt(formData.tax_percent, 10) || 0,
@@ -896,7 +894,6 @@ const Products = () => {
       barcode: "",
       sku: "",
       stock: "",
-      low_stock_threshold: "5",
       image_url: "",
       tagline: "",
       price_type: "without_tax",
@@ -1098,7 +1095,7 @@ const Products = () => {
               price,
               cost_price: productData.cost_price ? parseFloat(productData.cost_price.replace(/[₹,]/g, '')) : null,
               sku: productData.sku || null,
-              low_stock_threshold: productData.low_stock_threshold ? parseInt(productData.low_stock_threshold) : 5,
+              low_stock_threshold: 5,
               image_url: productData.image_url || null,
               tagline: productData.tagline || null,
               status: "active",
@@ -1170,7 +1167,6 @@ const Products = () => {
       barcode: product.barcode || "",
       sku: product.sku || "",
       stock: product.inventory?.quantity.toString() || "",
-      low_stock_threshold: (product.low_stock_threshold ?? 5).toString(),
       image_url: product.image_url || "",
       tagline: product.tagline || "",
       price_type: hasTax ? "with_tax" : "without_tax",
@@ -1305,8 +1301,6 @@ const Products = () => {
               <AnimatePresence>
                 {filteredProducts.map((product, index) => {
                   const stock = product.inventory?.quantity || 0;
-                  const isLowStock = stock <= (product.low_stock_threshold || 5);
-                  
                   return (
                     <motion.tr
                       key={product.id}
@@ -1360,16 +1354,7 @@ const Products = () => {
                         </span>
                       </td>
                       <td className="p-4 hidden lg:table-cell">
-                        <div className="flex items-center gap-2">
-                          <span className={`text-sm font-medium ${
-                            isLowStock ? "text-destructive" : "text-foreground"
-                          }`}>
-                            {stock}
-                          </span>
-                          {isLowStock && (
-                            <AlertCircle className="w-4 h-4 text-destructive" />
-                          )}
-                        </div>
+                        <span className="text-sm font-medium text-foreground">{stock}</span>
                       </td>
                       <td className="p-4">
                         <span className="text-sm font-bold text-foreground">₹{product.price.toLocaleString()}</span>
@@ -1624,16 +1609,6 @@ const Products = () => {
                     value={formData.stock}
                     onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
                     placeholder="0"
-                    className="rounded-xl h-12 w-full mt-1"
-                  />
-                </div>
-                <div>
-                  <Label>Low Stock Threshold</Label>
-                  <Input
-                    type="number"
-                    value={formData.low_stock_threshold}
-                    onChange={(e) => setFormData({ ...formData, low_stock_threshold: e.target.value })}
-                    placeholder="5"
                     className="rounded-xl h-12 w-full mt-1"
                   />
                 </div>
@@ -2028,16 +2003,6 @@ const Products = () => {
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">Leave empty to auto-generate</p>
-              </div>
-              <div>
-                <Label>Low Stock Threshold</Label>
-                <Input
-                  type="number"
-                  value={formData.low_stock_threshold}
-                  onChange={(e) => setFormData({ ...formData, low_stock_threshold: e.target.value })}
-                  placeholder="5"
-                  className="rounded-xl h-12 w-full"
-                />
               </div>
             </div>
 
@@ -2507,7 +2472,6 @@ const Products = () => {
                 <li><strong>technique</strong> - Printing technique (optional)</li>
                 <li><strong>cost_price</strong> - Cost price in ₹ (optional)</li>
                 <li><strong>stock</strong> - Initial stock quantity (optional)</li>
-                <li><strong>low_stock_threshold</strong> - Low stock alert threshold (optional, default: 5)</li>
                 <li><strong>image_url</strong> - Product image URL (optional)</li>
               </ul>
               <p className="text-xs text-muted-foreground mt-2">
@@ -2745,12 +2709,6 @@ const Products = () => {
                   <p className="text-xs font-semibold text-muted-foreground">Stock</p>
                   <p className="font-medium text-foreground">
                     {detailsProduct.inventory?.quantity ?? 0}
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold text-muted-foreground">Low Stock Threshold</p>
-                  <p className="font-medium text-foreground">
-                    {detailsProduct.low_stock_threshold ?? 5}
                   </p>
                 </div>
                 <div className="space-y-1">

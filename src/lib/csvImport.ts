@@ -9,7 +9,6 @@ export interface CSVProductRow {
   cost_price?: string;
   stock?: string;
   sku?: string;
-  low_stock_threshold?: string;
   image_url?: string;
 }
 
@@ -84,18 +83,6 @@ export function validateCSVData(rows: any[]): CSVImportResult {
       }
     }
 
-    // Validate low_stock_threshold if provided
-    if (row.low_stock_threshold && row.low_stock_threshold.toString().trim() !== '') {
-      const threshold = parseInt(row.low_stock_threshold.toString());
-      if (isNaN(threshold) || threshold < 0) {
-        rowErrors.push({
-          row: rowNum,
-          field: 'low_stock_threshold',
-          message: 'Low stock threshold must be a valid non-negative integer',
-        });
-      }
-    }
-
     // Validate image_url if provided
     if (row.image_url && row.image_url.toString().trim() !== '') {
       try {
@@ -123,7 +110,6 @@ export function validateCSVData(rows: any[]): CSVImportResult {
         cost_price: row.cost_price?.toString().trim() || undefined,
         stock: row.stock?.toString().trim() || undefined,
         sku: row.sku?.toString().trim() || undefined,
-        low_stock_threshold: row.low_stock_threshold?.toString().trim() || undefined,
         image_url: row.image_url?.toString().trim() || undefined,
       });
     }
@@ -206,7 +192,6 @@ export function generateSampleCSV(): string {
     'cost_price',
     'stock',
     'sku',
-    'low_stock_threshold',
     'image_url'
   ];
 
@@ -222,7 +207,6 @@ export function generateSampleCSV(): string {
       '1500',
       '10',
       'KUR-ECO-001',
-      '5',
       'https://example.com/images/kurta-eco-001.jpg'
     ],
     [
@@ -236,7 +220,6 @@ export function generateSampleCSV(): string {
       '8000',
       '5',
       'SAR-KAL-001',
-      '3',
       'https://example.com/images/saree-kal-001.jpg'
     ],
     [
@@ -250,7 +233,6 @@ export function generateSampleCSV(): string {
       '400',
       '20',
       'TSH-TD-001',
-      '10',
       'https://example.com/images/tshirt-td-001.jpg'
     ]
   ];
