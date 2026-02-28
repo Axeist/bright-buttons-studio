@@ -66,8 +66,8 @@ const Products = () => {
   const [currentBarcodeValue, setCurrentBarcodeValue] = useState<string>("");
   const [barcodeProductName, setBarcodeProductName] = useState<string>("");
   const [barcodeSku, setBarcodeSku] = useState<string>("");
-  type StickerSize = "50x30" | "60x40" | "100x50";
-  const [stickerSize, setStickerSize] = useState<StickerSize>("50x30");
+  type StickerSize = "50x25" | "60x40" | "100x50";
+  const [stickerSize, setStickerSize] = useState<StickerSize>("50x25");
   const [showProductNameOnLabel, setShowProductNameOnLabel] = useState(true);
   const [showSkuOnLabel, setShowSkuOnLabel] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
@@ -184,7 +184,7 @@ const Products = () => {
   };
 
   const THERMAL_SIZES: Record<StickerSize, { w: string; h: string }> = {
-    "50x30": { w: "50mm", h: "30mm" },
+    "50x25": { w: "50mm", h: "25mm" },
     "60x40": { w: "60mm", h: "40mm" },
     "100x50": { w: "100mm", h: "50mm" },
   };
@@ -2285,7 +2285,7 @@ const Products = () => {
                 onChange={(e) => setStickerSize(e.target.value as StickerSize)}
                 className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm"
               >
-                <option value="50x30">50mm × 30mm</option>
+                <option value="50x25">50mm × 25mm</option>
                 <option value="60x40">60mm × 40mm</option>
                 <option value="100x50">100mm × 50mm</option>
               </select>
@@ -2369,7 +2369,7 @@ const Products = () => {
                 onChange={(e) => setStickerSize(e.target.value as StickerSize)}
                 className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm"
               >
-                <option value="50x30">50mm × 30mm</option>
+                <option value="50x25">50mm × 25mm</option>
                 <option value="60x40">60mm × 40mm</option>
                 <option value="100x50">100mm × 50mm</option>
               </select>
