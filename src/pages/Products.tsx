@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AdminLayout } from "@/layouts/AdminLayout";
-import { Search, Plus, Edit, Trash2, Leaf, Sparkles, Package, Scan, Loader2, AlertCircle, Upload, Download, FileText, X, Image as ImageIcon, Printer, Eye, Info } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Leaf, Sparkles, Package, Scan, Loader2, AlertCircle, Upload, Download, FileText, X, Image as ImageIcon, Printer, Eye, Info, FileArchive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { useAuth } from "@/hooks/useAuth";
 import { generateBarcode, generateBarcodeImage, generateBarcodeImageForPrint } from "@/lib/barcode";
+import JSZip from "jszip";
 import { parseCSV, validateCSVData, generateSampleCSV, CSVProductRow, CSVValidationError } from "@/lib/csvImport";
 import { getProductImageUrl } from "@/lib/utils";
 import logoImage from "@/assets/logo.jpg";
@@ -73,6 +74,7 @@ const Products = () => {
   const [showSkuOnLabel, setShowSkuOnLabel] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportProductId, setExportProductId] = useState<string>("");
+  const [isDownloadingZip, setIsDownloadingZip] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -361,6 +363,49 @@ const Products = () => {
       setBarcodeSellingPrice(null);
     }
     setIsExportModalOpen(true);
+  };
+
+  const handleDownloadBarcodesAsZip = async () => {
+    const list = filteredProducts.length > 0 ? filteredProducts : products;
+    if (list.length === 0) {
+      toast({
+        title: "No products",
+        description: "Add or filter products to download barcodes.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsDownloadingZip(true);
+    try {
+      const zip = new JSZip();
+      const sanitize = (name: string) => name.replace(/[<>:"/\\|?*]/g, "_").replace(/\s+/g, " ").trim().slice(0, 80) || "product";
+      for (const p of list) {
+        const barcodeValue = p.barcode || generateBarcode(p.id);
+        const dataUrl = generateBarcodeImage(barcodeValue);
+        const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, "");
+        const fileName = `${sanitize(p.name)}_${barcodeValue}.png`;
+        zip.file(fileName, base64, { base64: true });
+      }
+      const blob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `barcodes-${new Date().toISOString().slice(0, 10)}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast({
+        title: "Download started",
+        description: `${list.length} barcode(s) saved to zip.`,
+      });
+    } catch (e) {
+      toast({
+        title: "Download failed",
+        description: e instanceof Error ? e.message : "Could not create zip.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDownloadingZip(false);
+    }
   };
 
   const handleBarcodeScan = async (barcode: string) => {
@@ -2281,21 +2326,36 @@ const Products = () => {
               </div>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1 rounded-xl"
+                  onClick={() => setIsExportModalOpen(false)}
+                >
+                  Close
+                </Button>
+                <Button
+                  className="flex-1 rounded-xl bg-gradient-to-r from-primary to-primary-700 dark:from-primary-600 dark:to-primary-800"
+                  onClick={handlePrintBarcode}
+                  disabled={!barcodeImageUrl || !currentBarcodeValue}
+                >
+                  <Printer className="w-4 h-4 mr-2" />
+                  Print
+                </Button>
+              </div>
               <Button
                 variant="outline"
-                className="flex-1 rounded-xl"
-                onClick={() => setIsExportModalOpen(false)}
+                className="w-full rounded-xl border-primary-200 dark:border-primary-800"
+                onClick={handleDownloadBarcodesAsZip}
+                disabled={isDownloadingZip || (filteredProducts.length === 0 && products.length === 0)}
               >
-                Close
-              </Button>
-              <Button
-                className="flex-1 rounded-xl bg-gradient-to-r from-primary to-primary-700 dark:from-primary-600 dark:to-primary-800"
-                onClick={handlePrintBarcode}
-                disabled={!barcodeImageUrl || !currentBarcodeValue}
-              >
-                <Printer className="w-4 h-4 mr-2" />
-                Print
+                {isDownloadingZip ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <FileArchive className="w-4 h-4 mr-2" />
+                )}
+                {isDownloadingZip ? "Creating zip..." : "Download all barcodes as ZIP"}
               </Button>
             </div>
           </div>
