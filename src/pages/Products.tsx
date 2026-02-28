@@ -2245,7 +2245,9 @@ const Products = () => {
                 </div>
                 <img src={barcodeImageUrl} alt={`Barcode ${currentBarcodeValue}`} className="max-w-full h-auto" />
                 <div className="mt-4 text-center">
-                  <p className="text-lg font-semibold">{currentBarcodeValue}</p>
+                  <p className="text-lg font-semibold">
+                    {barcodeCostPrice != null ? `₹${Number(barcodeCostPrice).toLocaleString()}` : "—"}
+                  </p>
                   {barcodeProductName && (
                     <p className="text-sm text-muted-foreground mt-1">{barcodeProductName}</p>
                   )}
@@ -2329,7 +2331,9 @@ const Products = () => {
                   className="max-w-full h-auto"
                 />
                 <div className="mt-4 text-center">
-                  <p className="text-lg font-semibold">{currentBarcodeValue}</p>
+                  <p className="text-lg font-semibold">
+                    {barcodeCostPrice != null ? `₹${Number(barcodeCostPrice).toLocaleString()}` : "—"}
+                  </p>
                   {barcodeProductName && (
                     <p className="text-sm text-muted-foreground mt-1">{barcodeProductName}</p>
                   )}
