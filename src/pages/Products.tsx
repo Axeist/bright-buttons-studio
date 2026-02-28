@@ -66,7 +66,7 @@ const Products = () => {
   const [currentBarcodeValue, setCurrentBarcodeValue] = useState<string>("");
   const [barcodeProductName, setBarcodeProductName] = useState<string>("");
   const [barcodeSku, setBarcodeSku] = useState<string>("");
-  const [barcodeCostPrice, setBarcodeCostPrice] = useState<number | null>(null);
+  const [barcodeSellingPrice, setBarcodeSellingPrice] = useState<number | null>(null);
   type StickerSize = "50x25" | "60x40" | "100x50";
   const [stickerSize, setStickerSize] = useState<StickerSize>("50x25");
   const [showProductNameOnLabel, setShowProductNameOnLabel] = useState(true);
@@ -167,7 +167,7 @@ const Products = () => {
     }
   };
 
-  const handleViewBarcode = (barcodeValue: string, productName?: string, sku?: string, costPrice?: number | null) => {
+  const handleViewBarcode = (barcodeValue: string, productName?: string, sku?: string, sellingPrice?: number | null) => {
     if (!barcodeValue) {
       toast({
         title: "No Barcode",
@@ -181,7 +181,7 @@ const Products = () => {
     setCurrentBarcodeValue(barcodeValue);
     setBarcodeProductName(productName || "");
     setBarcodeSku(sku || "");
-    setBarcodeCostPrice(costPrice ?? null);
+    setBarcodeSellingPrice(sellingPrice ?? null);
     setIsBarcodeModalOpen(true);
   };
 
@@ -190,7 +190,7 @@ const Products = () => {
     barcodeValue: string;
     productName?: string;
     sku?: string;
-    costPrice?: number | null;
+    sellingPrice?: number | null;
     showProductName: boolean;
     showSku: boolean;
   }) => {
@@ -200,7 +200,7 @@ const Products = () => {
     const safeName = (args.productName || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
     const safeSku = (args.sku || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
     const safeValue = (args.barcodeValue || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
-    const costPriceText = args.costPrice != null ? `₹${Number(args.costPrice).toLocaleString()}` : "—";
+    const priceText = args.sellingPrice != null ? `₹${Number(args.sellingPrice).toLocaleString()}` : "—";
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -313,7 +313,7 @@ const Products = () => {
               <span class="brand-name">Bright Buttons</span>
             </div>
             <img src="${args.barcodeImage}" alt="Barcode" class="barcode-img" />
-            <div class="label-text">${costPriceText}</div>
+            <div class="label-text">${priceText}</div>
             ${args.showProductName && safeName ? `<div class="label-text">${safeName}</div>` : ""}
             ${args.showSku && safeSku ? `<div class="label-text">${safeSku}</div>` : ""}
           </div>
@@ -337,7 +337,7 @@ const Products = () => {
       barcodeValue: currentBarcodeValue,
       productName: barcodeProductName,
       sku: barcodeSku,
-      costPrice: barcodeCostPrice,
+      sellingPrice: barcodeSellingPrice,
       showProductName: showProductNameOnLabel,
       showSku: showSkuOnLabel,
     });
@@ -352,13 +352,13 @@ const Products = () => {
       setCurrentBarcodeValue(value);
       setBarcodeProductName(first.name);
       setBarcodeSku(first.sku || "");
-      setBarcodeCostPrice(first.cost_price ?? null);
+      setBarcodeSellingPrice(first.price ?? null);
     } else {
       setBarcodeImageUrl(null);
       setCurrentBarcodeValue("");
       setBarcodeProductName("");
       setBarcodeSku("");
-      setBarcodeCostPrice(null);
+      setBarcodeSellingPrice(null);
     }
     setIsExportModalOpen(true);
   };
@@ -1406,7 +1406,7 @@ const Products = () => {
                               whileTap={{ scale: 0.9 }}
                               onClick={() => {
                                 setEditingProduct(product);
-                                handleViewBarcode(product.barcode || generateBarcode(product.id), product.name, product.sku ?? undefined, product.cost_price ?? undefined);
+                                handleViewBarcode(product.barcode || generateBarcode(product.id), product.name, product.sku ?? undefined, product.price ?? undefined);
                               }}
                               className="p-2 text-muted-foreground hover:text-primary rounded-lg hover:bg-primary/10 transition-colors"
                               title="View/Print barcode"
@@ -1645,7 +1645,7 @@ const Products = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => handleViewBarcode(formData.barcode, formData.name, "", formData.cost_price ? parseFloat(formData.cost_price) : undefined)}
+                    onClick={() => handleViewBarcode(formData.barcode, formData.name, "", formData.price ? parseFloat(formData.price) : undefined)}
                     className="rounded-xl h-12 shrink-0"
                     title="View/Print barcode"
                   >
@@ -2004,7 +2004,7 @@ const Products = () => {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => handleViewBarcode(formData.barcode, formData.name, "", formData.cost_price ? parseFloat(formData.cost_price) : undefined)}
+                      onClick={() => handleViewBarcode(formData.barcode, formData.name, "", formData.price ? parseFloat(formData.price) : undefined)}
                       className="rounded-xl h-12 shrink-0"
                       title="View/Print barcode"
                     >
@@ -2206,7 +2206,7 @@ const Products = () => {
                     setCurrentBarcodeValue("");
                     setBarcodeProductName("");
                     setBarcodeSku("");
-                    setBarcodeCostPrice(null);
+                    setBarcodeSellingPrice(null);
                     return;
                   }
                   const value = p.barcode || generateBarcode(p.id);
@@ -2214,7 +2214,7 @@ const Products = () => {
                   setCurrentBarcodeValue(value);
                   setBarcodeProductName(p.name);
                   setBarcodeSku(p.sku || "");
-                  setBarcodeCostPrice(p.cost_price ?? null);
+                  setBarcodeSellingPrice(p.price ?? null);
                 }}
                 className="w-full px-4 py-2 h-12 rounded-xl border border-primary-200/50 dark:border-primary-800/30 bg-background text-foreground focus:ring-2 focus:ring-primary transition-all"
               >
@@ -2243,7 +2243,7 @@ const Products = () => {
                 <img src={barcodeImageUrl} alt={`Barcode ${currentBarcodeValue}`} className="max-w-full h-auto" />
                 <div className="mt-4 text-center">
                   <p className="text-lg font-semibold">
-                    {barcodeCostPrice != null ? `₹${Number(barcodeCostPrice).toLocaleString()}` : "—"}
+                    {barcodeSellingPrice != null ? `₹${Number(barcodeSellingPrice).toLocaleString()}` : "—"}
                   </p>
                   {barcodeProductName && (
                     <p className="text-sm text-muted-foreground mt-1">{barcodeProductName}</p>
@@ -2329,7 +2329,7 @@ const Products = () => {
                 />
                 <div className="mt-4 text-center">
                   <p className="text-lg font-semibold">
-                    {barcodeCostPrice != null ? `₹${Number(barcodeCostPrice).toLocaleString()}` : "—"}
+                    {barcodeSellingPrice != null ? `₹${Number(barcodeSellingPrice).toLocaleString()}` : "—"}
                   </p>
                   {barcodeProductName && (
                     <p className="text-sm text-muted-foreground mt-1">{barcodeProductName}</p>
