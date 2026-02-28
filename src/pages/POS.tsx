@@ -2388,7 +2388,7 @@ const POS = () => {
 
       {/* Invoice after Complete Sale - Print option */}
       <Dialog open={!!invoiceOrderForPrint} onOpenChange={(open) => !open && setInvoiceOrderForPrint(null)}>
-        <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto rounded-2xl p-0 gap-0 print:hidden">
+        <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto rounded-2xl p-0 gap-0">
           {invoiceOrderForPrint && (
             <div className="p-4 print:p-0">
               <Invoice
