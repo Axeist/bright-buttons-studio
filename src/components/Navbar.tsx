@@ -19,6 +19,17 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { Badge } from "./ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "./ui/dialog";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+
+const STAFF_PIN = "0303";
 
 const navLinks = [
   { name: "Home", href: "/#hero" },
@@ -36,6 +47,9 @@ export const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCustomerMenuOpen, setIsCustomerMenuOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isStaffPinOpen, setIsStaffPinOpen] = useState(false);
+  const [staffPinValue, setStaffPinValue] = useState("");
+  const [staffPinError, setStaffPinError] = useState("");
   const location = useLocation();
   const navigate = useNavigate();
   const menuRef = useRef<HTMLDivElement>(null);
@@ -105,6 +119,18 @@ export const Navbar = () => {
     };
   }, [isMenuOpen]);
 
+  const handleStaffPinSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setStaffPinError("");
+    if (staffPinValue === STAFF_PIN) {
+      setIsStaffPinOpen(false);
+      setStaffPinValue("");
+      navigate("/login");
+    } else {
+      setStaffPinError("Incorrect PIN");
+    }
+  };
+
   const handleNavClick = (href: string) => {
     setIsMenuOpen(false);
     
@@ -148,10 +174,19 @@ export const Navbar = () => {
       >
         <nav className="container-custom">
           <div className="flex items-center justify-between h-14 sm:h-16 md:h-20 gap-4">
-            {/* Logo */}
-            <Link to="/" className="flex-shrink-0">
+            {/* Logo - click opens PIN dialog for staff login */}
+            <button
+              type="button"
+              onClick={() => {
+                setStaffPinValue("");
+                setStaffPinError("");
+                setIsStaffPinOpen(true);
+              }}
+              className="flex-shrink-0 hover:opacity-80 transition-opacity cursor-pointer"
+              aria-label="Bright Buttons home"
+            >
               <Logo size="2xl" linkTo={undefined} />
-            </Link>
+            </button>
 
             {/* Search Bar - Desktop */}
             <div className="hidden lg:flex flex-1 max-w-md mx-4">
@@ -403,6 +438,52 @@ export const Navbar = () => {
           )}
         </AnimatePresence>
       </motion.header>
+
+      {/* Staff login PIN dialog (hidden behind header logo) */}
+      <Dialog open={isStaffPinOpen} onOpenChange={(open) => {
+        setIsStaffPinOpen(open);
+        if (!open) {
+          setStaffPinValue("");
+          setStaffPinError("");
+        }
+      }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Staff access</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleStaffPinSubmit}>
+            <div className="space-y-2 py-2">
+              <Label htmlFor="staff-pin">Enter PIN</Label>
+              <Input
+                id="staff-pin"
+                type="password"
+                inputMode="numeric"
+                autoComplete="off"
+                placeholder="••••"
+                value={staffPinValue}
+                onChange={(e) => {
+                  setStaffPinValue(e.target.value);
+                  setStaffPinError("");
+                }}
+                className={staffPinError ? "border-destructive" : ""}
+              />
+              {staffPinError && (
+                <p className="text-sm text-destructive">{staffPinError}</p>
+              )}
+            </div>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsStaffPinOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit">Continue</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Enhanced Shopping Cart */}
       <EnhancedShoppingCart

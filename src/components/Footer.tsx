@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Instagram, MessageCircle, Mail, LogIn } from "lucide-react";
+import { Instagram, MessageCircle, Mail } from "lucide-react";
 import { Logo } from "./Logo";
 import { CuephoriaBranding } from "./CuephoriaBranding";
 
@@ -175,14 +175,6 @@ export const Footer = () => {
                 © 2025 Bright Buttons. Handcrafted with love 💚
               </p>
               <div className="flex items-center gap-4 flex-wrap justify-center">
-                <Link
-                  to="/login"
-                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
-                  title="Staff Login"
-                >
-                  <LogIn className="w-3.5 h-3.5" />
-                  <span>Staff Login</span>
-                </Link>
                 <CuephoriaBranding variant="footer" />
               </div>
             </div>
