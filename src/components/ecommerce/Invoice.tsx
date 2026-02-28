@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import logoImage from "@/assets/logo.jpg";
 import { format } from "date-fns";
+
+const PRINT_MOUNT_ID = "invoice-print-mount";
 
 interface InvoiceProps {
   order: any;
@@ -9,6 +11,7 @@ interface InvoiceProps {
 }
 
 export const Invoice = ({ order, onClose }: InvoiceProps) => {
+  const printRootRef = useRef<HTMLDivElement>(null);
   const [shopSettings, setShopSettings] = useState({
     shop_name: "Bright Buttons",
     shop_phone: "",
@@ -55,11 +58,22 @@ export const Invoice = ({ order, onClose }: InvoiceProps) => {
   };
 
   const handlePrint = () => {
+    const root = printRootRef.current;
+    if (!root) return;
+
     const cleanup = () => {
+      const mount = document.getElementById(PRINT_MOUNT_ID);
+      if (mount) mount.remove();
       document.body.classList.remove("print-invoice-active");
       window.removeEventListener("afterprint", cleanup);
     };
     window.addEventListener("afterprint", cleanup);
+
+    const mount = document.createElement("div");
+    mount.id = PRINT_MOUNT_ID;
+    mount.className = "invoice-print-mount";
+    mount.appendChild(root.cloneNode(true));
+    document.body.appendChild(mount);
     document.body.classList.add("print-invoice-active");
     window.print();
   };
@@ -73,32 +87,39 @@ export const Invoice = ({ order, onClose }: InvoiceProps) => {
   if (!order) return null;
 
   return (
-    <div className="invoice-print-root bg-white text-black print:bg-white print:text-black">
-      {/* Print: show only this invoice (A4), hide rest of page */}
+    <div ref={printRootRef} className="invoice-print-root bg-white text-black print:bg-white print:text-black">
+      {/* Print: show only the cloned invoice in #invoice-print-mount (no :has() needed) */}
       <style>{`
+        /* Keep print clone off-screen when in DOM (before/after print) */
+        .invoice-print-mount {
+          position: absolute !important;
+          left: -9999px !important;
+          top: 0 !important;
+          width: 1px !important;
+          height: 1px !important;
+          overflow: hidden !important;
+          pointer-events: none !important;
+        }
         @media print {
           @page {
             size: A4;
             margin: 0.75in;
           }
-          
-          body * {
-            visibility: hidden;
-          }
-          /* Show invoice and all its ancestors (e.g. dialog portal) so content is visible */
-          body *:has(.invoice-print-root),
-          .invoice-print-root,
-          .invoice-print-root * {
-            visibility: visible !important;
-          }
-          /* When print was triggered from invoice button, ensure only invoice shows */
+          /* When print was triggered from invoice: hide everything except the clone mount */
           body.print-invoice-active * {
             visibility: hidden;
           }
-          body.print-invoice-active *:has(.invoice-print-root),
-          body.print-invoice-active .invoice-print-root,
-          body.print-invoice-active .invoice-print-root * {
+          body.print-invoice-active .invoice-print-mount,
+          body.print-invoice-active .invoice-print-mount * {
             visibility: visible !important;
+          }
+          body.print-invoice-active .invoice-print-mount {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            height: auto !important;
+            overflow: visible !important;
           }
           .invoice-print-root {
             position: absolute;
