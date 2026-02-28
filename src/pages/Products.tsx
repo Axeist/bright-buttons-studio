@@ -66,6 +66,7 @@ const Products = () => {
   const [currentBarcodeValue, setCurrentBarcodeValue] = useState<string>("");
   const [barcodeProductName, setBarcodeProductName] = useState<string>("");
   const [barcodeSku, setBarcodeSku] = useState<string>("");
+  const [barcodeCostPrice, setBarcodeCostPrice] = useState<number | null>(null);
   type StickerSize = "50x25" | "60x40" | "100x50";
   const [stickerSize, setStickerSize] = useState<StickerSize>("50x25");
   const [showProductNameOnLabel, setShowProductNameOnLabel] = useState(true);
@@ -166,7 +167,7 @@ const Products = () => {
     }
   };
 
-  const handleViewBarcode = (barcodeValue: string, productName?: string, sku?: string) => {
+  const handleViewBarcode = (barcodeValue: string, productName?: string, sku?: string, costPrice?: number | null) => {
     if (!barcodeValue) {
       toast({
         title: "No Barcode",
@@ -180,6 +181,7 @@ const Products = () => {
     setCurrentBarcodeValue(barcodeValue);
     setBarcodeProductName(productName || "");
     setBarcodeSku(sku || "");
+    setBarcodeCostPrice(costPrice ?? null);
     setIsBarcodeModalOpen(true);
   };
 
@@ -194,6 +196,7 @@ const Products = () => {
     barcodeValue: string;
     productName?: string;
     sku?: string;
+    costPrice?: number | null;
     size: StickerSize;
     showProductName: boolean;
     showSku: boolean;
@@ -203,8 +206,9 @@ const Products = () => {
 
     const { w, h } = THERMAL_SIZES[args.size];
     const safeName = (args.productName || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
-    const safeValue = (args.barcodeValue || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
     const safeSku = (args.sku || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+    const safeValue = (args.barcodeValue || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+    const costPriceText = args.costPrice != null ? `₹${Number(args.costPrice).toLocaleString()}` : "—";
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -311,8 +315,8 @@ const Products = () => {
               <img src="${logoImage}" alt="Bright Buttons" />
               <span class="brand-name">Bright Buttons</span>
             </div>
-            <img src="${args.barcodeImage}" alt="Barcode ${safeValue}" class="sticker-barcode-image" />
-            <div class="sticker-value">${safeValue}</div>
+            <img src="${args.barcodeImage}" alt="Barcode" class="sticker-barcode-image" />
+            <div class="sticker-value">${costPriceText}</div>
             ${args.showProductName && safeName ? `<div class="sticker-name">${safeName}</div>` : ""}
             ${args.showSku && safeSku ? `<div class="sticker-sku">${safeSku}</div>` : ""}
           </div>
@@ -335,6 +339,7 @@ const Products = () => {
       barcodeValue: currentBarcodeValue,
       productName: barcodeProductName,
       sku: barcodeSku,
+      costPrice: barcodeCostPrice,
       size: stickerSize,
       showProductName: showProductNameOnLabel,
       showSku: showSkuOnLabel,
@@ -350,11 +355,13 @@ const Products = () => {
       setCurrentBarcodeValue(value);
       setBarcodeProductName(first.name);
       setBarcodeSku(first.sku || "");
+      setBarcodeCostPrice(first.cost_price ?? null);
     } else {
       setBarcodeImageUrl(null);
       setCurrentBarcodeValue("");
       setBarcodeProductName("");
       setBarcodeSku("");
+      setBarcodeCostPrice(null);
     }
     setIsExportModalOpen(true);
   };
@@ -1402,7 +1409,7 @@ const Products = () => {
                               whileTap={{ scale: 0.9 }}
                               onClick={() => {
                                 setEditingProduct(product);
-                                handleViewBarcode(product.barcode || generateBarcode(product.id), product.name, product.sku ?? undefined);
+                                handleViewBarcode(product.barcode || generateBarcode(product.id), product.name, product.sku ?? undefined, product.cost_price ?? undefined);
                               }}
                               className="p-2 text-muted-foreground hover:text-primary rounded-lg hover:bg-primary/10 transition-colors"
                               title="View/Print barcode"
@@ -1641,7 +1648,7 @@ const Products = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => handleViewBarcode(formData.barcode, formData.name, "")}
+                    onClick={() => handleViewBarcode(formData.barcode, formData.name, "", formData.cost_price ? parseFloat(formData.cost_price) : undefined)}
                     className="rounded-xl h-12 shrink-0"
                     title="View/Print barcode"
                   >
@@ -2000,7 +2007,7 @@ const Products = () => {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => handleViewBarcode(formData.barcode, formData.name, "")}
+                      onClick={() => handleViewBarcode(formData.barcode, formData.name, "", formData.cost_price ? parseFloat(formData.cost_price) : undefined)}
                       className="rounded-xl h-12 shrink-0"
                       title="View/Print barcode"
                     >
@@ -2202,6 +2209,7 @@ const Products = () => {
                     setCurrentBarcodeValue("");
                     setBarcodeProductName("");
                     setBarcodeSku("");
+                    setBarcodeCostPrice(null);
                     return;
                   }
                   const value = p.barcode || generateBarcode(p.id);
@@ -2209,6 +2217,7 @@ const Products = () => {
                   setCurrentBarcodeValue(value);
                   setBarcodeProductName(p.name);
                   setBarcodeSku(p.sku || "");
+                  setBarcodeCostPrice(p.cost_price ?? null);
                 }}
                 className="w-full px-4 py-2 h-12 rounded-xl border border-primary-200/50 dark:border-primary-800/30 bg-background text-foreground focus:ring-2 focus:ring-primary transition-all"
               >
