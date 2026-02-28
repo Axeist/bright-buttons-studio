@@ -76,6 +76,7 @@ const Products = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageUploading, setImageUploading] = useState(false);
+  const [isAddingProduct, setIsAddingProduct] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const imageInputEditRef = useRef<HTMLInputElement>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -398,9 +399,12 @@ const Products = () => {
   };
 
   const handleAddProduct = async () => {
+    if (isAddingProduct) return;
+    setIsAddingProduct(true);
     try {
       const price = parseFloat(formData.price);
       if (!price || price <= 0) {
+        setIsAddingProduct(false);
         toast({
           title: "Error",
           description: "Please enter a valid price",
@@ -416,7 +420,7 @@ const Products = () => {
         if (uploadedUrl) {
           imageUrl = uploadedUrl;
         } else {
-          // If upload failed, don't proceed
+          setIsAddingProduct(false);
           return;
         }
       }
@@ -456,24 +460,14 @@ const Products = () => {
           .eq("id", product.id);
       }
 
-      // Add inventory if stock is provided
+      // Add inventory if stock is provided (only insert here — do not record stock_movement
+      // for initial stock to avoid any DB trigger doubling the quantity)
       if (formData.stock) {
         const stockQty = parseInt(formData.stock);
         if (stockQty > 0) {
           await supabase.from("inventory").insert({
             product_id: product.id,
             quantity: stockQty,
-          });
-
-          // Record stock movement for audit only (quantity_change 0 to avoid double-counting
-          // if a DB trigger applies stock_movements to inventory; we already set inventory above)
-          await supabase.from("stock_movements").insert({
-            product_id: product.id,
-            quantity_change: 0,
-            movement_type: "purchase",
-            reference_type: "purchase",
-            notes: `Initial stock: ${stockQty}`,
-            created_by: user?.id || null,
           });
         }
       }
@@ -497,6 +491,8 @@ const Products = () => {
         description: error.message || "Failed to add product",
         variant: "destructive",
       });
+    } finally {
+      setIsAddingProduct(false);
     }
   };
 
@@ -1117,22 +1113,13 @@ const Products = () => {
             .update({ barcode: barcodeValue })
             .eq("id", product.id);
 
-          // Add inventory if stock is provided
+          // Add inventory if stock is provided (no stock_movement to avoid doubling)
           if (productData.stock) {
             const stockQty = parseInt(productData.stock);
             if (stockQty > 0) {
               await supabase.from("inventory").insert({
                 product_id: product.id,
                 quantity: stockQty,
-              });
-
-              await supabase.from("stock_movements").insert({
-                product_id: product.id,
-                quantity_change: 0,
-                movement_type: "purchase",
-                reference_type: "purchase",
-                notes: `Initial stock from CSV import: ${stockQty}`,
-                created_by: user?.id || null,
               });
             }
           }
@@ -1825,12 +1812,17 @@ const Products = () => {
             <Button
               className="flex-1 rounded-xl bg-gradient-to-r from-primary to-primary-700 dark:from-primary-600 dark:to-primary-800"
               onClick={handleAddProduct}
-              disabled={imageUploading}
+              disabled={imageUploading || isAddingProduct}
             >
               {imageUploading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Uploading...
+                </>
+              ) : isAddingProduct ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Adding...
                 </>
               ) : (
                 "Add Product"
