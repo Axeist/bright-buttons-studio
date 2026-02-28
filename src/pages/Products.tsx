@@ -465,13 +465,14 @@ const Products = () => {
             quantity: stockQty,
           });
 
-          // Record stock movement
+          // Record stock movement for audit only (quantity_change 0 to avoid double-counting
+          // if a DB trigger applies stock_movements to inventory; we already set inventory above)
           await supabase.from("stock_movements").insert({
             product_id: product.id,
-            quantity_change: stockQty,
+            quantity_change: 0,
             movement_type: "purchase",
             reference_type: "purchase",
-            notes: "Initial stock",
+            notes: `Initial stock: ${stockQty}`,
             created_by: user?.id || null,
           });
         }
@@ -1127,10 +1128,10 @@ const Products = () => {
 
               await supabase.from("stock_movements").insert({
                 product_id: product.id,
-                quantity_change: stockQty,
+                quantity_change: 0,
                 movement_type: "purchase",
                 reference_type: "purchase",
-                notes: "Initial stock from CSV import",
+                notes: `Initial stock from CSV import: ${stockQty}`,
                 created_by: user?.id || null,
               });
             }
