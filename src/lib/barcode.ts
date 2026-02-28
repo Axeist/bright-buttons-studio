@@ -32,23 +32,29 @@ export function generateBarcodeImage(barcodeValue: string): string {
 
 /**
  * Generates a barcode image for 203 DPI thermal label print (e.g. TSC TE244).
- * Renders at 40mm × 12mm in 203 DPI pixels so it fits inside 50mm × 25mm labels.
+ * Renders at exactly 40mm × 12mm in 203 DPI pixels for sharp print (no scaling).
  */
 export function generateBarcodeImageForPrint(barcodeValue: string): string {
-  const widthPx = Math.round(40 * DPI_203_PX_PER_MM);  // 40mm
-  const heightPx = Math.round(12 * DPI_203_PX_PER_MM); // 12mm
-  const canvas = document.createElement('canvas');
-  canvas.width = widthPx;
-  canvas.height = heightPx;
-  JsBarcode(canvas, barcodeValue, {
+  const widthPx = Math.round(40 * DPI_203_PX_PER_MM);  // 40mm → ~320px
+  const heightPx = Math.round(12 * DPI_203_PX_PER_MM);  // 12mm → ~96px
+  const temp = document.createElement('canvas');
+  JsBarcode(temp, barcodeValue, {
     format: 'CODE128',
-    width: 1.2,
-    height: 70,
+    width: 1.5,
+    height: 72,
     displayValue: true,
     fontSize: 8,
     margin: 2,
   });
-  return canvas.toDataURL('image/png');
+  const out = document.createElement('canvas');
+  out.width = widthPx;
+  out.height = heightPx;
+  const ctx = out.getContext('2d');
+  if (!ctx) return temp.toDataURL('image/png');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, widthPx, heightPx);
+  ctx.drawImage(temp, 0, 0, temp.width, temp.height, 0, 0, widthPx, heightPx);
+  return out.toDataURL('image/png');
 }
 
 

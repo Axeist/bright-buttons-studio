@@ -282,10 +282,36 @@ const Products = () => {
               margin-top: 0.5mm;
               text-align: center;
             }
+            .print-container .brand {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 2px;
+              margin-bottom: 1mm;
+              flex-shrink: 0;
+            }
+            .print-container .brand img {
+              width: 6mm;
+              height: 6mm;
+              object-fit: contain;
+            }
+            .print-container .brand-name {
+              font-size: 7pt;
+              font-weight: 700;
+              color: #111;
+            }
+            @media print {
+              .print-container .brand img { width: 6mm; height: 6mm; }
+              .print-container .brand-name { font-size: 7pt !important; }
+            }
           </style>
         </head>
         <body>
           <div class="print-container">
+            <div class="brand">
+              <img src="${logoImage}" alt="Bright Buttons" />
+              <span class="brand-name">Bright Buttons</span>
+            </div>
             <img src="${args.barcodeImage}" alt="Barcode" class="barcode-img" />
             <div class="label-text">${costPriceText}</div>
             ${args.showProductName && safeName ? `<div class="label-text">${safeName}</div>` : ""}
