@@ -1300,6 +1300,21 @@ const Products = () => {
         </motion.div>
         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
           <Button
+            onClick={handleDownloadBarcodesAsZip}
+            variant="outline"
+            className="rounded-full h-12"
+            disabled={isDownloadingZip || (filteredProducts.length === 0 && products.length === 0)}
+          >
+            {isDownloadingZip ? (
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+            ) : (
+              <FileArchive className="w-5 h-5 mr-2" />
+            )}
+            Download barcode
+          </Button>
+        </motion.div>
+        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <Button
             onClick={() => setIsImportModalOpen(true)}
             variant="outline"
             className="rounded-full h-12"
