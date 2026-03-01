@@ -12,7 +12,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { useAuth } from "@/hooks/useAuth";
-import { generateBarcode, generateBarcodeImage, generateBarcodeImageForPrint } from "@/lib/barcode";
+import { generateBarcode, generateBarcodeImage, generateBarcodeImageForPrint, generateBarcodeImageHD } from "@/lib/barcode";
 import JSZip from "jszip";
 import { parseCSV, validateCSVData, generateSampleCSV, CSVProductRow, CSVValidationError } from "@/lib/csvImport";
 import { getProductImageUrl } from "@/lib/utils";
@@ -29,45 +29,77 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-/** Generate a branded barcode PNG (Bright Buttons logo + barcode + selling price) as data URL. Uses high-quality display barcode. */
+/** Generate a branded barcode PNG (logo + barcode + product name + price) in HD. */
 async function generateBrandedBarcodeDataUrl(opts: {
   logoUrl: string;
   barcodeValue: string;
+  productName: string;
   sellingPrice: number | null;
 }): Promise<string> {
-  const { logoUrl, barcodeValue, sellingPrice } = opts;
+  const { logoUrl, barcodeValue, productName, sellingPrice } = opts;
+  const scale = 2;
+  const width = 420 * scale;
+  const height = 320 * scale;
   const canvas = document.createElement("canvas");
-  const width = 420;
-  const height = 280;
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext("2d");
-  if (!ctx) return generateBarcodeImage(barcodeValue);
+  if (!ctx) return generateBarcodeImageHD(barcodeValue);
 
-  const barcodeDataUrl = generateBarcodeImage(barcodeValue);
+  const barcodeDataUrl = generateBarcodeImageHD(barcodeValue);
   const [logoImg, barcodeImg] = await Promise.all([loadImage(logoUrl), loadImage(barcodeDataUrl)]);
 
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, width, height);
 
-  const logoSize = 36;
-  ctx.drawImage(logoImg, (width - logoSize) / 2, 14, logoSize, logoSize);
+  const logoSize = 64;
+  ctx.drawImage(logoImg, (width - logoSize) / 2, 24, logoSize, logoSize);
 
   ctx.fillStyle = "#111111";
-  ctx.font = "bold 14px Arial, sans-serif";
+  ctx.font = "bold 20px Arial, sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText("Bright Buttons", width / 2, 62);
+  ctx.fillText("Bright Buttons", width / 2, 24 + logoSize + 22);
 
-  const barcodeW = Math.min(380, barcodeImg.width);
+  const barcodeMaxW = 380 * scale;
+  const barcodeW = Math.min(barcodeMaxW, barcodeImg.width);
   const barcodeH = (barcodeImg.height / barcodeImg.width) * barcodeW;
   const barcodeX = (width - barcodeW) / 2;
-  ctx.drawImage(barcodeImg, barcodeX, 78, barcodeW, barcodeH);
+  const barcodeY = 24 + logoSize + 48;
+  ctx.drawImage(barcodeImg, barcodeX, barcodeY, barcodeW, barcodeH);
+
+  const productNameY = barcodeY + barcodeH + 24;
+  ctx.font = "bold 18px Arial, sans-serif";
+  ctx.textAlign = "center";
+  const maxProductW = width - 40;
+  const productLines = wrapText(ctx, productName, maxProductW);
+  productLines.forEach((line, i) => {
+    ctx.fillText(line, width / 2, productNameY + i * 22);
+  });
+  const productBlockH = productLines.length * 22;
 
   const priceText = sellingPrice != null ? `₹${Number(sellingPrice).toLocaleString()}` : "—";
-  ctx.font = "bold 22px Arial, sans-serif";
-  ctx.fillText(priceText, width / 2, 78 + barcodeH + 32);
+  ctx.font = "bold 28px Arial, sans-serif";
+  ctx.fillText(priceText, width / 2, productNameY + productBlockH + 36);
 
   return canvas.toDataURL("image/png");
+}
+
+function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+  const words = text.trim().split(/\s+/);
+  const lines: string[] = [];
+  let current = "";
+  for (const word of words) {
+    const next = current ? `${current} ${word}` : word;
+    const m = ctx.measureText(next);
+    if (m.width > maxWidth && current) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = next;
+    }
+  }
+  if (current) lines.push(current);
+  return lines.length ? lines : [text || "—"];
 }
 
 interface ProductPhoto {
@@ -438,6 +470,7 @@ const Products = () => {
           const dataUrl = await generateBrandedBarcodeDataUrl({
             logoUrl: logoImage,
             barcodeValue,
+            productName: p.name,
             sellingPrice: p.price ?? null,
           });
           return { fileName: `${sanitize(p.name)}_${barcodeValue}.png`, dataUrl };

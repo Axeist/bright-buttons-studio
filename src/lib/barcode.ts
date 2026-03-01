@@ -31,6 +31,23 @@ export function generateBarcodeImage(barcodeValue: string): string {
 }
 
 /**
+ * Generates a high-resolution barcode image for HD export (e.g. bulk download).
+ * Uses thicker bars, larger height, and bigger font for crisp output.
+ */
+export function generateBarcodeImageHD(barcodeValue: string): string {
+  const canvas = document.createElement('canvas');
+  JsBarcode(canvas, barcodeValue, {
+    format: 'CODE128',
+    width: 4,
+    height: 160,
+    displayValue: true,
+    fontSize: 28,
+    margin: 20,
+  });
+  return canvas.toDataURL('image/png');
+}
+
+/**
  * Generates a barcode image for 203 DPI thermal label print (e.g. TSC TE244).
  * Renders at exactly 40mm × 12mm in 203 DPI pixels for sharp print (no scaling).
  */
