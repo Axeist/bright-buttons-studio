@@ -103,7 +103,7 @@ export const Invoice = ({ order, onClose }: InvoiceProps) => {
         @media print {
           @page {
             size: A4;
-            margin: 0.75in;
+            margin: 12mm;
           }
           /* When print was triggered from invoice: hide everything except the clone mount */
           body.print-invoice-active * {
@@ -156,13 +156,14 @@ export const Invoice = ({ order, onClose }: InvoiceProps) => {
           }
           
           .invoice-container {
-            max-width: 100% !important;
-            width: 210mm !important;
+            max-width: 186mm !important;
+            width: 186mm !important;
             margin: 0 auto !important;
-            padding: 0 0.75in !important;
+            padding: 0 8mm !important;
             box-shadow: none !important;
             background: white !important;
             page-break-inside: avoid;
+            box-sizing: border-box !important;
           }
           
           .invoice-container * {
@@ -219,11 +220,9 @@ export const Invoice = ({ order, onClose }: InvoiceProps) => {
       {/* Invoice Container */}
       <div className="invoice-container max-w-4xl mx-auto bg-white p-8 shadow-lg print:shadow-none">
         {/* Header */}
-        <div className="border-b-2 border-gray-800 pb-6 mb-8 no-break">
+        <div className="pb-6 mb-8 no-break">
           <div className="flex justify-between items-center gap-6">
-            <div className="flex-1 flex items-center">
-              <h1 className="text-3xl font-bold mb-0 print:text-4xl">INVOICE</h1>
-            </div>
+            <div className="flex-1" />
             <div className="flex-1 flex justify-center items-center">
               <img 
                 src={logoImage} 
@@ -248,10 +247,11 @@ export const Invoice = ({ order, onClose }: InvoiceProps) => {
             {shopSettings.shop_email && (
               <p>Email: {shopSettings.shop_email}</p>
             )}
-            {shopSettings.business_hours && (
-              <p>Business Hours: {shopSettings.business_hours}</p>
-            )}
           </div>
+          <p className="text-center mt-4 mb-0">
+            <span className="text-2xl font-bold text-black print:text-3xl">INVOICE</span>
+          </p>
+          <div className="border-b-2 border-gray-800 pt-2 mt-2" />
         </div>
 
         {/* Invoice Details */}
