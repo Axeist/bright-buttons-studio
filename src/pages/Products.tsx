@@ -366,7 +366,8 @@ const Products = () => {
   };
 
   const handleDownloadBarcodesAsZip = async () => {
-    const list = filteredProducts.length > 0 ? filteredProducts : products;
+    const activeProducts = products.filter((p) => p.status !== "archived");
+    const list = filteredProducts.length > 0 ? filteredProducts : activeProducts;
     if (list.length === 0) {
       toast({
         title: "No products",

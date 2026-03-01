@@ -356,11 +356,20 @@ const Dashboard = () => {
         .order("created_at", { ascending: false })
         .limit(5);
 
-      // Total stock units (all products)
-      const { data: inventoryRows } = await supabase
-        .from("inventory")
-        .select("quantity");
-      const totalStockUnits = inventoryRows?.reduce((sum, row) => sum + (row.quantity ?? 0), 0) ?? 0;
+      // Total stock units (existing products only – exclude archived)
+      const { data: activeProductIds } = await supabase
+        .from("products")
+        .select("id")
+        .neq("status", "archived");
+      const ids = activeProductIds?.map((p) => p.id) ?? [];
+      let totalStockUnits = 0;
+      if (ids.length > 0) {
+        const { data: inventoryRows } = await supabase
+          .from("inventory")
+          .select("quantity")
+          .in("product_id", ids);
+        totalStockUnits = inventoryRows?.reduce((sum, row) => sum + (row.quantity ?? 0), 0) ?? 0;
+      }
 
       setStats({
         todayRevenue,
