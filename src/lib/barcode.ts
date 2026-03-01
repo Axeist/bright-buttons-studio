@@ -14,8 +14,10 @@ export interface BarcodeSvgOptions {
   height?: number; // bar height in mm
   includetext?: boolean;
   textxalign?: 'left' | 'center' | 'right';
-  /** Gap in points between barcode bars and human-readable barcode ID text */
-  textgaps?: number;
+  /** Vertical offset in points: moves barcode ID text down from the bars (no letter spacing change). */
+  textyoffset?: number;
+  /** Color of human-readable barcode ID (hex RRGGBB). */
+  textcolor?: string;
 }
 
 const defaultOptions: BarcodeSvgOptions = {
@@ -23,7 +25,8 @@ const defaultOptions: BarcodeSvgOptions = {
   height: 10,
   includetext: true,
   textxalign: 'center',
-  textgaps: 3,
+  textyoffset: 5,
+  textcolor: '000000',
 };
 
 /**
@@ -38,7 +41,8 @@ export function generateBarcodeSvg(barcodeValue: string, opts: BarcodeSvgOptions
     height: options.height ?? 10,
     includetext: options.includetext ?? true,
     textxalign: options.textxalign ?? 'center',
-    textgaps: options.textgaps ?? 3,
+    textyoffset: options.textyoffset ?? 5,
+    textcolor: options.textcolor ?? '000000',
   });
 }
 
