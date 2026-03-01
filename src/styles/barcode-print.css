@@ -74,15 +74,12 @@
     margin: 0;
   }
 
-  /* Hide everything except the barcode label */
+  /* Hide entire page except the barcode label (avoids 100+ pages) */
   body * {
-    visibility: hidden;
-  }
-  #barcode-print-root,
-  #barcode-print-root * {
-    visibility: visible;
+    display: none !important;
   }
   #barcode-print-root {
+    display: block !important;
     position: absolute !important;
     left: 0 !important;
     top: 0 !important;
@@ -95,7 +92,11 @@
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
+  #barcode-print-root * {
+    display: revert !important;
+  }
   #barcode-print-root .print-container {
+    display: flex !important;
     width: 50mm !important;
     height: 25mm !important;
     max-width: 50mm !important;
@@ -103,6 +104,7 @@
     padding: 0.5mm !important;
   }
   #barcode-print-root .print-container .brand {
+    display: flex !important;
     max-height: 4mm !important;
   }
   #barcode-print-root .print-container .brand img {
@@ -113,10 +115,12 @@
     font-size: 5.5pt !important;
   }
   #barcode-print-root .print-container .barcode-img {
+    display: inline-block !important;
     width: 40mm !important;
     height: 10mm !important;
   }
   #barcode-print-root .print-container .label-text {
+    display: block !important;
     font-size: 5.5pt !important;
     max-height: 2.5mm !important;
   }

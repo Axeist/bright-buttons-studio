@@ -290,32 +290,41 @@ const Products = () => {
     const safeSku = (args.sku || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
     const priceText = args.sellingPrice != null ? `₹${Number(args.sellingPrice).toLocaleString()}` : "—";
 
-    root.innerHTML = `
-      <div class="print-container">
-        <div class="brand">
-          <img src="${logoImage}" alt="Bright Buttons" />
-          <span class="brand-name">Bright Buttons</span>
-        </div>
-        <img src="${args.barcodeImage}" alt="Barcode" class="barcode-img" />
-        <div class="label-text">${priceText}</div>
-        ${args.showProductName && safeName ? `<div class="label-text">${safeName}</div>` : ""}
-        ${args.showSku && safeSku ? `<div class="label-text">${safeSku}</div>` : ""}
-      </div>
-    `;
+    // Preload images so they're decoded before we inject (avoids blank barcode in print)
+    const logoPreload = new Image();
+    logoPreload.src = logoImage;
+    const barcodePreload = new Image();
+    barcodePreload.src = args.barcodeImage;
 
     const triggerPrint = () => {
-      window.print();
-      window.onafterprint = () => {
-        if (root) root.innerHTML = "";
-      };
+      root.innerHTML = `
+        <div class="print-container">
+          <div class="brand">
+            <img src="${logoImage}" alt="Bright Buttons" />
+            <span class="brand-name">Bright Buttons</span>
+          </div>
+          <img src="${args.barcodeImage}" alt="Barcode" class="barcode-img" />
+          <div class="label-text">${priceText}</div>
+          ${args.showProductName && safeName ? `<div class="label-text">${safeName}</div>` : ""}
+          ${args.showSku && safeSku ? `<div class="label-text">${safeSku}</div>` : ""}
+        </div>
+      `;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          window.print();
+          window.onafterprint = () => {
+            if (root) root.innerHTML = "";
+          };
+        });
+      });
     };
 
-    const logoImg = root.querySelector(".brand img") as HTMLImageElement | null;
-    if (logoImg && !logoImg.complete) {
-      logoImg.onload = triggerPrint;
-    } else {
-      triggerPrint();
-    }
+    const maybeTriggerPrint = () => {
+      if (logoPreload.complete && barcodePreload.complete) triggerPrint();
+    };
+    logoPreload.onload = maybeTriggerPrint;
+    barcodePreload.onload = maybeTriggerPrint;
+    maybeTriggerPrint();
   };
 
   const handlePrintBarcode = () => {
