@@ -218,48 +218,41 @@ export const Invoice = ({ order, onClose }: InvoiceProps) => {
       </div>
 
       {/* Invoice Container */}
-      <div className="invoice-container max-w-4xl mx-auto bg-white p-8 shadow-lg print:shadow-none">
+      <div className="invoice-container max-w-4xl mx-auto bg-white p-8 shadow-lg print:shadow-none print:p-4">
         {/* Header */}
-        <div className="pb-6 mb-8 no-break">
-          <div className="flex justify-between items-center gap-6">
-            <div className="flex-1" />
-            <div className="flex-1 flex justify-center items-center">
+        <div className="pb-3 mb-4 no-break print:pb-2 print:mb-3">
+          <div className="flex justify-between items-start gap-4">
+            <div className="flex items-center gap-3 shrink-0">
               <img 
                 src={logoImage} 
                 alt="Bright Buttons" 
-                className="h-56 w-auto object-contain print:h-80 max-w-2xl"
+                className="h-12 w-auto object-contain print:h-10 max-w-[120px]"
               />
+              <div className="text-xs text-gray-600 space-y-0.5 print:text-[11px]">
+                {shopSettings.shop_address && <p>{shopSettings.shop_address}</p>}
+                {shopSettings.shop_phone && <p>Phone: {shopSettings.shop_phone}</p>}
+                {shopSettings.shop_email && <p>Email: {shopSettings.shop_email}</p>}
+              </div>
             </div>
             <div className="flex-1 text-right min-w-0">
-              <div className="text-sm text-gray-600 space-y-1">
+              <div className="text-sm text-gray-600 space-y-0.5 print:text-xs">
                 <p className="font-semibold text-black">Invoice #</p>
-                <p className="text-lg font-bold text-black">{order.order_number}</p>
+                <p className="text-base font-bold text-black print:text-sm">{order.order_number}</p>
               </div>
             </div>
           </div>
-          <div className="text-center text-sm text-gray-600 space-y-1 mt-4">
-            {shopSettings.shop_address && (
-              <p>{shopSettings.shop_address}</p>
-            )}
-            {shopSettings.shop_phone && (
-              <p>Phone: {shopSettings.shop_phone}</p>
-            )}
-            {shopSettings.shop_email && (
-              <p>Email: {shopSettings.shop_email}</p>
-            )}
-          </div>
-          <p className="text-center mt-4 mb-0">
-            <span className="text-2xl font-bold text-black print:text-3xl">INVOICE</span>
+          <p className="text-center mt-3 mb-0 print:mt-2">
+            <span className="text-xl font-bold text-black print:text-2xl">INVOICE</span>
           </p>
-          <div className="border-b-2 border-gray-800 pt-2 mt-2" />
+          <div className="border-b-2 border-gray-800 pt-1.5 mt-1.5 print:pt-1 print:mt-1" />
         </div>
 
         {/* Invoice Details */}
-        <div className="grid grid-cols-2 gap-8 mb-8 no-break">
+        <div className="grid grid-cols-2 gap-4 mb-4 no-break print:gap-3 print:mb-3">
           {/* Bill To */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Bill To</h3>
-            <div className="text-sm space-y-1">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase mb-1 print:mb-0.5">Bill To</h3>
+            <div className="text-xs space-y-0.5 print:text-[11px]">
               <p className="font-semibold text-black">{order.customer_name}</p>
               {order.customer_email && (
                 <p className="text-gray-600">{order.customer_email}</p>
@@ -272,8 +265,8 @@ export const Invoice = ({ order, onClose }: InvoiceProps) => {
 
           {/* Invoice Info */}
           <div className="text-right">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Invoice Details</h3>
-            <div className="text-sm space-y-1 text-gray-600">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase mb-1 print:mb-0.5">Invoice Details</h3>
+            <div className="text-xs space-y-0.5 text-gray-600 print:text-[11px]">
               <p>
                 <span className="font-semibold text-black">Date:</span>{" "}
                 {format(new Date(order.created_at), "MMMM dd, yyyy")}
@@ -304,39 +297,39 @@ export const Invoice = ({ order, onClose }: InvoiceProps) => {
 
         {/* Shipping Address */}
         {order.shipping_address && (
-          <div className="mb-8 no-break">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Ship To</h3>
-            <div className="text-sm text-gray-600">
+          <div className="mb-4 no-break print:mb-3">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase mb-1 print:mb-0.5">Ship To</h3>
+            <div className="text-xs text-gray-600 print:text-[11px]">
               <p>{order.shipping_address}</p>
             </div>
           </div>
         )}
 
         {/* Items Table */}
-        <div className="mb-8 no-break">
-          <table className="w-full border-collapse print:border-collapse">
+        <div className="mb-4 no-break print:mb-3">
+          <table className="w-full border-collapse print:border-collapse text-sm print:text-xs">
             <thead className="print:table-header-group">
               <tr className="bg-gray-100 border-b-2 border-gray-800 print:bg-gray-100">
-                <th className="text-left py-3 px-4 text-sm font-semibold text-black print:border print:border-gray-300">Item</th>
-                <th className="text-center py-3 px-4 text-sm font-semibold text-black print:border print:border-gray-300">Quantity</th>
-                <th className="text-right py-3 px-4 text-sm font-semibold text-black print:border print:border-gray-300">Unit Price</th>
-                <th className="text-right py-3 px-4 text-sm font-semibold text-black print:border print:border-gray-300">Total</th>
+                <th className="text-left py-2 px-3 text-xs font-semibold text-black print:border print:border-gray-300 print:py-1 print:px-2">Item</th>
+                <th className="text-center py-2 px-3 text-xs font-semibold text-black print:border print:border-gray-300 print:py-1 print:px-2">Quantity</th>
+                <th className="text-right py-2 px-3 text-xs font-semibold text-black print:border print:border-gray-300 print:py-1 print:px-2">Unit Price</th>
+                <th className="text-right py-2 px-3 text-xs font-semibold text-black print:border print:border-gray-300 print:py-1 print:px-2">Total</th>
               </tr>
             </thead>
             <tbody>
               {order.order_items?.map((item: any, index: number) => (
                 <tr key={index} className="border-b border-gray-200 print:border-b print:border-gray-300">
-                  <td className="py-3 px-4 print:border print:border-gray-300">
+                  <td className="py-2 px-3 print:border print:border-gray-300 print:py-1 print:px-2">
                     <p className="font-medium text-black">{item.product_name}</p>
                     {item.product_sku && (
                       <p className="text-xs text-gray-500 print:text-gray-700">SKU: {item.product_sku}</p>
                     )}
                   </td>
-                  <td className="py-3 px-4 text-center text-gray-600 print:border print:border-gray-300 print:text-gray-700">{item.quantity}</td>
-                  <td className="py-3 px-4 text-right text-gray-600 print:border print:border-gray-300 print:text-gray-700">
+                  <td className="py-2 px-3 text-center text-gray-600 print:border print:border-gray-300 print:text-gray-700 print:py-1 print:px-2">{item.quantity}</td>
+                  <td className="py-2 px-3 text-right text-gray-600 print:border print:border-gray-300 print:text-gray-700 print:py-1 print:px-2">
                     ₹{item.unit_price.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
-                  <td className="py-3 px-4 text-right font-semibold text-black print:border print:border-gray-300">
+                  <td className="py-2 px-3 text-right font-semibold text-black print:border print:border-gray-300 print:py-1 print:px-2">
                     ₹{item.total_price.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
                 </tr>
@@ -346,45 +339,45 @@ export const Invoice = ({ order, onClose }: InvoiceProps) => {
         </div>
 
         {/* Totals */}
-        <div className="flex justify-end mb-8 no-break">
-          <div className="w-80">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
+        <div className="flex justify-end mb-4 no-break print:mb-3">
+          <div className="w-72 print:w-64">
+            <div className="space-y-1 print:space-y-0.5">
+              <div className="flex justify-between text-xs print:text-[11px]">
                 <span className="text-gray-600">Subtotal</span>
                 <span className="text-black">₹{order.subtotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
               {order.discount_amount > 0 && (
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-xs print:text-[11px]">
                   <span className="text-gray-600">Discount</span>
                   <span className="text-green-600">-₹{order.discount_amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
               )}
               {order.shipping_amount > 0 && (
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-xs print:text-[11px]">
                   <span className="text-gray-600">Shipping</span>
                   <span className="text-black">₹{order.shipping_amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
               )}
               {order.shipping_amount === 0 && (
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-xs print:text-[11px]">
                   <span className="text-gray-600">Shipping</span>
                   <span className="text-green-600 font-semibold">FREE</span>
                 </div>
               )}
-              <div className="flex justify-between text-sm font-medium">
+              <div className="flex justify-between text-xs font-medium print:text-[11px]">
                 <span className="text-gray-700">Taxable Amount</span>
                 <span className="text-black">
                   ₹{(Number(order.subtotal) - Number(order.discount_amount || 0)).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between text-xs print:text-[11px]">
                 <span className="text-gray-600">Total Tax</span>
                 <span className="text-black">₹{parseFloat(order.tax_amount ?? 0).toFixed(2)}</span>
               </div>
-              <div className="border-t-2 border-gray-800 pt-2 mt-2">
-                <div className="flex justify-between">
-                  <span className="text-lg font-bold text-black">Total Amount</span>
-                  <span className="text-lg font-bold text-black">
+              <div className="border-t-2 border-gray-800 pt-1.5 mt-1.5 print:pt-1 print:mt-1">
+                <div className="flex justify-between text-sm print:text-xs">
+                  <span className="font-bold text-black">Total Amount</span>
+                  <span className="font-bold text-black">
                     ₹{parseFloat(order.total_amount).toFixed(2)}
                   </span>
                 </div>
@@ -394,8 +387,8 @@ export const Invoice = ({ order, onClose }: InvoiceProps) => {
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-300 pt-6 mt-8 no-break">
-          <div className="text-center text-xs text-gray-500 space-y-1 print:text-gray-700">
+        <div className="border-t border-gray-300 pt-4 mt-4 no-break print:pt-2 print:mt-2">
+          <div className="text-center text-xs text-gray-500 space-y-0.5 print:text-[10px] print:text-gray-700">
             <p className="font-semibold text-black">Thank you for your business!</p>
             <p>This is a computer-generated invoice and does not require a signature.</p>
             {shopSettings.shop_email && (
