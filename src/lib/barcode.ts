@@ -14,6 +14,9 @@ export function generateBarcode(productId: string): string {
 /** 203 DPI: pixels per mm ≈ 8 (203/25.4) */
 const DPI_203_PX_PER_MM = 203 / 25.4;
 
+/** 300 DPI for sharp print/PDF (no upscale blur) */
+const DPI_300_PX_PER_MM = 300 / 25.4;
+
 /**
  * Generates a barcode image data URL
  */
@@ -48,12 +51,12 @@ export function generateBarcodeImageHD(barcodeValue: string): string {
 }
 
 /**
- * Generates a barcode image for 203 DPI thermal label print (e.g. TSC TE244).
- * Renders at exactly 40mm × 12mm in 203 DPI pixels for sharp print (no scaling).
+ * Generates a barcode image for label print at 300 DPI.
+ * 40mm × 12mm at 300 DPI keeps barcode sharp when saving as PDF or printing.
  */
 export function generateBarcodeImageForPrint(barcodeValue: string): string {
-  const widthPx = Math.round(40 * DPI_203_PX_PER_MM);  // 40mm → ~320px
-  const heightPx = Math.round(12 * DPI_203_PX_PER_MM);  // 12mm → ~96px
+  const widthPx = Math.round(40 * DPI_300_PX_PER_MM);   // 40mm @ 300 DPI → ~472px
+  const heightPx = Math.round(12 * DPI_300_PX_PER_MM);  // 12mm @ 300 DPI → ~142px
   const temp = document.createElement('canvas');
   JsBarcode(temp, barcodeValue, {
     format: 'CODE128',

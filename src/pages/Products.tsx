@@ -312,39 +312,56 @@ const Products = () => {
                 size: 50mm 25mm;
                 margin: 0;
               }
-              body {
+              html, body {
                 margin: 0 !important;
                 padding: 0 !important;
+                width: 50mm !important;
+                height: 25mm !important;
+                overflow: hidden !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
               }
               .print-container {
-                width: 50mm;
-                height: 25mm;
+                width: 50mm !important;
+                height: 25mm !important;
+                max-width: 50mm !important;
+                max-height: 25mm !important;
                 display: flex;
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
                 overflow: hidden;
+                padding: 0.5mm;
+                box-sizing: border-box;
               }
+              .print-container .brand {
+                flex-shrink: 0;
+                max-height: 4mm;
+                margin-bottom: 0.5mm;
+              }
+              .print-container .brand img {
+                width: 3.5mm !important;
+                height: 3.5mm !important;
+                object-fit: contain;
+              }
+              .print-container .brand-name { font-size: 5.5pt !important; line-height: 1 !important; }
               .print-container .barcode-img {
                 width: 40mm !important;
-                height: 12mm !important;
+                height: 10mm !important;
                 object-fit: contain !important;
                 flex-shrink: 0;
               }
               .print-container .label-text {
-                font-size: 8pt !important;
-                max-height: 4mm;
+                font-size: 5.5pt !important;
+                line-height: 1 !important;
+                max-height: 2.5mm;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
                 max-width: 48mm;
+                margin-top: 0.3mm;
               }
-              svg, canvas {
-                max-width: 100%;
-                max-height: 100%;
-              }
+              svg, canvas { max-width: 100%; max-height: 100%; }
             }
             .print-container {
               width: 50mm;
@@ -354,41 +371,49 @@ const Products = () => {
               align-items: center;
               justify-content: center;
               overflow: hidden;
-              padding: 0;
-            }
-            .print-container .barcode-img {
-              width: 40mm;
-              height: 12mm;
-              object-fit: contain;
-              flex-shrink: 0;
-            }
-            .print-container .label-text {
-              font-size: 8pt;
-              line-height: 1.1;
-              margin-top: 0.5mm;
-              text-align: center;
+              padding: 0.5mm;
+              box-sizing: border-box;
             }
             .print-container .brand {
               display: flex;
               align-items: center;
               justify-content: center;
-              gap: 2px;
-              margin-bottom: 1mm;
+              gap: 1px;
+              margin-bottom: 0.5mm;
               flex-shrink: 0;
+              max-height: 4mm;
             }
             .print-container .brand img {
-              width: 6mm;
-              height: 6mm;
+              width: 3.5mm;
+              height: 3.5mm;
               object-fit: contain;
             }
             .print-container .brand-name {
-              font-size: 7pt;
+              font-size: 5.5pt;
               font-weight: 700;
               color: #111;
+              line-height: 1;
+            }
+            .print-container .barcode-img {
+              width: 40mm;
+              height: 10mm;
+              object-fit: contain;
+              flex-shrink: 0;
+            }
+            .print-container .label-text {
+              font-size: 5.5pt;
+              line-height: 1;
+              margin-top: 0.3mm;
+              text-align: center;
+              max-height: 2.5mm;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+              max-width: 48mm;
             }
             @media print {
-              .print-container .brand img { width: 6mm; height: 6mm; }
-              .print-container .brand-name { font-size: 7pt !important; }
+              .print-container .brand img { width: 3.5mm !important; height: 3.5mm !important; }
+              .print-container .brand-name { font-size: 5.5pt !important; }
             }
           </style>
         </head>
