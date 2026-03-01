@@ -220,32 +220,16 @@ export const Invoice = ({ order, onClose }: InvoiceProps) => {
       <div className="invoice-container max-w-4xl mx-auto bg-white p-8 shadow-lg print:shadow-none">
         {/* Header */}
         <div className="border-b-2 border-gray-800 pb-6 mb-8 no-break">
-          <div className="flex justify-between items-start gap-6">
-            <div className="flex-1 min-w-0">
-              <div className="mb-4">
-                <img 
-                  src={logoImage} 
-                  alt="Bright Buttons" 
-                  className="h-40 w-auto object-contain print:h-48"
-                />
-              </div>
-              <div className="text-sm text-gray-600 space-y-1">
-                {shopSettings.shop_address && (
-                  <p>{shopSettings.shop_address}</p>
-                )}
-                {shopSettings.shop_phone && (
-                  <p>Phone: {shopSettings.shop_phone}</p>
-                )}
-                {shopSettings.shop_email && (
-                  <p>Email: {shopSettings.shop_email}</p>
-                )}
-                {shopSettings.business_hours && (
-                  <p>Business Hours: {shopSettings.business_hours}</p>
-                )}
-              </div>
-            </div>
-            <div className="flex-1 flex items-center justify-center shrink-0">
+          <div className="flex justify-between items-center gap-6">
+            <div className="flex-1 flex items-center">
               <h1 className="text-4xl font-bold mb-0 print:text-5xl">INVOICE</h1>
+            </div>
+            <div className="flex-1 flex justify-center">
+              <img 
+                src={logoImage} 
+                alt="Bright Buttons" 
+                className="h-40 w-auto object-contain print:h-56 max-w-md"
+              />
             </div>
             <div className="flex-1 text-right min-w-0">
               <div className="text-sm text-gray-600 space-y-1">
@@ -253,6 +237,20 @@ export const Invoice = ({ order, onClose }: InvoiceProps) => {
                 <p className="text-lg font-bold text-black">{order.order_number}</p>
               </div>
             </div>
+          </div>
+          <div className="text-center text-sm text-gray-600 space-y-1 mt-4">
+            {shopSettings.shop_address && (
+              <p>{shopSettings.shop_address}</p>
+            )}
+            {shopSettings.shop_phone && (
+              <p>Phone: {shopSettings.shop_phone}</p>
+            )}
+            {shopSettings.shop_email && (
+              <p>Email: {shopSettings.shop_email}</p>
+            )}
+            {shopSettings.business_hours && (
+              <p>Business Hours: {shopSettings.business_hours}</p>
+            )}
           </div>
         </div>
 
