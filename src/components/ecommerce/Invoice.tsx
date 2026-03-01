@@ -220,13 +220,13 @@ export const Invoice = ({ order, onClose }: InvoiceProps) => {
       <div className="invoice-container max-w-4xl mx-auto bg-white p-8 shadow-lg print:shadow-none">
         {/* Header */}
         <div className="border-b-2 border-gray-800 pb-6 mb-8 no-break">
-          <div className="flex justify-between items-start">
-            <div className="flex-1">
+          <div className="flex justify-between items-start gap-6">
+            <div className="flex-1 min-w-0">
               <div className="mb-4">
                 <img 
                   src={logoImage} 
                   alt="Bright Buttons" 
-                  className="h-16 w-auto object-contain"
+                  className="h-28 w-auto object-contain print:h-32"
                 />
               </div>
               <div className="text-sm text-gray-600 space-y-1">
@@ -244,8 +244,10 @@ export const Invoice = ({ order, onClose }: InvoiceProps) => {
                 )}
               </div>
             </div>
-            <div className="text-right">
-              <h1 className="text-4xl font-bold mb-2">INVOICE</h1>
+            <div className="flex-1 flex items-center justify-center shrink-0">
+              <h1 className="text-4xl font-bold mb-0 print:text-5xl">INVOICE</h1>
+            </div>
+            <div className="flex-1 text-right min-w-0">
               <div className="text-sm text-gray-600 space-y-1">
                 <p className="font-semibold text-black">Invoice #</p>
                 <p className="text-lg font-bold text-black">{order.order_number}</p>
