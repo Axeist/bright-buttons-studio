@@ -226,7 +226,7 @@ export const Invoice = ({ order, onClose }: InvoiceProps) => {
                 <img 
                   src={logoImage} 
                   alt="Bright Buttons" 
-                  className="h-28 w-auto object-contain print:h-32"
+                  className="h-40 w-auto object-contain print:h-48"
                 />
               </div>
               <div className="text-sm text-gray-600 space-y-1">
