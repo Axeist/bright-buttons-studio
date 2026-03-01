@@ -17,7 +17,8 @@ import {
   BarChart3,
   PieChart,
   Activity,
-  Award
+  Award,
+  Boxes
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,6 +35,7 @@ interface DashboardStats {
   avgOrderValue: number;
   whatsappOrders: number;
   onlineOrders: number;
+  totalStockUnits: number;
   topProducts: Array<{ name: string; sales: number; revenue: number }>;
   recentOrders: Array<{
     id: string;
@@ -66,6 +68,7 @@ const Dashboard = () => {
     avgOrderValue: 0,
     whatsappOrders: 0,
     onlineOrders: 0,
+    totalStockUnits: 0,
     topProducts: [],
     recentOrders: [],
     monthlyRevenue: [],
@@ -353,12 +356,19 @@ const Dashboard = () => {
         .order("created_at", { ascending: false })
         .limit(5);
 
+      // Total stock units (all products)
+      const { data: inventoryRows } = await supabase
+        .from("inventory")
+        .select("quantity");
+      const totalStockUnits = inventoryRows?.reduce((sum, row) => sum + (row.quantity ?? 0), 0) ?? 0;
+
       setStats({
         todayRevenue,
         todayOrders: todayOrdersCount,
         avgOrderValue,
         whatsappOrders: 0,
         onlineOrders: onlineOrdersCount,
+        totalStockUnits,
         topProducts,
         recentOrders: recentOrdersData || [],
         monthlyRevenue,
@@ -385,6 +395,7 @@ const Dashboard = () => {
         avgOrderValue: 0,
         whatsappOrders: 0,
         onlineOrders: 0,
+        totalStockUnits: 0,
         topProducts: [],
         recentOrders: [],
         monthlyRevenue: [],
@@ -467,6 +478,15 @@ const Dashboard = () => {
       iconBg: "bg-blue-100 dark:bg-blue-900/40",
       iconColor: "text-blue-600 dark:text-blue-400"
     },
+    { 
+      title: "Total Stock (Units)", 
+      value: stats.totalStockUnits.toLocaleString(), 
+      change: "All products",
+      icon: Boxes,
+      color: "from-amber-500 to-amber-700",
+      iconBg: "bg-amber-100 dark:bg-amber-900/40",
+      iconColor: "text-amber-600 dark:text-amber-400"
+    },
   ];
 
   return (
@@ -490,7 +510,7 @@ const Dashboard = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
         {displayStats.map((stat, index) => (
           <motion.div
             key={stat.title}
