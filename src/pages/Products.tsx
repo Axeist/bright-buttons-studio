@@ -17,6 +17,7 @@ import JSZip from "jszip";
 import { parseCSV, validateCSVData, generateSampleCSV, CSVProductRow, CSVValidationError } from "@/lib/csvImport";
 import { getProductImageUrl } from "@/lib/utils";
 import logoImage from "@/assets/logo.jpg";
+import "@/styles/barcode-print.css";
 
 /** Load image from URL/data URL and return as HTMLImageElement */
 function loadImage(src: string): Promise<HTMLImageElement> {
@@ -271,6 +272,8 @@ const Products = () => {
     setIsBarcodeModalOpen(true);
   };
 
+  const barcodePrintRootRef = useRef<HTMLDivElement>(null);
+
   const printBarcodeLabel = (args: {
     barcodeImage: string;
     barcodeValue: string;
@@ -280,164 +283,39 @@ const Products = () => {
     showProductName: boolean;
     showSku: boolean;
   }) => {
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
+    const root = barcodePrintRootRef.current;
+    if (!root) return;
 
     const safeName = (args.productName || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
     const safeSku = (args.sku || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
-    const safeValue = (args.barcodeValue || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
     const priceText = args.sellingPrice != null ? `₹${Number(args.sellingPrice).toLocaleString()}` : "—";
 
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <title>Barcode - ${safeValue}</title>
-          <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            html, body {
-              margin: 0 !important;
-              padding: 0 !important;
-              width: 50mm;
-              height: 25mm;
-              overflow: hidden;
-              background: #fff;
-              font-family: Arial, sans-serif;
-              -webkit-print-color-adjust: exact;
-              print-color-adjust: exact;
-            }
-            @media print {
-              @page {
-                size: 50mm 25mm;
-                margin: 0;
-              }
-              html, body {
-                margin: 0 !important;
-                padding: 0 !important;
-                width: 50mm !important;
-                height: 25mm !important;
-                overflow: hidden !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-              }
-              .print-container {
-                width: 50mm !important;
-                height: 25mm !important;
-                max-width: 50mm !important;
-                max-height: 25mm !important;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                overflow: hidden;
-                padding: 0.5mm;
-                box-sizing: border-box;
-              }
-              .print-container .brand {
-                flex-shrink: 0;
-                max-height: 4mm;
-                margin-bottom: 0.5mm;
-              }
-              .print-container .brand img {
-                width: 3.5mm !important;
-                height: 3.5mm !important;
-                object-fit: contain;
-              }
-              .print-container .brand-name { font-size: 5.5pt !important; line-height: 1 !important; }
-              .print-container .barcode-img {
-                width: 40mm !important;
-                height: 10mm !important;
-                object-fit: contain !important;
-                flex-shrink: 0;
-              }
-              .print-container .label-text {
-                font-size: 5.5pt !important;
-                line-height: 1 !important;
-                max-height: 2.5mm;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-                max-width: 48mm;
-                margin-top: 0.3mm;
-              }
-              svg, canvas { max-width: 100%; max-height: 100%; }
-            }
-            .print-container {
-              width: 50mm;
-              height: 25mm;
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              justify-content: center;
-              overflow: hidden;
-              padding: 0.5mm;
-              box-sizing: border-box;
-            }
-            .print-container .brand {
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              gap: 1px;
-              margin-bottom: 0.5mm;
-              flex-shrink: 0;
-              max-height: 4mm;
-            }
-            .print-container .brand img {
-              width: 3.5mm;
-              height: 3.5mm;
-              object-fit: contain;
-            }
-            .print-container .brand-name {
-              font-size: 5.5pt;
-              font-weight: 700;
-              color: #111;
-              line-height: 1;
-            }
-            .print-container .barcode-img {
-              width: 40mm;
-              height: 10mm;
-              object-fit: contain;
-              flex-shrink: 0;
-            }
-            .print-container .label-text {
-              font-size: 5.5pt;
-              line-height: 1;
-              margin-top: 0.3mm;
-              text-align: center;
-              max-height: 2.5mm;
-              overflow: hidden;
-              text-overflow: ellipsis;
-              white-space: nowrap;
-              max-width: 48mm;
-            }
-            @media print {
-              .print-container .brand img { width: 3.5mm !important; height: 3.5mm !important; }
-              .print-container .brand-name { font-size: 5.5pt !important; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="print-container">
-            <div class="brand">
-              <img src="${logoImage}" alt="Bright Buttons" />
-              <span class="brand-name">Bright Buttons</span>
-            </div>
-            <img src="${args.barcodeImage}" alt="Barcode" class="barcode-img" />
-            <div class="label-text">${priceText}</div>
-            ${args.showProductName && safeName ? `<div class="label-text">${safeName}</div>` : ""}
-            ${args.showSku && safeSku ? `<div class="label-text">${safeSku}</div>` : ""}
-          </div>
-          <script>
-            window.onload = function() {
-              window.print();
-              window.onafterprint = function() { window.close(); };
-            };
-          </script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
+    root.innerHTML = `
+      <div class="print-container">
+        <div class="brand">
+          <img src="${logoImage}" alt="Bright Buttons" />
+          <span class="brand-name">Bright Buttons</span>
+        </div>
+        <img src="${args.barcodeImage}" alt="Barcode" class="barcode-img" />
+        <div class="label-text">${priceText}</div>
+        ${args.showProductName && safeName ? `<div class="label-text">${safeName}</div>` : ""}
+        ${args.showSku && safeSku ? `<div class="label-text">${safeSku}</div>` : ""}
+      </div>
+    `;
+
+    const triggerPrint = () => {
+      window.print();
+      window.onafterprint = () => {
+        if (root) root.innerHTML = "";
+      };
+    };
+
+    const logoImg = root.querySelector(".brand img") as HTMLImageElement | null;
+    if (logoImg && !logoImg.complete) {
+      logoImg.onload = triggerPrint;
+    } else {
+      triggerPrint();
+    }
   };
 
   const handlePrintBarcode = () => {
@@ -2975,6 +2853,9 @@ const Products = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Hidden root for in-page barcode print (50mm × 25mm); only visible when printing */}
+      <div id="barcode-print-root" ref={barcodePrintRootRef} aria-hidden="true" />
     </AdminLayout>
   );
 };
