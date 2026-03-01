@@ -30,6 +30,65 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
+/** 2×1 inch label at 600 DPI for ZIP = maximum print quality (CMYK workflows convert from sRGB). */
+const ZIP_LABEL_DPI = 600;
+const ZIP_LABEL_WIDTH_PX = 2 * ZIP_LABEL_DPI;
+const ZIP_LABEL_HEIGHT_PX = 1 * ZIP_LABEL_DPI;
+
+/** Generate branded barcode as JPEG (logo, Bright Buttons, barcode, price, product name). */
+async function generateBrandedBarcodeJpeg(opts: {
+  logoUrl: string;
+  barcodeImageDataUrl: string;
+  productName: string;
+  sellingPrice: number | null;
+  /** Print-ready: 2×1" at 600 DPI, quality 1.0 for CMYK-friendly output. */
+  printReady?: boolean;
+}): Promise<string> {
+  const printReady = opts.printReady === true;
+  const width = printReady ? ZIP_LABEL_WIDTH_PX : 600;
+  const height = printReady ? ZIP_LABEL_HEIGHT_PX : 300;
+  const scale = printReady ? 2 : 1;
+  const quality = printReady ? 1 : 0.92;
+
+  const [logoImg, barcodeImg] = await Promise.all([
+    loadImage(opts.logoUrl),
+    loadImage(opts.barcodeImageDataUrl),
+  ]);
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return "";
+
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, width, height);
+
+  const logoSize = 28 * scale;
+  ctx.drawImage(logoImg, (width - logoSize) / 2, 6 * scale, logoSize, logoSize);
+  ctx.fillStyle = "#111";
+  ctx.font = `bold ${10 * scale}px Arial, sans-serif`;
+  ctx.textAlign = "center";
+  ctx.fillText("Bright Buttons", width / 2, 6 * scale + logoSize + 14);
+
+  const barcodeW = 540 * scale;
+  const barcodeH = 110 * scale;
+  const barcodeX = (width - barcodeW) / 2;
+  const barcodeY = 6 * scale + logoSize + 14 + 12 * scale;
+  ctx.drawImage(barcodeImg, barcodeX, barcodeY, barcodeW, barcodeH);
+
+  const priceText = opts.sellingPrice != null ? `₹${Number(opts.sellingPrice).toLocaleString()}` : "—";
+  ctx.font = `bold ${12 * scale}px Arial, sans-serif`;
+  ctx.fillText(priceText, width / 2, barcodeY + barcodeH + 8 * scale + 14 * scale);
+
+  ctx.font = `${9 * scale}px Arial, sans-serif`;
+  const maxW = width - 24 * scale;
+  const lines = wrapText(ctx, opts.productName, maxW);
+  lines.slice(0, 3).forEach((line, i) => {
+    ctx.fillText(line, width / 2, barcodeY + barcodeH + (8 + 14 + 12) * scale + i * 11 * scale);
+  });
+
+  return canvas.toDataURL("image/jpeg", quality);
+}
 
 function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
   const words = text.trim().split(/\s+/);
@@ -322,11 +381,25 @@ const Products = () => {
     try {
       const zip = new JSZip();
       const sanitize = (name: string) => name.replace(/[<>:"/\\|?*]/g, "_").replace(/\s+/g, " ").trim().slice(0, 80) || "product";
-      list.forEach((p) => {
-        const barcodeValue = p.barcode || generateBarcode(p.id);
-        const svg = generateBarcodeSvg(barcodeValue, { scale: 3, height: 10, includetext: true });
-        zip.file(`${sanitize(p.name)}_${barcodeValue}.svg`, svg);
+      const brandedImages = await Promise.all(
+        list.map(async (p) => {
+          const barcodeValue = p.barcode || generateBarcode(p.id);
+          const barcodeDataUrl = generateBarcodeImageAtSize(barcodeValue, 540 * 2, 110 * 2);
+          const jpegDataUrl = await generateBrandedBarcodeJpeg({
+            logoUrl: logoImage,
+            barcodeImageDataUrl: barcodeDataUrl,
+            productName: p.name,
+            sellingPrice: p.price ?? null,
+            printReady: true,
+          });
+          const base64 = jpegDataUrl.replace(/^data:image\/jpeg;base64,/, "");
+          return { fileName: `${sanitize(p.name)}_${barcodeValue}.jpg`, base64 };
+        })
+      );
+      brandedImages.forEach(({ fileName, base64 }) => {
+        zip.file(fileName, base64, { base64: true });
       });
+      zip.file("PRINT_README.txt", "Barcode labels: 2×1 inch, 600 DPI, JPEG quality 100%.\r\nsRGB color space — suitable for CMYK printing (your print provider will convert).\r\n");
       const blob = await zip.generateAsync({ type: "blob" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -336,7 +409,7 @@ const Products = () => {
       URL.revokeObjectURL(url);
       toast({
         title: "Download started",
-        description: `${list.length} barcode(s) saved as SVG in zip.`,
+        description: `${list.length} barcode(s): 2×1\", 600 DPI, max quality JPEG (CMYK-ready) in zip.`,
       });
     } catch (e) {
       toast({
