@@ -222,13 +222,13 @@ export const Invoice = ({ order, onClose }: InvoiceProps) => {
         <div className="border-b-2 border-gray-800 pb-6 mb-8 no-break">
           <div className="flex justify-between items-center gap-6">
             <div className="flex-1 flex items-center">
-              <h1 className="text-4xl font-bold mb-0 print:text-5xl">INVOICE</h1>
+              <h1 className="text-3xl font-bold mb-0 print:text-4xl">INVOICE</h1>
             </div>
-            <div className="flex-1 flex justify-center">
+            <div className="flex-1 flex justify-center items-center">
               <img 
                 src={logoImage} 
                 alt="Bright Buttons" 
-                className="h-40 w-auto object-contain print:h-56 max-w-md"
+                className="h-56 w-auto object-contain print:h-80 max-w-2xl"
               />
             </div>
             <div className="flex-1 text-right min-w-0">
