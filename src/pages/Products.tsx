@@ -18,6 +18,58 @@ import { parseCSV, validateCSVData, generateSampleCSV, CSVProductRow, CSVValidat
 import { getProductImageUrl } from "@/lib/utils";
 import logoImage from "@/assets/logo.jpg";
 
+/** Load image from URL/data URL and return as HTMLImageElement */
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("Failed to load image"));
+    img.src = src;
+  });
+}
+
+/** Generate a branded barcode PNG (Bright Buttons logo + barcode + selling price) as data URL */
+async function generateBrandedBarcodeDataUrl(opts: {
+  logoUrl: string;
+  barcodeValue: string;
+  sellingPrice: number | null;
+}): Promise<string> {
+  const { logoUrl, barcodeValue, sellingPrice } = opts;
+  const canvas = document.createElement("canvas");
+  const width = 400;
+  const height = 220;
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return generateBarcodeImageForPrint(barcodeValue);
+
+  const barcodeDataUrl = generateBarcodeImageForPrint(barcodeValue);
+  const [logoImg, barcodeImg] = await Promise.all([loadImage(logoUrl), loadImage(barcodeDataUrl)]);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, width, height);
+
+  const logoSize = 32;
+  ctx.drawImage(logoImg, (width - logoSize) / 2, 12, logoSize, logoSize);
+
+  ctx.fillStyle = "#111111";
+  ctx.font = "bold 14px Arial, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("Bright Buttons", width / 2, 56);
+
+  const barcodeW = 360;
+  const barcodeH = (barcodeImg.height / barcodeImg.width) * barcodeW;
+  const barcodeX = (width - barcodeW) / 2;
+  ctx.drawImage(barcodeImg, barcodeX, 68, barcodeW, barcodeH);
+
+  const priceText = sellingPrice != null ? `₹${Number(sellingPrice).toLocaleString()}` : "—";
+  ctx.font = "bold 20px Arial, sans-serif";
+  ctx.fillText(priceText, width / 2, 68 + barcodeH + 28);
+
+  return canvas.toDataURL("image/png");
+}
+
 interface ProductPhoto {
   id: string;
   product_id: string;
@@ -380,11 +432,19 @@ const Products = () => {
     try {
       const zip = new JSZip();
       const sanitize = (name: string) => name.replace(/[<>:"/\\|?*]/g, "_").replace(/\s+/g, " ").trim().slice(0, 80) || "product";
-      for (const p of list) {
-        const barcodeValue = p.barcode || generateBarcode(p.id);
-        const dataUrl = generateBarcodeImage(barcodeValue);
+      const brandedImages = await Promise.all(
+        list.map(async (p) => {
+          const barcodeValue = p.barcode || generateBarcode(p.id);
+          const dataUrl = await generateBrandedBarcodeDataUrl({
+            logoUrl: logoImage,
+            barcodeValue,
+            sellingPrice: p.price ?? null,
+          });
+          return { fileName: `${sanitize(p.name)}_${barcodeValue}.png`, dataUrl };
+        })
+      );
+      for (const { fileName, dataUrl } of brandedImages) {
         const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, "");
-        const fileName = `${sanitize(p.name)}_${barcodeValue}.png`;
         zip.file(fileName, base64, { base64: true });
       }
       const blob = await zip.generateAsync({ type: "blob" });
